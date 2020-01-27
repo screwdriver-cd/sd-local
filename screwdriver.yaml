@@ -1,15 +1,15 @@
 shared:
-    image: golang
+    image: golang:1.13.6
     environment:
         GOPATH: /sd/workspace
 
 jobs:
-    main:
+    test:
         requires: [~pr, ~commit]
         steps:
+            - gover: go version
             - install: go mod download
             - vet: go vet ./...
-            - gofmt: ret=$(find . -name '*.go' | xargs gofmt -d) && echo "$ret" && test -z "$ret"
-            - gover: go version
+            - gofmt: (! gofmt -d -s . | grep '^')
             - test: go test -coverprofile=${SD_ARTIFACTS_DIR}/coverage.out -coverpkg=./...
             - build: go build -a -o /dev/null
