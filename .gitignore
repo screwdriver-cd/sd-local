@@ -16,6 +16,7 @@ cover.html
 # plugins
 vendor/
 .vscode/
+.idea/
 
 debug
 
