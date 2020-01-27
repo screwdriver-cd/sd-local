@@ -16,8 +16,8 @@ var testDir string = "./testdata"
 func TestReadConfig(t *testing.T) {
 	t.Run("success", func(t *testing.T) {
 		testConfig := Config{
-			ApiUrl:   "api-url",
-			StoreUrl: "store-api-url",
+			APIURL:   "api-url",
+			StoreURL: "store-api-url",
 			Token:    "dummy_token",
 			Launcher: Launcher{
 				Version: "latest",
