@@ -19,6 +19,7 @@ lint:
 	$(GOLINT) $$($(GOLIST_PKG))
 format:
 	find . -name '*.go' | xargs gofmt -s -w
+	find . -name '*.go' | xargs goimports -w
 mod_download:
 	$(GOCMD) mod download
 build: mod_download
