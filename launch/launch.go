@@ -67,7 +67,7 @@ func checkExecCmd(c string) (ok bool, err error) {
 	err = cmd.Run()
 
 	if err != nil {
-		return false, err
+		return false, fmt.Errorf("error: %s : also not exists command to %s.", err, c)
 	}
 
 	status := cmd.ProcessState.ExitCode()
@@ -90,7 +90,7 @@ func New(job screwdriver.Job, token string) *Launch {
 }
 
 func runDocker(env BuildEnvironemnt, config LaunchConfig, image, jobName, apiURL, storeURL string) error {
-	// 厳密にするならカレントかつscrewdriver.yamlがある場所にした方が良さそう
+	//厳密にするならカレントかつscrewdriver.yamlがある場所にした方が良さそう
 	cwd, err := os.Getwd()
 
 	if err != nil {
@@ -110,12 +110,13 @@ func runDocker(env BuildEnvironemnt, config LaunchConfig, image, jobName, apiURL
 		return err
 	}
 
-
 	cmd := []string{"/opt/sd/local_run.sh", string(configJson), jobName, apiURL, storeURL, containerArtDir}
 	execCmd := strings.Join(cmd, " ")
 
 
-	out, err := exec.Command("docker", "run", "-d", "--rm", srcOpt, artOpt, buildImage, execCmd).Output()
+	// 以下のコードでdokcerが動作することを確認済み
+	//out, err := exec.Command("sudo", "docker", "run", "-d", "--rm", "alpine", "sleep", "100000000").Output()
+	out, err := exec.Command("sudo", "docker", "run", "-d", "--rm", srcOpt, artOpt, buildImage, execCmd).Output()
 
 	if err != nil {
 		return err
@@ -127,7 +128,7 @@ func runDocker(env BuildEnvironemnt, config LaunchConfig, image, jobName, apiURL
 }
 
 func (l *Launch) Run() {
-	_, err := checkExecCmd("ls")
+	_, err := checkExecCmd("docker")
 	if err != nil {
 		fmt.Println(err)
 		os.Exit(1)
@@ -135,5 +136,9 @@ func (l *Launch) Run() {
 
 	env := BuildEnvironemnt{SD_ARTIFACTS_DIR: "/sd/workspace/artifacts"}
 
-	runDocker(env, l.config, "alpine", "main", "https://api-cd.screwdriver.corp.yahoo.co.jp", "https://store-cd.screwdriver.corp.yahoo.co.jp")
+	err = runDocker(env, l.config, "alpine", "main", "https://api-cd.screwdriver.corp.yahoo.co.jp", "https://store-cd.screwdriver.corp.yahoo.co.jp")
+	if err != nil {
+		fmt.Println(err)
+		os.Exit(1)
+	}
 }
