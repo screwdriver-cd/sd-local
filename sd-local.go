@@ -2,6 +2,7 @@ package main
 
 import (
 	"fmt"
+
 	"github.com/screwdriver-cd/sd-local/launch"
 	"github.com/screwdriver-cd/sd-local/screwdriver"
 )
@@ -9,9 +10,9 @@ import (
 func main() {
 	job := screwdriver.Job{
 		Environment: map[string]string{"FOO": "BAR"},
-		Image:"",
-		Steps: []screwdriver.Step{},
+		Image:       "",
+		Steps:       []screwdriver.Step{},
 	}
-	launch.CreateLaunchConfig(job, "hogehoge")
+	launch.New(job, "hogehoge").Run()
 	fmt.Println("hello world")
 }
