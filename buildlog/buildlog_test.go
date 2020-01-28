@@ -51,10 +51,9 @@ func TestRun(t *testing.T) {
 		}
 
 		testInputs := []string{
-			"test1\n",
-			"test2\n",
+			`{"t": 1580198209, "m": "test 1", "n": 0, "s": "main"}` + "\n",
+			`{"t": 1580198222, "m": "test 2", "n": 1, "s": "main"}` + "\n",
 		}
-		t.Log(tmpFile.Name())
 		go write(t, tmpFile.Name(), testInputs)
 
 		parent, cancel := context.WithCancel(context.Background())
@@ -72,8 +71,10 @@ func TestRun(t *testing.T) {
 		time.Sleep(3 * time.Second)
 		l.Stop()
 
-		assert.Equal(t, strings.Join(testInputs, ""), writer.String())
-
-		//t.Log(<-errChan)
+		expected := []string{
+			"2020-01-28 16:56:49 +0900 JST: test 1\n",
+			"2020-01-28 16:57:02 +0900 JST: test 2\n",
+		}
+		assert.Equal(t, strings.Join(expected, ""), writer.String())
 	})
 }

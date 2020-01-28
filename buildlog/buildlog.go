@@ -3,6 +3,7 @@ package buildlog
 import (
 	"bufio"
 	"context"
+	"encoding/json"
 	"fmt"
 	"io"
 	"os"
@@ -21,6 +22,13 @@ type log struct {
 	file   io.Reader
 	writer io.Writer
 	cancel context.CancelFunc
+}
+
+type logLine struct {
+	Time     int64  `json:"t"`
+	Message  string `json:"m"`
+	Line     int    `json:"n"`
+	StepName string `json:"s"`
 }
 
 func New(ctx context.Context, filepath string, writer io.Writer) (Logger, error) {
@@ -64,10 +72,29 @@ func (l log) run(errChan chan error) {
 	}
 }
 
-func (l log) output(reader *bufio.Reader) {
+func (l log) output(reader *bufio.Reader) error {
 	line, _, err := reader.ReadLine()
 	if err != nil {
-		return
+		return nil
 	}
-	fmt.Fprintln(l.writer, string(line))
+
+	parsedLog, err := parse(line)
+	if err != nil {
+		return fmt.Errorf("failed to output log: %w", err)
+	}
+
+	fmt.Fprintln(l.writer, parsedLog)
+	return nil
+}
+
+func parse(rawLog []byte) (string, error) {
+	ll := &logLine{}
+	err := json.Unmarshal(rawLog, ll)
+	if err != nil {
+		return "", fmt.Errorf("failed to parse raw log: %w", err)
+	}
+
+	ISOTime := time.Unix(ll.Time, 0)
+
+	return fmt.Sprintf("%s: %s", ISOTime.String(), ll.Message), nil
 }
