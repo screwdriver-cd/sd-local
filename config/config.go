@@ -13,7 +13,7 @@ type Launcher struct {
 	Image   string `yaml:"image"`
 }
 
-// Config is entity of sd-local config
+// Config is entity struct of sd-local config
 type Config struct {
 	APIURL   string   `yaml:"api-url"`
 	StoreURL string   `yaml:"store-url"`
