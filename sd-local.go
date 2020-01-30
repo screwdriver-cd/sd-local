@@ -10,7 +10,7 @@ import (
 )
 
 const (
-	configDir string = ".sdlocal"
+	configDir  string = ".sdlocal"
 	configName string = "config"
 )
 

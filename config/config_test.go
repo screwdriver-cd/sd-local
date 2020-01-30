@@ -45,6 +45,6 @@ func TestReadConfig(t *testing.T) {
 		cnfPath := path.Join(testDir, "failureConfig")
 		_, err := ReadConfig(cnfPath)
 
-		assert.Equal(t, 0, strings.Index(err.Error(), "failed to parse successConfig file: "), fmt.Sprintf("expected error is `failed to parse successConfig file: ...`, actual: `%v`", msg))
+		assert.Equal(t, 0, strings.Index(err.Error(), "failed to parse successConfig file: "), fmt.Sprintf("expected error is `failed to parse successConfig file: ...`, actual: `%v`", err))
 	})
 }
