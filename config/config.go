@@ -2,8 +2,9 @@ package config
 
 import (
 	"fmt"
-	"github.com/go-yaml/yaml"
 	"io/ioutil"
+
+	"github.com/go-yaml/yaml"
 )
 
 // Launcher is launcher entity struct
