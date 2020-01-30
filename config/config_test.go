@@ -2,8 +2,6 @@ package config
 
 import (
 	"fmt"
-	"io/ioutil"
-	"os"
 	"path"
 	"strings"
 	"testing"
@@ -25,7 +23,8 @@ func TestReadConfig(t *testing.T) {
 			},
 		}
 
-		actual, err := ReadConfig(testDir)
+		cnfPath := path.Join(testDir, "successConfig")
+		actual, err := ReadConfig(cnfPath)
 
 		assert.Nil(t, err)
 		assert.Equal(t, testConfig, actual)
@@ -34,32 +33,18 @@ func TestReadConfig(t *testing.T) {
 	t.Run("failure by no entry", func(t *testing.T) {
 		emptyConfig := Config{}
 		actual, err := ReadConfig("./not-exist")
-		assert.NotNil(t, err, fmt.Sprintf("There is no error when reading config fails"))
+		assert.NotNil(t, err, fmt.Sprintf("There is no error when reading successConfig fails"))
 
 		assert.Equal(t, emptyConfig, actual)
 
 		msg := err.Error()
-		assert.Equal(t, 0, strings.Index(msg, "failed to read config file: "), fmt.Sprintf("expected error is `failed to read config file: ...`, actual: `%v`", msg))
+		assert.Equal(t, 0, strings.Index(msg, "failed to read successConfig file: "), fmt.Sprintf("expected error is `failed to read successConfig file: ...`, actual: `%v`", msg))
 	})
 
 	t.Run("failure by invalid yaml", func(t *testing.T) {
-		invalidConfigFile := []byte("key; 1")
-		tmpdir, err := ioutil.TempDir("", "sdlocal")
+		cnfPath := path.Join(testDir, "failureConfig")
+		_, err := ReadConfig(cnfPath)
 
-		assert.Nil(t, err, fmt.Sprintf("failed to create temporary directory: %v", err))
-
-		defer os.RemoveAll(tmpdir)
-
-		err = ioutil.WriteFile(path.Join(tmpdir, "config"), invalidConfigFile, 0666)
-
-		assert.Nil(t, err, fmt.Sprintf("failed to create config file: %v", err))
-
-		emptyConfig := Config{}
-		actual, err := ReadConfig(tmpdir)
-
-		assert.Equal(t, emptyConfig, actual)
-
-		msg := fmt.Errorf("%v", err).Error()
-		assert.Equal(t, 0, strings.Index(msg, "failed to parse config file: "), fmt.Sprintf("expected error is `failed to parse config file: ...`, actual: `%v`", msg))
+		assert.Equal(t, 0, strings.Index(err.Error(), "failed to parse successConfig file: "), fmt.Sprintf("expected error is `failed to parse successConfig file: ...`, actual: `%v`", msg))
 	})
 }
