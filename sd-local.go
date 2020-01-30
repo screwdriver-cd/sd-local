@@ -2,17 +2,41 @@ package main
 
 import (
 	"fmt"
+	"github.com/screwdriver-cd/sd-local/config"
+	"log"
+	"path"
 
 	"github.com/screwdriver-cd/sd-local/launch"
 	"github.com/screwdriver-cd/sd-local/screwdriver"
+	"github.com/mitchellh/go-homedir"
+)
+
+const (
+	JobName string = "main"
 )
 
 func main() {
-	job := screwdriver.Job{
-		Environment: map[string]string{"FOO": "BAR"},
-		Image:       "",
-		Steps:       []screwdriver.Step{},
+	homeDir, err := homedir.Dir()
+	if err != nil {
+		log.Fatal(err)
 	}
-	launch.New(job, "hogehoge").Run()
-	fmt.Println("hello world")
+
+	configPath := path.Join(homeDir, "/.sdlocal/config")
+
+	config, err := config.ReadConfig(configPath)
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	api, err := screwdriver.New(config.APIURL, config.Token)
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	job, err := api.Job(JobName, "./screwdriver.yaml")
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	launch.New(job, config, JobName, api.SDJWT).Run()
 }

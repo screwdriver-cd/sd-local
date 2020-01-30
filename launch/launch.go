@@ -1,21 +1,27 @@
 package launch
 
 import (
-	"encoding/json"
 	"fmt"
+	"github.com/screwdriver-cd/sd-local/config"
 	"github.com/screwdriver-cd/sd-local/screwdriver"
 	"os"
 	"os/exec"
-	"strings"
 )
 
+type Runner interface {
+	RunBuild(buildConfig BuildConfig, environment BuildEnvironment) ([]byte, error)
+	SetupBin() error
+}
+
 type Launch struct {
-	config LaunchConfig
+	buildConfig BuildConfig
+	buildEnvironment BuildEnvironment
+	runner Runner
 }
 
 type EnvVar map[string]string
 
-type LaunchConfig struct {
+type BuildConfig struct {
 	ID            int                    `json:"id"`
 	Environment   []EnvVar               `json:"environment"`
 	EventID       int                    `json:"eventId"`
@@ -24,10 +30,14 @@ type LaunchConfig struct {
 	Sha           string                 `json:"sha"`
 	Meta          map[string]interface{} `json:"meta"`
 	Steps         []screwdriver.Step                 `json:"steps"`
+	Image		  string				  `json:"-"`
+	JobName		  string				  `json:"-"`
 }
 
-type BuildEnvironemnt struct {
+type BuildEnvironment struct {
 	SD_ARTIFACTS_DIR string
+	SD_API_URL string
+	SD_STORE_URL string
 }
 
 func envMerge(env1 []EnvVar, env2 EnvVar) []EnvVar{
@@ -46,11 +56,11 @@ func envMerge(env1 []EnvVar, env2 EnvVar) []EnvVar{
 	return merged
 }
 
-func createLaunchConfig(job screwdriver.Job, token string) LaunchConfig {
-	t1 := []EnvVar{EnvVar{"SD_TOKEN": token}}
+func createBuildConfig(job screwdriver.Job, jobName, jwt string) BuildConfig {
+	t1 := []EnvVar{EnvVar{"SD_TOKEN": jwt}}
 	env := envMerge(t1, job.Environment)
 
-	return LaunchConfig{
+	return BuildConfig{
 		ID: 0,
 		Environment: env,
 		EventID: 0,
@@ -59,7 +69,23 @@ func createLaunchConfig(job screwdriver.Job, token string) LaunchConfig {
 		Sha: "dummy",
 		Meta: map[string]interface{}{},
 		Steps: job.Steps,
+		Image:job.Image,
+		JobName: jobName,
 	}
+}
+
+func New(job screwdriver.Job, config config.Config, jobName, jwt string) *Launch {
+	l := new(Launch)
+
+	l.runner = newDocker(config.Launcher.Image, config.Launcher.Version)
+	l.buildConfig = createBuildConfig(job, jobName, jwt)
+	l.buildEnvironment = BuildEnvironment{
+		SD_ARTIFACTS_DIR: "/sd/workspace/artifacts",
+		SD_API_URL: config.APIURL,
+		SD_STORE_URL: config.StoreURL,
+	}
+
+	return l
 }
 
 func checkExecCmd(c string) (ok bool, err error) {
@@ -81,48 +107,8 @@ func checkExecCmd(c string) (ok bool, err error) {
 	return ok, nil
 }
 
-func New(job screwdriver.Job, token string) *Launch {
-	l := new(Launch)
+func (l *Launch) runBuild(image, jobName, apiURL, storeURL string) error {
 
-	l.config = createLaunchConfig(job, token)
-
-	return l
-}
-
-func runDocker(env BuildEnvironemnt, config LaunchConfig, image, jobName, apiURL, storeURL string) error {
-	//厳密にするならカレントかつscrewdriver.yamlがある場所にした方が良さそう
-	cwd, err := os.Getwd()
-
-	if err != nil {
-		return nil
-	}
-
-	srcDir := cwd
-	hostArtDir := cwd
-	containerArtDir := env.SD_ARTIFACTS_DIR
-	buildImage := image
-
-	srcOpt := "-v" + srcDir + "/:/sd/workspace"
-	artOpt := "-v" + hostArtDir + "/:/" + containerArtDir
-	configJson, err := json.Marshal(config)
-
-	if err != nil {
-		return err
-	}
-
-	cmd := []string{"/opt/sd/local_run.sh", string(configJson), jobName, apiURL, storeURL, containerArtDir}
-	execCmd := strings.Join(cmd, " ")
-
-
-	// 以下のコードでdokcerが動作することを確認済み
-	//out, err := exec.Command("sudo", "docker", "run", "-d", "--rm", "alpine", "sleep", "100000000").Output()
-	out, err := exec.Command("sudo", "docker", "run", "-d", "--rm", srcOpt, artOpt, buildImage, execCmd).Output()
-
-	if err != nil {
-		return err
-	}
-
-	fmt.Println(string(out))
 
 	return nil
 }
@@ -134,11 +120,17 @@ func (l *Launch) Run() {
 		os.Exit(1)
 	}
 
-	env := BuildEnvironemnt{SD_ARTIFACTS_DIR: "/sd/workspace/artifacts"}
-
-	err = runDocker(env, l.config, "alpine", "main", "https://api-cd.screwdriver.corp.yahoo.co.jp", "https://store-cd.screwdriver.corp.yahoo.co.jp")
+	err = l.runner.SetupBin()
 	if err != nil {
-		fmt.Println(err)
+		fmt.Println("SetupBin: ", err)
 		os.Exit(1)
 	}
+
+	out, err := l.runner.RunBuild(l.buildConfig, l.buildEnvironment)
+	if err != nil {
+		fmt.Println("RunBuild: ", err)
+		os.Exit(1)
+	}
+
+	fmt.Println(string(out))
 }
