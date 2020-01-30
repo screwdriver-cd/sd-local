@@ -33,18 +33,18 @@ func TestReadConfig(t *testing.T) {
 	t.Run("failure by no entry", func(t *testing.T) {
 		emptyConfig := Config{}
 		actual, err := ReadConfig("./not-exist")
-		assert.NotNil(t, err, fmt.Sprintf("There is no error when reading successConfig fails"))
+		assert.NotNil(t, err, fmt.Sprintf("There is no error when reading config files"))
 
 		assert.Equal(t, emptyConfig, actual)
 
 		msg := err.Error()
-		assert.Equal(t, 0, strings.Index(msg, "failed to read successConfig file: "), fmt.Sprintf("expected error is `failed to read successConfig file: ...`, actual: `%v`", msg))
+		assert.Equal(t, 0, strings.Index(msg, "failed to read config file: "), fmt.Sprintf("expected error is `failed to read config file: ...`, actual: `%v`", msg))
 	})
 
 	t.Run("failure by invalid yaml", func(t *testing.T) {
 		cnfPath := path.Join(testDir, "failureConfig")
 		_, err := ReadConfig(cnfPath)
 
-		assert.Equal(t, 0, strings.Index(err.Error(), "failed to parse successConfig file: "), fmt.Sprintf("expected error is `failed to parse successConfig file: ...`, actual: `%v`", err))
+		assert.Equal(t, 0, strings.Index(err.Error(), "failed to parse config file: "), fmt.Sprintf("expected error is `failed to parse config file: ...`, actual: `%v`", err))
 	})
 }
