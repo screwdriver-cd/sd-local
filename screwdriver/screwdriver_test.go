@@ -102,11 +102,11 @@ func TestJob(t *testing.T) {
 
 		testJob := Job{
 			Steps: []Step{
-				Step{
+				{
 					Name:    "install",
 					Command: "echo install",
 				},
-				Step{
+				{
 					Name:    "publish",
 					Command: "echo publish",
 				},
