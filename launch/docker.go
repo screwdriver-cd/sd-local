@@ -8,18 +8,17 @@ import (
 )
 
 type docker struct {
-	volume string
-	setupImage string
+	volume            string
+	setupImage        string
 	setupImageVersion string
 }
 
 var _ Runner = (*docker)(nil)
 
-
 func newDocker(setupImage, setupImageVer string) Runner {
 	return &docker{
-		volume: "SD_LAUNCH_BIN",
-		setupImage: setupImage,
+		volume:            "SD_LAUNCH_BIN",
+		setupImage:        setupImage,
 		setupImageVersion: setupImageVer,
 	}
 }
@@ -30,7 +29,7 @@ func (d *docker) SetupBin() error {
 		return err
 	}
 
-	mount := fmt.Sprintf( "%s:/opt/sd/", d.volume)
+	mount := fmt.Sprintf("%s:/opt/sd/", d.volume)
 	image := fmt.Sprintf("%s:%s", d.setupImage, d.setupImageVersion)
 	cmd := exec.Command("sudo", "docker", "run", "-v", mount, image, "--entrypoint", "/bin/echo set up bin")
 	cmd.Stdout = os.Stdout
@@ -53,7 +52,7 @@ func (d *docker) RunBuild(buildConfig BuildConfig, environment BuildEnvironment)
 	buildImage := buildConfig.Image
 
 	srcOpt := fmt.Sprintf("%s/:/sd/workspace", srcDir)
-	artOpt := fmt.Sprintf("%s/:/%s", hostArtDir, containerArtDir)
+	artOpt := fmt.Sprintf("%s/:%s", hostArtDir, containerArtDir)
 	binOpt := fmt.Sprintf("%s:%s", d.volume, "/opt/sd")
 	configJson, err := json.Marshal(buildConfig)
 	if err != nil {
@@ -61,7 +60,7 @@ func (d *docker) RunBuild(buildConfig BuildConfig, environment BuildEnvironment)
 	}
 
 	cmd := []string{"docker", "run", "--rm", "-v", srcOpt, "-v", artOpt, "-v", binOpt, buildImage, "/opt/sd/local_run.sh", string(configJson), buildConfig.JobName, environment.SD_API_URL, environment.SD_STORE_URL, containerArtDir}
-	out, err := exec.Command("sudo",  cmd...).CombinedOutput()
+	out, err := exec.Command("sudo", cmd...).CombinedOutput()
 	if err != nil {
 		fmt.Println(string(out))
 		return nil, err
