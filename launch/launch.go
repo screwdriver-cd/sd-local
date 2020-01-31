@@ -2,21 +2,21 @@ package launch
 
 import (
 	"fmt"
-	"github.com/screwdriver-cd/sd-local/config"
-	"github.com/screwdriver-cd/sd-local/screwdriver"
 	"os"
 	"os/exec"
+
+	"github.com/screwdriver-cd/sd-local/config"
+	"github.com/screwdriver-cd/sd-local/screwdriver"
 )
 
 type Runner interface {
-	RunBuild(buildConfig BuildConfig, environment BuildEnvironment) ([]byte, error)
+	RunBuild(buildConfig BuildConfig) ([]byte, error)
 	SetupBin() error
 }
 
 type Launch struct {
 	buildConfig BuildConfig
-	buildEnvironment BuildEnvironment
-	runner Runner
+	runner      Runner
 }
 
 type EnvVar map[string]string
@@ -29,48 +29,50 @@ type BuildConfig struct {
 	ParentBuildID []int                  `json:"parentBuildId"`
 	Sha           string                 `json:"sha"`
 	Meta          map[string]interface{} `json:"meta"`
-	Steps         []screwdriver.Step                 `json:"steps"`
-	Image		  string				  `json:"-"`
-	JobName		  string				  `json:"-"`
+	Steps         []screwdriver.Step     `json:"steps"`
+	Image         string                 `json:"-"`
+	JobName       string                 `json:"-"`
 }
 
 type BuildEnvironment struct {
 	SD_ARTIFACTS_DIR string
-	SD_API_URL string
-	SD_STORE_URL string
+	SD_API_URL       string
+	SD_STORE_URL     string
 }
 
-func envMerge(env1 []EnvVar, env2 EnvVar) []EnvVar{
-	merged := make([]EnvVar, 0)
+const (
+	defaultArtDir = "/sd/workspace/artifacts"
+)
 
-	for _, v := range env1 {
-		for k, vv := range v {
-			merged = append(merged, EnvVar{k: vv})
-		}
+func mergeEnv(env, userEnv EnvVar) []EnvVar {
+
+	for k, v := range userEnv {
+		env[k] = v
 	}
 
-	for k, v := range env2 {
-		merged = append(merged, EnvVar{k: v})
-	}
-
-	return merged
+	return []EnvVar{env}
 }
 
-func createBuildConfig(job screwdriver.Job, jobName, jwt string) BuildConfig {
-	t1 := []EnvVar{EnvVar{"SD_TOKEN": jwt}}
-	env := envMerge(t1, job.Environment)
+func createBuildConfig(config config.Config, job screwdriver.Job, jobName, jwt string) BuildConfig {
+	defaultEnv := EnvVar{
+		"SD_TOKEN":         jwt,
+		"SD_ARTIFACTS_DIR": defaultArtDir,
+		"SD_API_URL":       config.APIURL,
+		"SD_STORE_URL":     config.StoreURL,
+	}
+	env := mergeEnv(defaultEnv, job.Environment)
 
 	return BuildConfig{
-		ID: 0,
-		Environment: env,
-		EventID: 0,
-		JobID: 0,
+		ID:            0,
+		Environment:   env,
+		EventID:       0,
+		JobID:         0,
 		ParentBuildID: []int{0},
-		Sha: "dummy",
-		Meta: map[string]interface{}{},
-		Steps: job.Steps,
-		Image:job.Image,
-		JobName: jobName,
+		Sha:           "dummy",
+		Meta:          map[string]interface{}{},
+		Steps:         job.Steps,
+		Image:         job.Image,
+		JobName:       jobName,
 	}
 }
 
@@ -78,12 +80,7 @@ func New(job screwdriver.Job, config config.Config, jobName, jwt string) *Launch
 	l := new(Launch)
 
 	l.runner = newDocker(config.Launcher.Image, config.Launcher.Version)
-	l.buildConfig = createBuildConfig(job, jobName, jwt)
-	l.buildEnvironment = BuildEnvironment{
-		SD_ARTIFACTS_DIR: "/sd/workspace/artifacts",
-		SD_API_URL: config.APIURL,
-		SD_STORE_URL: config.StoreURL,
-	}
+	l.buildConfig = createBuildConfig(config, job, jobName, jwt)
 
 	return l
 }
@@ -109,7 +106,6 @@ func checkExecCmd(c string) (ok bool, err error) {
 
 func (l *Launch) runBuild(image, jobName, apiURL, storeURL string) error {
 
-
 	return nil
 }
 
@@ -126,7 +122,7 @@ func (l *Launch) Run() {
 		os.Exit(1)
 	}
 
-	out, err := l.runner.RunBuild(l.buildConfig, l.buildEnvironment)
+	out, err := l.runner.RunBuild(l.buildConfig)
 	if err != nil {
 		fmt.Println("RunBuild: ", err)
 		os.Exit(1)

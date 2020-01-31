@@ -5,6 +5,8 @@ import (
 	"fmt"
 	"os"
 	"os/exec"
+	"path"
+	"path/filepath"
 )
 
 type docker struct {
@@ -14,6 +16,11 @@ type docker struct {
 }
 
 var _ Runner = (*docker)(nil)
+
+const (
+	artifactsDir = "artifacts"
+	logFile      = "builds.log"
+)
 
 func newDocker(setupImage, setupImageVer string) Runner {
 	return &docker{
@@ -38,7 +45,7 @@ func (d *docker) SetupBin() error {
 	return err
 }
 
-func (d *docker) RunBuild(buildConfig BuildConfig, environment BuildEnvironment) ([]byte, error) {
+func (d *docker) RunBuild(buildConfig BuildConfig) ([]byte, error) {
 	//厳密にするならカレントかつscrewdriver.yamlがある場所にした方が良さそう
 	cwd, err := os.Getwd()
 
@@ -46,20 +53,23 @@ func (d *docker) RunBuild(buildConfig BuildConfig, environment BuildEnvironment)
 		return nil, nil
 	}
 
-	srcDir := cwd
-	hostArtDir := cwd
-	containerArtDir := environment.SD_ARTIFACTS_DIR
-	buildImage := buildConfig.Image
+	environment := buildConfig.Environment[0]
 
-	srcOpt := fmt.Sprintf("%s/:/sd/workspace", srcDir)
-	artOpt := fmt.Sprintf("%s/:%s", hostArtDir, containerArtDir)
-	binOpt := fmt.Sprintf("%s:%s", d.volume, "/opt/sd")
+	srcDir := cwd
+	hostArtDir := filepath.Join(cwd, artifactsDir)
+	containerArtDir := environment["SD_ARTIFACTS_DIR"]
+	buildImage := buildConfig.Image
+	logfilePath := path.Join(containerArtDir, logFile)
+
+	srcVol := fmt.Sprintf("%s/:/sd/workspace", srcDir)
+	artVol := fmt.Sprintf("%s/:%s", hostArtDir, containerArtDir)
+	binVol := fmt.Sprintf("%s:%s", d.volume, "/opt/sd")
 	configJson, err := json.Marshal(buildConfig)
 	if err != nil {
 		return nil, err
 	}
 
-	cmd := []string{"docker", "run", "--rm", "-v", srcOpt, "-v", artOpt, "-v", binOpt, buildImage, "/opt/sd/local_run.sh", string(configJson), buildConfig.JobName, environment.SD_API_URL, environment.SD_STORE_URL, containerArtDir}
+	cmd := []string{"docker", "run", "--rm", "-v", srcVol, "-v", artVol, "-v", binVol, buildImage, "/opt/sd/local_run.sh", string(configJson), buildConfig.JobName, environment["SD_API_URL"], environment["SD_STORE_URL"], logfilePath}
 	out, err := exec.Command("sudo", cmd...).CombinedOutput()
 	if err != nil {
 		fmt.Println(string(out))

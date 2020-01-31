@@ -1,14 +1,14 @@
 package main
 
 import (
-	"fmt"
-	"github.com/screwdriver-cd/sd-local/config"
 	"log"
 	"path"
 
+	"github.com/screwdriver-cd/sd-local/config"
+
+	"github.com/mitchellh/go-homedir"
 	"github.com/screwdriver-cd/sd-local/launch"
 	"github.com/screwdriver-cd/sd-local/screwdriver"
-	"github.com/mitchellh/go-homedir"
 )
 
 const (
