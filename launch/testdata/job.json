@@ -1,0 +1,13 @@
+{
+    "commands": [
+        {
+            "name": "test",
+            "command": "npm test"
+        }
+    ],
+    "environment": {
+        "SD_ARTIFACTS_DIR": "/test/artifacts",
+        "FOO": "foo"
+    },
+    "image": "node:12"
+}
