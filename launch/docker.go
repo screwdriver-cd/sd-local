@@ -16,6 +16,7 @@ type docker struct {
 }
 
 var _ Runner = (*docker)(nil)
+var execCommand = exec.Command
 
 const (
 	artifactsDir = "artifacts"
@@ -31,18 +32,23 @@ func newDocker(setupImage, setupImageVer string) Runner {
 }
 
 func (d *docker) SetupBin() error {
-	err := exec.Command("sudo", "docker", "volume", "create", "--name", d.volume).Run()
+	err := execCommand("sudo", "docker", "volume", "create", "--name", d.volume).Run()
 	if err != nil {
-		return err
+		return fmt.Errorf("failed to create docker volume")
 	}
 
 	mount := fmt.Sprintf("%s:/opt/sd/", d.volume)
 	image := fmt.Sprintf("%s:%s", d.setupImage, d.setupImageVersion)
-	cmd := exec.Command("sudo", "docker", "run", "-v", mount, image, "--entrypoint", "/bin/echo set up bin")
+	cmd := execCommand("sudo", "docker", "container", "run", "-v", mount, image, "--entrypoint", "/bin/echo set up bin")
 	cmd.Stdout = os.Stdout
 	cmd.Stderr = os.Stderr
 	err = cmd.Run()
-	return err
+
+	if err != nil {
+		return fmt.Errorf("failed to prepare build scripts")
+	}
+
+	return nil
 }
 
 func (d *docker) RunBuild(buildConfig BuildConfig) ([]byte, error) {
@@ -69,8 +75,8 @@ func (d *docker) RunBuild(buildConfig BuildConfig) ([]byte, error) {
 		return nil, err
 	}
 
-	cmd := []string{"docker", "run", "--rm", "-v", srcVol, "-v", artVol, "-v", binVol, buildImage, "/opt/sd/local_run.sh", string(configJson), buildConfig.JobName, environment["SD_API_URL"], environment["SD_STORE_URL"], logfilePath}
-	out, err := exec.Command("sudo", cmd...).CombinedOutput()
+	cmd := []string{"docker", "container", "run", "--rm", "-v", srcVol, "-v", artVol, "-v", binVol, buildImage, "/opt/sd/local_run.sh", string(configJson), buildConfig.JobName, environment["SD_API_URL"], environment["SD_STORE_URL"], logfilePath}
+	out, err := execCommand("sudo", cmd...).CombinedOutput()
 	if err != nil {
 		fmt.Println(string(out))
 		return nil, err
