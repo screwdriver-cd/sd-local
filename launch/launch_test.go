@@ -148,7 +148,9 @@ func TestRun(t *testing.T) {
 			lookPath = exec.LookPath
 		}()
 
-		assert.Equal(t, nil, launch.Run())
+		err := launch.Run()
+
+		assert.Equal(t, nil, err)
 	})
 
 	t.Run("failure in lookPath", func(t *testing.T) {
@@ -191,7 +193,9 @@ func TestRun(t *testing.T) {
 			lookPath = exec.LookPath
 		}()
 
-		assert.Equal(t, fmt.Errorf("`docker` command is not found in $PATH: exec: \"docker\": executable file not found in $PATH"), launch.Run())
+		err := launch.Run()
+
+		assert.Equal(t, fmt.Errorf("`docker` command is not found in $PATH: exec: \"docker\": executable file not found in $PATH"), err)
 	})
 
 	t.Run("failure in SetupBin", func(t *testing.T) {
@@ -234,7 +238,9 @@ func TestRun(t *testing.T) {
 			lookPath = exec.LookPath
 		}()
 
-		assert.Equal(t, fmt.Errorf("failed to setup build: docker: Error response from daemon"), launch.Run())
+		err := launch.Run()
+
+		assert.Equal(t, fmt.Errorf("failed to setup build: docker: Error response from daemon"), err)
 	})
 
 	t.Run("failure in RunBuild", func(t *testing.T) {
@@ -277,6 +283,8 @@ func TestRun(t *testing.T) {
 			lookPath = exec.LookPath
 		}()
 
-		assert.Equal(t, fmt.Errorf("failed to run build: docker: Error response from daemon"), launch.Run())
+		err := launch.Run()
+
+		assert.Equal(t, fmt.Errorf("failed to run build: docker: Error response from daemon"), err)
 	})
 }
