@@ -6,7 +6,6 @@
         }
     ],
     "environment": {
-        "SD_ARTIFACTS_DIR": "/test/artifacts",
         "FOO": "foo"
     },
     "image": "node:12"

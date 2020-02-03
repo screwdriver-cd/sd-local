@@ -2,12 +2,13 @@ package launch
 
 import (
 	"fmt"
-	"os"
 	"os/exec"
 
 	"github.com/screwdriver-cd/sd-local/config"
 	"github.com/screwdriver-cd/sd-local/screwdriver"
 )
+
+var lookPath = exec.LookPath
 
 type Runner interface {
 	RunBuild(buildConfig BuildConfig) ([]byte, error)
@@ -85,48 +86,25 @@ func New(job screwdriver.Job, config config.Config, jobName, jwt string) *Launch
 	return l
 }
 
-func checkExecCmd(c string) (ok bool, err error) {
-	cmd := exec.Command("which", c)
-	err = cmd.Run()
-
-	if err != nil {
-		return false, fmt.Errorf("error: %s : also not exists command to %s.", err, c)
-	}
-
-	status := cmd.ProcessState.ExitCode()
-
-	if status == 0 {
-		ok = true
-	} else {
-		ok = false
-	}
-
-	return ok, nil
-}
-
 func (l *Launch) runBuild(image, jobName, apiURL, storeURL string) error {
 
 	return nil
 }
 
-func (l *Launch) Run() {
-	_, err := checkExecCmd("docker")
-	if err != nil {
-		fmt.Println(err)
-		os.Exit(1)
+func (l *Launch) Run() error {
+	if _, err := lookPath("docker"); err != nil {
+		return fmt.Errorf("`docker` command is not found in $PATH: %v", err)
 	}
 
-	err = l.runner.SetupBin()
-	if err != nil {
-		fmt.Println("SetupBin: ", err)
-		os.Exit(1)
+	if err := l.runner.SetupBin(); err != nil {
+		return fmt.Errorf("failed to setup build: %v", err)
 	}
 
 	out, err := l.runner.RunBuild(l.buildConfig)
 	if err != nil {
-		fmt.Println("RunBuild: ", err)
-		os.Exit(1)
+		return fmt.Errorf("failed to run build: %v", err)
 	}
 
 	fmt.Println(string(out))
+	return nil
 }
