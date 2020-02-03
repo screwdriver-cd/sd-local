@@ -38,5 +38,8 @@ func main() {
 		log.Fatal(err)
 	}
 
-	launch.New(job, config, JobName, api.SDJWT).Run()
+	err = launch.New(job, config, JobName, api.SDJWT).Run()
+	if err != nil {
+		log.Fatal(err)
+	}
 }
