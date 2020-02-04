@@ -55,8 +55,9 @@ func TestNew(t *testing.T) {
 
 		expectedBuildConfig := newBuildConfig()
 
-		l := New(job, config, "test", "testjwt")
-
+		launcher := New(job, config, "test", "testjwt")
+		l, ok := launcher.(*launch)
+		assert.True(t, ok)
 		assert.Equal(t, expectedBuildConfig, l.buildConfig)
 	})
 
@@ -75,8 +76,9 @@ func TestNew(t *testing.T) {
 		expectedBuildConfig := newBuildConfig()
 		expectedBuildConfig.Environment[0]["SD_ARTIFACTS_DIR"] = "/sd/workspace/artifacts"
 
-		l := New(job, config, "test", "testjwt")
-
+		launcher := New(job, config, "test", "testjwt")
+		l, ok := launcher.(*launch)
+		assert.True(t, ok)
 		assert.Equal(t, expectedBuildConfig, l.buildConfig)
 	})
 }
@@ -100,7 +102,7 @@ func TestRun(t *testing.T) {
 		job := screwdriver.Job{}
 		json.Unmarshal(buf, &job)
 
-		launch := Launch{
+		launch := launch{
 			buildConfig: newBuildConfig(),
 			runner: &mockRunner{
 				errorRunBuild: nil,
@@ -126,7 +128,7 @@ func TestRun(t *testing.T) {
 		job := screwdriver.Job{}
 		json.Unmarshal(buf, &job)
 
-		launch := Launch{
+		launch := launch{
 			buildConfig: newBuildConfig(),
 			runner: &mockRunner{
 				errorRunBuild: nil,
@@ -152,7 +154,7 @@ func TestRun(t *testing.T) {
 		job := screwdriver.Job{}
 		json.Unmarshal(buf, &job)
 
-		launch := Launch{
+		launch := launch{
 			buildConfig: newBuildConfig(),
 			runner: &mockRunner{
 				errorRunBuild: nil,
@@ -178,7 +180,7 @@ func TestRun(t *testing.T) {
 		job := screwdriver.Job{}
 		json.Unmarshal(buf, &job)
 
-		launch := Launch{
+		launch := launch{
 			buildConfig: newBuildConfig(),
 			runner: &mockRunner{
 				errorRunBuild: fmt.Errorf("docker: Error response from daemon"),

@@ -15,8 +15,14 @@ type runner interface {
 	setupBin() error
 }
 
-// Launch has config to run build.
-type Launch struct {
+// Launcher able to run local build
+type Launcher interface {
+	Run() error
+}
+
+var _ (Launcher) = (*launch)(nil)
+
+type launch struct {
 	buildConfig buildConfig
 	runner      runner
 }
@@ -71,9 +77,9 @@ func createBuildConfig(config config.Config, job screwdriver.Job, jobName, jwt s
 	}
 }
 
-// New creates new Launch struct.
-func New(job screwdriver.Job, config config.Config, jobName, jwt string) *Launch {
-	l := new(Launch)
+// New creates new Launcher interface.
+func New(job screwdriver.Job, config config.Config, jobName, jwt string) Launcher {
+	l := new(launch)
 
 	l.runner = newDocker(config.Launcher.Image, config.Launcher.Version)
 	l.buildConfig = createBuildConfig(config, job, jobName, jwt)
@@ -82,7 +88,7 @@ func New(job screwdriver.Job, config config.Config, jobName, jwt string) *Launch
 }
 
 // Run runs the build specified.
-func (l *Launch) Run() error {
+func (l *launch) Run() error {
 	if _, err := lookPath("docker"); err != nil {
 		return fmt.Errorf("`docker` command is not found in $PATH: %v", err)
 	}
