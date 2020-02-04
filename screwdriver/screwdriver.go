@@ -50,8 +50,8 @@ type tokenResponse struct {
 }
 
 // New creates a SDAPI
-func New(apiURL, token string) (SDAPI, error) {
-	s := SDAPI{
+func New(apiURL, token string) (API, error) {
+	s := &SDAPI{
 		HTTPClient: http.DefaultClient,
 		APIURL:     apiURL,
 		UserToken:  token,
