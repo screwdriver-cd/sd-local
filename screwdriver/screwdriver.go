@@ -8,11 +8,14 @@ import (
 	"io/ioutil"
 	"net/http"
 	"net/url"
+	"path"
 	"strings"
 )
 
 const (
-	apiVersion = "v4"
+	apiVersion        = "v4"
+	validatorEndpoint = "validator"
+	tokenEndpoint     = "auth/token"
 )
 
 // API has method to get job
@@ -72,10 +75,14 @@ func New(apiURL, token string) (API, error) {
 	return s, nil
 }
 
-func (sd *sdAPI) makeURL(path string) (*url.URL, error) {
-	fullpath := fmt.Sprintf("%s/%s/%s", sd.APIURL, apiVersion, path)
+func (sd *sdAPI) makeURL(endpoint string) (*url.URL, error) {
+	u, err := url.Parse(sd.APIURL)
+	if err != nil {
+		return nil, err
+	}
+	u.Path = path.Join(u.Path, apiVersion, endpoint)
 
-	return url.Parse(fullpath)
+	return u, nil
 }
 
 func (sd *sdAPI) request(method, path string, body io.Reader) (*http.Response, error) {
@@ -100,11 +107,14 @@ func (sd *sdAPI) request(method, path string, body io.Reader) (*http.Response, e
 }
 
 func (sd *sdAPI) jwt() (string, error) {
-	path := "auth/token?api_token=" + sd.UserToken
-	fullpath, err := sd.makeURL(path)
+	fullpath, err := sd.makeURL(tokenEndpoint)
 	if err != nil {
 		return "", fmt.Errorf("failed to make request url: %v", err)
 	}
+
+	query := fullpath.Query()
+	query.Set("api_token", sd.UserToken)
+	fullpath.RawQuery = query.Encode()
 
 	res, err := sd.request(http.MethodGet, fullpath.String(), nil)
 	if err != nil {
@@ -130,7 +140,7 @@ func readScrewdriverYAML(filePath string) (string, error) {
 }
 
 func (sd *sdAPI) validate(filePath string) (*validatorResponse, error) {
-	fullpath, err := sd.makeURL("validator")
+	fullpath, err := sd.makeURL(validatorEndpoint)
 	if err != nil {
 		return &validatorResponse{}, fmt.Errorf("failed to create api endpoint URL: %v", err)
 	}

@@ -31,7 +31,6 @@ func TestNew(t *testing.T) {
 		server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 			wantAcceptMIMEType := "application/json"
 			validateHeader(t, "Accept", wantAcceptMIMEType, r)
-
 			token := r.URL.Query().Get("api_token")
 			assert.Equal(t, token, testToken)
 
