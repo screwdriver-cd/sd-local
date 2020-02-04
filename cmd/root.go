@@ -1,8 +1,10 @@
 package cmd
 
 import (
+	"github.com/screwdriver-cd/sd-local/config"
+	"github.com/screwdriver-cd/sd-local/launch"
+	"github.com/screwdriver-cd/sd-local/screwdriver"
 	"github.com/spf13/cobra"
-	"honnef.co/go/tools/config"
 )
 
 func newRootCmd() *cobra.Command {
@@ -16,8 +18,8 @@ a mostly the same environment as Screwdriver.cd's`,
 }
 
 // Execute executes the root command.
-func Execute(c config.Config, api screwdriver.api) error {
+func Execute(c config.Config, api screwdriver.API, l launch.Launcher) error {
 	rootCmd := newRootCmd()
-	rootCmd.AddCommand(newBuildCmd(c, api))
+	rootCmd.AddCommand(newBuildCmd(c, api, l))
 	return rootCmd.Execute()
 }
