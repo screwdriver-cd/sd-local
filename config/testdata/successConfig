@@ -1,0 +1,6 @@
+api-url: api-url
+store-url: store-api-url
+token: dummy_token
+launcher:
+  version: latest
+  image: screwdrivercd/launcher

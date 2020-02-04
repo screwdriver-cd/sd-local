@@ -23,7 +23,7 @@ func newBuildConfig() *BuildConfig {
 	json.Unmarshal(buf, &job)
 	return &BuildConfig{
 		ID: 0,
-		Environment: []EnvVar{EnvVar{
+		Environment: []EnvVar{{
 			"SD_ARTIFACTS_DIR": "/test/artifacts",
 			"SD_API_URL":       "http://api-test.screwdriver.cd",
 			"SD_STORE_URL":     "http://store-test.screwdriver.cd",
@@ -111,7 +111,7 @@ func TestRun(t *testing.T) {
 		launch := Launch{
 			buildConfig: BuildConfig{
 				ID: 0,
-				Environment: []EnvVar{EnvVar{
+				Environment: []EnvVar{{
 					"SD_ARTIFACTS_DIR": "/sd/workspace/artifacts",
 					"SD_API_URL":       "http://api-test.screwdriver.cd",
 					"SD_STORE_URL":     "http://store-test.screwdriver.cd",
@@ -156,7 +156,7 @@ func TestRun(t *testing.T) {
 		launch := Launch{
 			buildConfig: BuildConfig{
 				ID: 0,
-				Environment: []EnvVar{EnvVar{
+				Environment: []EnvVar{{
 					"SD_ARTIFACTS_DIR": "/sd/workspace/artifacts",
 					"SD_API_URL":       "http://api-test.screwdriver.cd",
 					"SD_STORE_URL":     "http://store-test.screwdriver.cd",
@@ -201,7 +201,7 @@ func TestRun(t *testing.T) {
 		launch := Launch{
 			buildConfig: BuildConfig{
 				ID: 0,
-				Environment: []EnvVar{EnvVar{
+				Environment: []EnvVar{{
 					"SD_ARTIFACTS_DIR": "/sd/workspace/artifacts",
 					"SD_API_URL":       "http://api-test.screwdriver.cd",
 					"SD_STORE_URL":     "http://store-test.screwdriver.cd",
@@ -246,7 +246,7 @@ func TestRun(t *testing.T) {
 		launch := Launch{
 			buildConfig: BuildConfig{
 				ID: 0,
-				Environment: []EnvVar{EnvVar{
+				Environment: []EnvVar{{
 					"SD_ARTIFACTS_DIR": "/sd/workspace/artifacts",
 					"SD_API_URL":       "http://api-test.screwdriver.cd",
 					"SD_STORE_URL":     "http://store-test.screwdriver.cd",

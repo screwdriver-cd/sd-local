@@ -4,9 +4,8 @@ import (
 	"log"
 	"path"
 
-	"github.com/screwdriver-cd/sd-local/config"
-
 	"github.com/mitchellh/go-homedir"
+	"github.com/screwdriver-cd/sd-local/config"
 	"github.com/screwdriver-cd/sd-local/launch"
 	"github.com/screwdriver-cd/sd-local/screwdriver"
 )
@@ -38,7 +37,7 @@ func main() {
 		log.Fatal(err)
 	}
 
-	err = launch.New(job, config, JobName, api.SDJWT).Run()
+	err = launch.New(job, config, JobName, api.JWT()).Run()
 	if err != nil {
 		log.Fatal(err)
 	}
