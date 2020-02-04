@@ -46,9 +46,10 @@ func TestNew(t *testing.T) {
 		api, ok := gotAPI.(*SDAPI)
 		assert.True(t, ok)
 		assert.Nil(t, err)
-		assert.Equal(t, api.UserToken, testToken)
-		assert.Equal(t, api.APIURL, server.URL)
-		assert.Equal(t, api.SDJWT, testJWT)
+		assert.Equal(t, testToken, api.UserToken)
+		assert.Equal(t, server.URL, api.APIURL)
+		assert.Equal(t, testJWT, api.SDJWT)
+		assert.Equal(t, testJWT, api.JWT())
 	})
 
 	t.Run("failure by invalid JSON", func(t *testing.T) {

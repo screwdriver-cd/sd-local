@@ -14,6 +14,7 @@ import (
 // API has method to get job
 type API interface {
 	Job(jobName, filePath string) (Job, error)
+	JWT() string
 }
 
 // SDAPI has methods for control Screwdriver.cd APIs
@@ -176,4 +177,8 @@ func (sd *SDAPI) Job(jobName, filepath string) (Job, error) {
 	}
 
 	return job[0], nil
+}
+
+func (sd *SDAPI) JWT() string {
+	return sd.SDJWT
 }
