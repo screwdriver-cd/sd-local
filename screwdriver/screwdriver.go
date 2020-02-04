@@ -17,15 +17,14 @@ type API interface {
 	JWT() string
 }
 
-// SDAPI has methods for control Screwdriver.cd APIs
-type SDAPI struct {
+type sdAPI struct {
 	HTTPClient *http.Client
 	UserToken  string
 	APIURL     string
 	SDJWT      string
 }
 
-var _ API = (*SDAPI)(nil)
+var _ API = (*sdAPI)(nil)
 
 // Step is step entity struct
 type Step struct {
@@ -40,11 +39,10 @@ type Job struct {
 	Image       string            `json:"image"`
 }
 
-// Jobs is Job entity map
-type Jobs map[string][]Job
+type jobs map[string][]Job
 
 type validatorResponse struct {
-	Jobs   Jobs     `json:"jobs"`
+	Jobs   jobs     `json:"jobs"`
 	Errors []string `json:"errors"`
 }
 
@@ -52,9 +50,9 @@ type tokenResponse struct {
 	JWT string `json:"token"`
 }
 
-// New creates a SDAPI
+// New creates a API
 func New(apiURL, token string) (API, error) {
-	s := &SDAPI{
+	s := &sdAPI{
 		HTTPClient: http.DefaultClient,
 		APIURL:     apiURL,
 		UserToken:  token,
@@ -70,14 +68,14 @@ func New(apiURL, token string) (API, error) {
 	return s, nil
 }
 
-func (sd *SDAPI) makeURL(path string) (*url.URL, error) {
+func (sd *sdAPI) makeURL(path string) (*url.URL, error) {
 	version := "v4"
 	fullpath := fmt.Sprintf("%s/%s/%s", sd.APIURL, version, path)
 
 	return url.Parse(fullpath)
 }
 
-func (sd *SDAPI) request(method, path string, body io.Reader) (*http.Response, error) {
+func (sd *sdAPI) request(method, path string, body io.Reader) (*http.Response, error) {
 	req, err := http.NewRequest(method, path, body)
 	if err != nil {
 		return nil, err
@@ -98,7 +96,7 @@ func (sd *SDAPI) request(method, path string, body io.Reader) (*http.Response, e
 	return sd.HTTPClient.Do(req)
 }
 
-func (sd *SDAPI) jwt() (string, error) {
+func (sd *sdAPI) jwt() (string, error) {
 	path := "auth/token?api_token=" + sd.UserToken
 	fullpath, err := sd.makeURL(path)
 	if err != nil {
@@ -128,7 +126,7 @@ func readScrewdriverYAML(filePath string) (string, error) {
 	return string(yaml), nil
 }
 
-func (sd *SDAPI) validate(filePath string) (*validatorResponse, error) {
+func (sd *sdAPI) validate(filePath string) (*validatorResponse, error) {
 	fullpath, err := sd.makeURL("validator")
 	if err != nil {
 		return &validatorResponse{}, fmt.Errorf("failed to create api endpoint URL: %v", err)
@@ -161,7 +159,7 @@ func (sd *SDAPI) validate(filePath string) (*validatorResponse, error) {
 }
 
 // Job returns job represented by "jobName"
-func (sd *SDAPI) Job(jobName, filepath string) (Job, error) {
+func (sd *sdAPI) Job(jobName, filepath string) (Job, error) {
 	v, err := sd.validate(filepath)
 	if err != nil {
 		return Job{}, err
@@ -180,6 +178,6 @@ func (sd *SDAPI) Job(jobName, filepath string) (Job, error) {
 }
 
 // JWT returns JWT token for screwdriver API
-func (sd *SDAPI) JWT() string {
+func (sd *sdAPI) JWT() string {
 	return sd.SDJWT
 }

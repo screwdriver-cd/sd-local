@@ -43,7 +43,7 @@ func TestNew(t *testing.T) {
 		}))
 
 		gotAPI, err := New(server.URL, testToken)
-		api, ok := gotAPI.(*SDAPI)
+		api, ok := gotAPI.(*sdAPI)
 		assert.True(t, ok)
 		assert.Nil(t, err)
 		assert.Equal(t, testToken, api.UserToken)
@@ -96,7 +96,7 @@ func TestJob(t *testing.T) {
 			fmt.Fprintln(w, string(testJSON))
 		}))
 
-		testAPI := SDAPI{
+		testAPI := sdAPI{
 			HTTPClient: http.DefaultClient,
 			UserToken:  "dummy",
 			APIURL:     server.URL,
@@ -126,7 +126,7 @@ func TestJob(t *testing.T) {
 	})
 
 	t.Run("failure by making URL", func(t *testing.T) {
-		testAPI := SDAPI{
+		testAPI := sdAPI{
 			HTTPClient: http.DefaultClient,
 			UserToken:  "dummy",
 			APIURL:     string(0x7f),
@@ -149,7 +149,7 @@ func TestJob(t *testing.T) {
 			fmt.Fprintln(w, testBody)
 		}))
 
-		testAPI := SDAPI{
+		testAPI := sdAPI{
 			HTTPClient: http.DefaultClient,
 			UserToken:  "dummy",
 			APIURL:     server.URL,
@@ -164,7 +164,7 @@ func TestJob(t *testing.T) {
 	})
 
 	t.Run("failure by reading screwdriver.yaml", func(t *testing.T) {
-		testAPI := SDAPI{
+		testAPI := sdAPI{
 			HTTPClient: http.DefaultClient,
 			UserToken:  "dummy",
 			APIURL:     "http://example.com",
@@ -184,7 +184,7 @@ func TestJob(t *testing.T) {
 			w.Header().Set("Location", "")
 		}))
 
-		testAPI := SDAPI{
+		testAPI := sdAPI{
 			HTTPClient: http.DefaultClient,
 			UserToken:  "dummy",
 			APIURL:     server.URL,
@@ -204,7 +204,7 @@ func TestJob(t *testing.T) {
 			w.WriteHeader(500)
 		}))
 
-		testAPI := SDAPI{
+		testAPI := sdAPI{
 			HTTPClient: http.DefaultClient,
 			UserToken:  "dummy",
 			APIURL:     server.URL,
@@ -230,7 +230,7 @@ func TestJob(t *testing.T) {
 			fmt.Fprintln(w, string(testJSON))
 		}))
 
-		testAPI := SDAPI{
+		testAPI := sdAPI{
 			HTTPClient: http.DefaultClient,
 			UserToken:  "dummy",
 			APIURL:     server.URL,
@@ -254,7 +254,7 @@ func TestJob(t *testing.T) {
 			fmt.Fprintln(w, string(testJSON))
 		}))
 
-		testAPI := SDAPI{
+		testAPI := sdAPI{
 			HTTPClient: http.DefaultClient,
 			UserToken:  "dummy",
 			APIURL:     server.URL,
