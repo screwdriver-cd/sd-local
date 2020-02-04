@@ -39,7 +39,7 @@ func (d *docker) SetupBin() error {
 
 	mount := fmt.Sprintf("%s:/opt/sd/", d.volume)
 	image := fmt.Sprintf("%s:%s", d.setupImage, d.setupImageVersion)
-	cmd := execCommand("sudo", "docker", "container", "run", "-v", mount, image, "--entrypoint", "/bin/echo set up bin")
+	cmd := execCommand("sudo", "docker", "container", "run", "--rm", "-v", mount, image, "--entrypoint", "/bin/echo set up bin")
 	cmd.Stdout = os.Stdout
 	cmd.Stderr = os.Stderr
 	err = cmd.Run()

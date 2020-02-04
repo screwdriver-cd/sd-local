@@ -10,13 +10,23 @@ import (
 )
 
 const launchImage = "launcher:latest"
+type fakeExecCommand struct {
+	id      string
+	execCmd func(command string, args ...string) *exec.Cmd
+}
 
-func fakeExecCommand(name string, args ...string) *exec.Cmd {
-	cs := []string{"-test.run=TestHelperProcess", "--", name}
-	cs = append(cs, args...)
-	cmd := exec.Command(os.Args[0], cs...)
-	cmd.Env = []string{"GO_WANT_HELPER_PROCESS=1"}
-	return cmd
+func newFakeExecCommand(id string) *fakeExecCommand {
+	c := &fakeExecCommand{
+		id: id,
+		execCmd:  func(name string, args ...string) *exec.Cmd {
+			cs := []string{"-test.run=TestHelperProcess", "--", name}
+			cs = append(cs, args...)
+			cmd := exec.Command(os.Args[0], cs...)
+			cmd.Env = []string{"GO_WANT_HELPER_PROCESS=1", fmt.Sprintf("GO_TEST_MODE=%s", id)}
+			return cmd
+		},
+	}
+	return c
 }
 
 func TestNewDocker(t *testing.T) {
@@ -34,8 +44,6 @@ func TestNewDocker(t *testing.T) {
 }
 
 func TestSetupBin(t *testing.T) {
-	execCommand = fakeExecCommand
-
 	defer func() {
 		execCommand = exec.Command
 	}()
@@ -46,34 +54,46 @@ func TestSetupBin(t *testing.T) {
 		setupImageVersion: "latest",
 	}
 
-	t.Run("success", func(t *testing.T) {
-		err := d.SetupBin()
+	testCase := []struct {
+		name string
+		id string
+		expectError error
+	}{
+		{"success", "SUCCESS_SETUP_BIN", nil},
+		{"failure volume create", "FAIL_CREATING_VOLUME", fmt.Errorf("failed to create docker volume")},
+		{"failure container run", "FAIL_CONTAINER_RUN", fmt.Errorf("failed to prepare build scripts")},
+	}
 
-		assert.Equal(t, nil, err)
-	})
+	for _, tt := range testCase {
+		t.Run(tt.name, func(t *testing.T){
+			c := newFakeExecCommand(tt.id)
+			execCommand = c.execCmd
+			err := d.SetupBin()
 
-	t.Run("failure volume create", func(t *testing.T) {
-		d.volume = "TO_FAIL_CREATING_VOLUME"
-		defer func() {
-			d.volume = "SD_LAUNCH_BIN"
-		}()
+			assert.Equal(t, tt.expectError, err)
+		})
+	}
+}
 
-		err := d.SetupBin()
-
-		assert.Equal(t, fmt.Errorf("failed to create docker volume"), err)
-	})
-
-	t.Run("failure container run", func(t *testing.T) {
-		d.setupImage = "TO_FAIL_CONTAINER_RUN"
-		defer func() {
-			d.setupImage = "launcher"
-		}()
-
-		err := d.SetupBin()
-
-		assert.Equal(t, fmt.Errorf("failed to prepare build scripts"), err)
-	})
-
+func TestRunBuiold(t *testing.T) {
+	// buildConfig := BuildConfig{
+	// 	ID: 0,
+	// 	Environment: []EnvVar{EnvVar{
+	// 		"SD_ARTIFACTS_DIR": "/test/artifacts",
+	// 		"SD_API_URL":       "http://api-test.screwdriver.cd",
+	// 		"SD_STORE_URL":     "http://store-test.screwdriver.cd",
+	// 		"SD_TOKEN":         "testjwt",
+	// 		"FOO":              "foo",
+	// 	}},
+	// 	EventID:       0,
+	// 	JobID:         0,
+	// 	ParentBuildID: []int{0},
+	// 	Sha:           "dummy",
+	// 	Meta:          map[string]interface{}{},
+	// 	Steps:         job.Steps,
+	// 	Image:         job.Image,
+	// 	JobName:       "test",
+	// }
 }
 
 func TestHelperProcess(t *testing.T) {
@@ -96,30 +116,19 @@ func TestHelperProcess(t *testing.T) {
 	}
 
 	cmd, subcmd, subsubcmd, args := args[0], args[1], args[2], args[3:]
+	_, _, _ = cmd, subcmd,args
 
-	if cmd != "sudo" {
-		fmt.Fprintf(os.Stderr, "expected 'sudo', but %v\n", cmd)
+	switch os.Getenv("GO_TEST_MODE") {
+	case "":
 		os.Exit(1)
-	}
-
-	if subcmd != "docker" {
-		fmt.Fprintf(os.Stderr, "expected 'docker', but %v\n", subcmd)
+	case "SUCCESS_SETUP_BIN":
+		os.Exit(0)
+	case "FAIL_CREATING_VOLUME":
 		os.Exit(1)
-	}
-
-	switch subsubcmd {
-	case "volume":
-		expectedArgs := []string{"create", "--name", "SD_LAUNCH_BIN"}
-
-		if !assert.Equal(t, expectedArgs, args) {
-			fmt.Fprintf(os.Stderr, "expected args: %v but actual: %v", expectedArgs, args)
-			os.Exit(1)
+	case "FAIL_CONTAINER_RUN":
+		if subsubcmd == "volume" {
+			os.Exit(0)
 		}
-	case "container":
-		expectedArgs := []string{"run", "-v", "SD_LAUNCH_BIN:/opt/sd/", launchImage, "--entrypoint", "/bin/echo set up bin"}
-		if !assert.Equal(t, expectedArgs, args) {
-			fmt.Fprintf(os.Stderr, "expected args: %v but actual: %v", expectedArgs, args)
-			os.Exit(1)
-		}
+		os.Exit(1)
 	}
 }
