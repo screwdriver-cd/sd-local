@@ -24,6 +24,8 @@ type SDAPI struct {
 	SDJWT      string
 }
 
+var _ API = (*SDAPI)(nil)
+
 // Step is step entity struct
 type Step struct {
 	Name    string `json:"name"`
