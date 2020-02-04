@@ -1,0 +1,22 @@
+{
+  "jobs": {
+    "main": [
+      {
+        "commands": [
+          {
+            "name": "install",
+            "command": "echo install"
+          },
+          {
+            "name": "publish",
+            "command": "echo publish"
+          }
+        ],
+        "environment": {
+          "test_env": "hoge"
+        },
+        "image": "alpine"
+      }
+    ]
+  }
+}
