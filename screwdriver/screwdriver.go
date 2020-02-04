@@ -11,6 +11,10 @@ import (
 	"strings"
 )
 
+const (
+	apiVersion = "v4"
+)
+
 // API has method to get job
 type API interface {
 	Job(jobName, filePath string) (Job, error)
@@ -69,8 +73,7 @@ func New(apiURL, token string) (API, error) {
 }
 
 func (sd *sdAPI) makeURL(path string) (*url.URL, error) {
-	version := "v4"
-	fullpath := fmt.Sprintf("%s/%s/%s", sd.APIURL, version, path)
+	fullpath := fmt.Sprintf("%s/%s/%s", sd.APIURL, apiVersion, path)
 
 	return url.Parse(fullpath)
 }
@@ -100,7 +103,7 @@ func (sd *sdAPI) jwt() (string, error) {
 	path := "auth/token?api_token=" + sd.UserToken
 	fullpath, err := sd.makeURL(path)
 	if err != nil {
-		return "", fmt.Errorf("failed to send request: %v", err)
+		return "", fmt.Errorf("failed to make request url: %v", err)
 	}
 
 	res, err := sd.request(http.MethodGet, fullpath.String(), nil)

@@ -5,5 +5,4 @@ jobs:
             - install: echo install
             - publish: echo publish
         environment:
-            test_env: hoge
-
+            TEST_ENV: hoge
