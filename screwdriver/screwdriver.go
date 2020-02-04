@@ -179,6 +179,7 @@ func (sd *SDAPI) Job(jobName, filepath string) (Job, error) {
 	return job[0], nil
 }
 
+// JWT returns JWT token for screwdriver API
 func (sd *SDAPI) JWT() string {
 	return sd.SDJWT
 }
