@@ -10,16 +10,15 @@ import (
 
 var lookPath = exec.LookPath
 
-// Runner prepares binaries to run builds and run the specified build.
-type Runner interface {
-	RunBuild(buildConfig buildConfig) error
-	SetupBin() error
+type runner interface {
+	runBuild(buildConfig buildConfig) error
+	setupBin() error
 }
 
 // Launch has config to run build.
 type Launch struct {
 	buildConfig buildConfig
-	runner      Runner
+	runner      runner
 }
 
 type envVar map[string]string
@@ -82,21 +81,17 @@ func New(job screwdriver.Job, config config.Config, jobName, jwt string) *Launch
 	return l
 }
 
-func (l *Launch) runBuild(image, jobName, apiURL, storeURL string) error {
-	return nil
-}
-
 // Run runs the build specified.
 func (l *Launch) Run() error {
 	if _, err := lookPath("docker"); err != nil {
 		return fmt.Errorf("`docker` command is not found in $PATH: %v", err)
 	}
 
-	if err := l.runner.SetupBin(); err != nil {
+	if err := l.runner.setupBin(); err != nil {
 		return fmt.Errorf("failed to setup build: %v", err)
 	}
 
-	err := l.runner.RunBuild(l.buildConfig)
+	err := l.runner.runBuild(l.buildConfig)
 	if err != nil {
 		return fmt.Errorf("failed to run build: %v", err)
 	}

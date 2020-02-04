@@ -15,7 +15,7 @@ type docker struct {
 	setupImageVersion string
 }
 
-var _ Runner = (*docker)(nil)
+var _ runner = (*docker)(nil)
 var execCommand = exec.Command
 
 const (
@@ -23,7 +23,7 @@ const (
 	logFile      = "builds.log"
 )
 
-func newDocker(setupImage, setupImageVer string) Runner {
+func newDocker(setupImage, setupImageVer string) runner {
 	return &docker{
 		volume:            "SD_LAUNCH_BIN",
 		setupImage:        setupImage,
@@ -31,7 +31,7 @@ func newDocker(setupImage, setupImageVer string) Runner {
 	}
 }
 
-func (d *docker) SetupBin() error {
+func (d *docker) setupBin() error {
 	err := execCommand("sudo", "docker", "volume", "create", "--name", d.volume).Run()
 	if err != nil {
 		return fmt.Errorf("failed to create docker volume")
@@ -51,7 +51,7 @@ func (d *docker) SetupBin() error {
 	return nil
 }
 
-func (d *docker) RunBuild(buildConfig buildConfig) error {
+func (d *docker) runBuild(buildConfig buildConfig) error {
 	cwd, err := os.Getwd()
 	if err != nil {
 		return err

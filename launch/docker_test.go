@@ -69,7 +69,7 @@ func TestSetupBin(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			c := newFakeExecCommand(tt.id)
 			execCommand = c.execCmd
-			err := d.SetupBin()
+			err := d.setupBin()
 
 			assert.Equal(t, tt.expectError, err)
 		})
@@ -98,7 +98,7 @@ func TestRunBuild(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			c := newFakeExecCommand(tt.id)
 			execCommand = c.execCmd
-			err := d.RunBuild(buildConfig)
+			err := d.runBuild(buildConfig)
 			if tt.expectError != nil {
 				assert.Equal(t, tt.expectError.Error(), err.Error())
 			} else {

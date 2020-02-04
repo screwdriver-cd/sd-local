@@ -86,11 +86,11 @@ type mockRunner struct {
 	errorSetupBin error
 }
 
-func (m *mockRunner) RunBuild(buildConfig buildConfig) error {
+func (m *mockRunner) runBuild(buildConfig buildConfig) error {
 	return m.errorRunBuild
 }
 
-func (m *mockRunner) SetupBin() error {
+func (m *mockRunner) setupBin() error {
 	return m.errorSetupBin
 }
 
