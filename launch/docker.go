@@ -52,7 +52,6 @@ func (d *docker) SetupBin() error {
 }
 
 func (d *docker) RunBuild(buildConfig buildConfig) error {
-	//厳密にするならカレントかつscrewdriver.yamlがある場所にした方が良さそう
 	cwd, err := os.Getwd()
 	if err != nil {
 		return err

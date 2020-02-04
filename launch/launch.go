@@ -12,9 +12,7 @@ var lookPath = exec.LookPath
 
 // Runner prepares binaries to run builds and run the specified build.
 type Runner interface {
-	// RunBuild runs the specified build.
 	RunBuild(buildConfig buildConfig) error
-	// SetupBin prepares binaries to run builds.
 	SetupBin() error
 }
 
@@ -44,7 +42,6 @@ const (
 )
 
 func mergeEnv(env, userEnv envVar) []envVar {
-
 	for k, v := range userEnv {
 		env[k] = v
 	}
@@ -86,7 +83,6 @@ func New(job screwdriver.Job, config config.Config, jobName, jwt string) *Launch
 }
 
 func (l *Launch) runBuild(image, jobName, apiURL, storeURL string) error {
-
 	return nil
 }
 

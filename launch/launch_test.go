@@ -15,13 +15,11 @@ import (
 
 var testDir string = "./testdata"
 
-func newBuildConfig() *buildConfig {
+func newBuildConfig() buildConfig {
 	buf, _ := ioutil.ReadFile(filepath.Join(testDir, "job.json"))
-
 	job := screwdriver.Job{}
-
 	json.Unmarshal(buf, &job)
-	return &buildConfig{
+	return buildConfig{
 		ID: 0,
 		Environment: []envVar{{
 			"SD_ARTIFACTS_DIR": "/test/artifacts",
@@ -44,9 +42,7 @@ func newBuildConfig() *buildConfig {
 func TestNew(t *testing.T) {
 	t.Run("success with custom artifacts dir", func(t *testing.T) {
 		buf, _ := ioutil.ReadFile(filepath.Join(testDir, "job.json"))
-
 		job := screwdriver.Job{}
-
 		json.Unmarshal(buf, &job)
 		job.Environment["SD_ARTIFACTS_DIR"] = "/test/artifacts"
 
@@ -61,14 +57,12 @@ func TestNew(t *testing.T) {
 
 		l := New(job, config, "test", "testjwt")
 
-		assert.Equal(t, *expectedBuildConfig, l.buildConfig)
+		assert.Equal(t, expectedBuildConfig, l.buildConfig)
 	})
 
 	t.Run("success with default artifacts dir", func(t *testing.T) {
 		buf, _ := ioutil.ReadFile(filepath.Join(testDir, "job.json"))
-
 		job := screwdriver.Job{}
-
 		json.Unmarshal(buf, &job)
 
 		config := config.Config{
@@ -83,7 +77,7 @@ func TestNew(t *testing.T) {
 
 		l := New(job, config, "test", "testjwt")
 
-		assert.Equal(t, *expectedBuildConfig, l.buildConfig)
+		assert.Equal(t, expectedBuildConfig, l.buildConfig)
 	})
 }
 
@@ -103,30 +97,11 @@ func (m *mockRunner) SetupBin() error {
 func TestRun(t *testing.T) {
 	t.Run("success", func(t *testing.T) {
 		buf, _ := ioutil.ReadFile(filepath.Join(testDir, "job.json"))
-
 		job := screwdriver.Job{}
-
 		json.Unmarshal(buf, &job)
 
 		launch := Launch{
-			buildConfig: buildConfig{
-				ID: 0,
-				Environment: []envVar{{
-					"SD_ARTIFACTS_DIR": "/sd/workspace/artifacts",
-					"SD_API_URL":       "http://api-test.screwdriver.cd",
-					"SD_STORE_URL":     "http://store-test.screwdriver.cd",
-					"SD_TOKEN":         "testjwt",
-					"FOO":              "foo",
-				}},
-				EventID:       0,
-				JobID:         0,
-				ParentBuildID: []int{0},
-				Sha:           "dummy",
-				Meta:          map[string]interface{}{},
-				Steps:         job.Steps,
-				Image:         job.Image,
-				JobName:       "test",
-			},
+			buildConfig: newBuildConfig(),
 			runner: &mockRunner{
 				errorRunBuild: nil,
 				errorSetupBin: nil,
@@ -148,30 +123,11 @@ func TestRun(t *testing.T) {
 
 	t.Run("failure in lookPath", func(t *testing.T) {
 		buf, _ := ioutil.ReadFile(filepath.Join(testDir, "job.json"))
-
 		job := screwdriver.Job{}
-
 		json.Unmarshal(buf, &job)
 
 		launch := Launch{
-			buildConfig: buildConfig{
-				ID: 0,
-				Environment: []envVar{{
-					"SD_ARTIFACTS_DIR": "/sd/workspace/artifacts",
-					"SD_API_URL":       "http://api-test.screwdriver.cd",
-					"SD_STORE_URL":     "http://store-test.screwdriver.cd",
-					"SD_TOKEN":         "testjwt",
-					"FOO":              "foo",
-				}},
-				EventID:       0,
-				JobID:         0,
-				ParentBuildID: []int{0},
-				Sha:           "dummy",
-				Meta:          map[string]interface{}{},
-				Steps:         job.Steps,
-				Image:         job.Image,
-				JobName:       "test",
-			},
+			buildConfig: newBuildConfig(),
 			runner: &mockRunner{
 				errorRunBuild: nil,
 				errorSetupBin: nil,
@@ -193,30 +149,11 @@ func TestRun(t *testing.T) {
 
 	t.Run("failure in SetupBin", func(t *testing.T) {
 		buf, _ := ioutil.ReadFile(filepath.Join(testDir, "job.json"))
-
 		job := screwdriver.Job{}
-
 		json.Unmarshal(buf, &job)
 
 		launch := Launch{
-			buildConfig: buildConfig{
-				ID: 0,
-				Environment: []envVar{{
-					"SD_ARTIFACTS_DIR": "/sd/workspace/artifacts",
-					"SD_API_URL":       "http://api-test.screwdriver.cd",
-					"SD_STORE_URL":     "http://store-test.screwdriver.cd",
-					"SD_TOKEN":         "testjwt",
-					"FOO":              "foo",
-				}},
-				EventID:       0,
-				JobID:         0,
-				ParentBuildID: []int{0},
-				Sha:           "dummy",
-				Meta:          map[string]interface{}{},
-				Steps:         job.Steps,
-				Image:         job.Image,
-				JobName:       "test",
-			},
+			buildConfig: newBuildConfig(),
 			runner: &mockRunner{
 				errorRunBuild: nil,
 				errorSetupBin: fmt.Errorf("docker: Error response from daemon"),
@@ -238,30 +175,11 @@ func TestRun(t *testing.T) {
 
 	t.Run("failure in RunBuild", func(t *testing.T) {
 		buf, _ := ioutil.ReadFile(filepath.Join(testDir, "job.json"))
-
 		job := screwdriver.Job{}
-
 		json.Unmarshal(buf, &job)
 
 		launch := Launch{
-			buildConfig: buildConfig{
-				ID: 0,
-				Environment: []envVar{{
-					"SD_ARTIFACTS_DIR": "/sd/workspace/artifacts",
-					"SD_API_URL":       "http://api-test.screwdriver.cd",
-					"SD_STORE_URL":     "http://store-test.screwdriver.cd",
-					"SD_TOKEN":         "testjwt",
-					"FOO":              "foo",
-				}},
-				EventID:       0,
-				JobID:         0,
-				ParentBuildID: []int{0},
-				Sha:           "dummy",
-				Meta:          map[string]interface{}{},
-				Steps:         job.Steps,
-				Image:         job.Image,
-				JobName:       "test",
-			},
+			buildConfig: newBuildConfig(),
 			runner: &mockRunner{
 				errorRunBuild: fmt.Errorf("docker: Error response from daemon"),
 				errorSetupBin: nil,
