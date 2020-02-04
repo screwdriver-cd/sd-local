@@ -10,6 +10,7 @@ import (
 )
 
 const launchImage = "launcher:latest"
+
 type fakeExecCommand struct {
 	id      string
 	execCmd func(command string, args ...string) *exec.Cmd
@@ -18,7 +19,7 @@ type fakeExecCommand struct {
 func newFakeExecCommand(id string) *fakeExecCommand {
 	c := &fakeExecCommand{
 		id: id,
-		execCmd:  func(name string, args ...string) *exec.Cmd {
+		execCmd: func(name string, args ...string) *exec.Cmd {
 			cs := []string{"-test.run=TestHelperProcess", "--", name}
 			cs = append(cs, args...)
 			cmd := exec.Command(os.Args[0], cs...)
@@ -55,8 +56,8 @@ func TestSetupBin(t *testing.T) {
 	}
 
 	testCase := []struct {
-		name string
-		id string
+		name        string
+		id          string
 		expectError error
 	}{
 		{"success", "SUCCESS_SETUP_BIN", nil},
@@ -65,7 +66,7 @@ func TestSetupBin(t *testing.T) {
 	}
 
 	for _, tt := range testCase {
-		t.Run(tt.name, func(t *testing.T){
+		t.Run(tt.name, func(t *testing.T) {
 			c := newFakeExecCommand(tt.id)
 			execCommand = c.execCmd
 			err := d.SetupBin()
@@ -75,25 +76,37 @@ func TestSetupBin(t *testing.T) {
 	}
 }
 
-func TestRunBuiold(t *testing.T) {
-	// buildConfig := BuildConfig{
-	// 	ID: 0,
-	// 	Environment: []EnvVar{EnvVar{
-	// 		"SD_ARTIFACTS_DIR": "/test/artifacts",
-	// 		"SD_API_URL":       "http://api-test.screwdriver.cd",
-	// 		"SD_STORE_URL":     "http://store-test.screwdriver.cd",
-	// 		"SD_TOKEN":         "testjwt",
-	// 		"FOO":              "foo",
-	// 	}},
-	// 	EventID:       0,
-	// 	JobID:         0,
-	// 	ParentBuildID: []int{0},
-	// 	Sha:           "dummy",
-	// 	Meta:          map[string]interface{}{},
-	// 	Steps:         job.Steps,
-	// 	Image:         job.Image,
-	// 	JobName:       "test",
-	// }
+func TestRunBuild(t *testing.T) {
+	buildConfig := newBuildConfig()
+
+	d := &docker{
+		volume:            "SD_LAUNCH_BIN",
+		setupImage:        "launcher",
+		setupImageVersion: "latest",
+	}
+
+	testCase := []struct {
+		name        string
+		id          string
+		expectError error
+	}{
+		{"success", "SUCCESS_RUN_BUILD", nil},
+		{"fail run build", "FAIL_BUILD_CONTAINER_RUN", fmt.Errorf("exit status 1")},
+	}
+
+	for _, tt := range testCase {
+		t.Run(tt.name, func(t *testing.T) {
+			c := newFakeExecCommand(tt.id)
+			execCommand = c.execCmd
+			err := d.RunBuild(*buildConfig)
+			if tt.expectError != nil {
+				assert.Equal(t, tt.expectError.Error(), err.Error())
+			} else {
+				assert.Nil(t, err)
+			}
+
+		})
+	}
 }
 
 func TestHelperProcess(t *testing.T) {
@@ -116,7 +129,7 @@ func TestHelperProcess(t *testing.T) {
 	}
 
 	cmd, subcmd, subsubcmd, args := args[0], args[1], args[2], args[3:]
-	_, _, _ = cmd, subcmd,args
+	_, _, _ = cmd, subcmd, args
 
 	switch os.Getenv("GO_TEST_MODE") {
 	case "":
@@ -129,6 +142,12 @@ func TestHelperProcess(t *testing.T) {
 		if subsubcmd == "volume" {
 			os.Exit(0)
 		}
+		os.Exit(1)
+	case "SUCCESS_RUN_BUILD":
+		fmt.Println("hello world")
+		os.Exit(0)
+	case "FAIL_BUILD_CONTAINER_RUN":
+		fmt.Fprintln(os.Stderr, "something happen")
 		os.Exit(1)
 	}
 }

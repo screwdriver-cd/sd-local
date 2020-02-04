@@ -51,12 +51,11 @@ func (d *docker) SetupBin() error {
 	return nil
 }
 
-func (d *docker) RunBuild(buildConfig BuildConfig) ([]byte, error) {
+func (d *docker) RunBuild(buildConfig BuildConfig) error {
 	//厳密にするならカレントかつscrewdriver.yamlがある場所にした方が良さそう
 	cwd, err := os.Getwd()
-
 	if err != nil {
-		return nil, nil
+		return err
 	}
 
 	environment := buildConfig.Environment[0]
@@ -70,17 +69,19 @@ func (d *docker) RunBuild(buildConfig BuildConfig) ([]byte, error) {
 	srcVol := fmt.Sprintf("%s/:/sd/workspace", srcDir)
 	artVol := fmt.Sprintf("%s/:%s", hostArtDir, containerArtDir)
 	binVol := fmt.Sprintf("%s:%s", d.volume, "/opt/sd")
-	configJson, err := json.Marshal(buildConfig)
+	configJSON, err := json.Marshal(buildConfig)
 	if err != nil {
-		return nil, err
+		return err
 	}
 
-	cmd := []string{"docker", "container", "run", "--rm", "-v", srcVol, "-v", artVol, "-v", binVol, buildImage, "/opt/sd/local_run.sh", string(configJson), buildConfig.JobName, environment["SD_API_URL"], environment["SD_STORE_URL"], logfilePath}
-	out, err := execCommand("sudo", cmd...).CombinedOutput()
+	c := []string{"docker", "container", "run", "--rm", "-v", srcVol, "-v", artVol, "-v", binVol, buildImage, "/opt/sd/local_run.sh", string(configJSON), buildConfig.JobName, environment["SD_API_URL"], environment["SD_STORE_URL"], logfilePath}
+	cmd := execCommand("sudo", c...)
+	cmd.Stdout = os.Stdout
+	cmd.Stderr = os.Stderr
+	err = cmd.Run()
 	if err != nil {
-		fmt.Println(string(out))
-		return nil, err
+		return err
 	}
 
-	return out, nil
+	return nil
 }

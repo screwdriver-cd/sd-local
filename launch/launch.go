@@ -11,7 +11,7 @@ import (
 var lookPath = exec.LookPath
 
 type Runner interface {
-	RunBuild(buildConfig BuildConfig) ([]byte, error)
+	RunBuild(buildConfig BuildConfig) error
 	SetupBin() error
 }
 
@@ -100,11 +100,10 @@ func (l *Launch) Run() error {
 		return fmt.Errorf("failed to setup build: %v", err)
 	}
 
-	out, err := l.runner.RunBuild(l.buildConfig)
+	err := l.runner.RunBuild(l.buildConfig)
 	if err != nil {
 		return fmt.Errorf("failed to run build: %v", err)
 	}
 
-	fmt.Println(string(out))
 	return nil
 }

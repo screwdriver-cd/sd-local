@@ -15,6 +15,32 @@ import (
 
 var testDir string = "./testdata"
 
+func newBuildConfig() *BuildConfig {
+	buf, _ := ioutil.ReadFile(filepath.Join(testDir, "job.json"))
+
+	job := screwdriver.Job{}
+
+	json.Unmarshal(buf, &job)
+	return &BuildConfig{
+		ID: 0,
+		Environment: []EnvVar{EnvVar{
+			"SD_ARTIFACTS_DIR": "/test/artifacts",
+			"SD_API_URL":       "http://api-test.screwdriver.cd",
+			"SD_STORE_URL":     "http://store-test.screwdriver.cd",
+			"SD_TOKEN":         "testjwt",
+			"FOO":              "foo",
+		}},
+		EventID:       0,
+		JobID:         0,
+		ParentBuildID: []int{0},
+		Sha:           "dummy",
+		Meta:          map[string]interface{}{},
+		Steps:         job.Steps,
+		Image:         job.Image,
+		JobName:       "test",
+	}
+}
+
 func TestNew(t *testing.T) {
 	t.Run("success with custom artifacts dir", func(t *testing.T) {
 		buf, _ := ioutil.ReadFile(filepath.Join(testDir, "job.json"))
@@ -31,28 +57,11 @@ func TestNew(t *testing.T) {
 			Launcher: config.Launcher{Version: "latest", Image: "screwdrivercd/launcher"},
 		}
 
-		expectedBuildConfig := BuildConfig{
-			ID: 0,
-			Environment: []EnvVar{EnvVar{
-				"SD_ARTIFACTS_DIR": "/test/artifacts",
-				"SD_API_URL":       "http://api-test.screwdriver.cd",
-				"SD_STORE_URL":     "http://store-test.screwdriver.cd",
-				"SD_TOKEN":         "testjwt",
-				"FOO":              "foo",
-			}},
-			EventID:       0,
-			JobID:         0,
-			ParentBuildID: []int{0},
-			Sha:           "dummy",
-			Meta:          map[string]interface{}{},
-			Steps:         job.Steps,
-			Image:         job.Image,
-			JobName:       "test",
-		}
+		expectedBuildConfig := newBuildConfig()
 
 		l := New(job, config, "test", "testjwt")
 
-		assert.Equal(t, expectedBuildConfig, l.buildConfig)
+		assert.Equal(t, *expectedBuildConfig, l.buildConfig)
 	})
 
 	t.Run("success with default artifacts dir", func(t *testing.T) {
@@ -69,28 +78,12 @@ func TestNew(t *testing.T) {
 			Launcher: config.Launcher{Version: "latest", Image: "screwdrivercd/launcher"},
 		}
 
-		expectedBuildConfig := BuildConfig{
-			ID: 0,
-			Environment: []EnvVar{EnvVar{
-				"SD_ARTIFACTS_DIR": "/sd/workspace/artifacts",
-				"SD_API_URL":       "http://api-test.screwdriver.cd",
-				"SD_STORE_URL":     "http://store-test.screwdriver.cd",
-				"SD_TOKEN":         "testjwt",
-				"FOO":              "foo",
-			}},
-			EventID:       0,
-			JobID:         0,
-			ParentBuildID: []int{0},
-			Sha:           "dummy",
-			Meta:          map[string]interface{}{},
-			Steps:         job.Steps,
-			Image:         job.Image,
-			JobName:       "test",
-		}
+		expectedBuildConfig := newBuildConfig()
+		expectedBuildConfig.Environment[0]["SD_ARTIFACTS_DIR"] = "/sd/workspace/artifacts"
 
 		l := New(job, config, "test", "testjwt")
 
-		assert.Equal(t, expectedBuildConfig, l.buildConfig)
+		assert.Equal(t, *expectedBuildConfig, l.buildConfig)
 	})
 }
 
@@ -99,8 +92,8 @@ type mockRunner struct {
 	errorSetupBin error
 }
 
-func (m *mockRunner) RunBuild(buildConfig BuildConfig) ([]byte, error) {
-	return []byte{}, m.errorRunBuild
+func (m *mockRunner) RunBuild(buildConfig BuildConfig) error {
+	return m.errorRunBuild
 }
 
 func (m *mockRunner) SetupBin() error {
