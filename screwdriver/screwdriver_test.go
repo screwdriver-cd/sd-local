@@ -115,7 +115,7 @@ func TestJob(t *testing.T) {
 				},
 			},
 			Environment: map[string]string{
-				"test_env": "hoge",
+				"TEST_ENV": "hoge",
 			},
 			Image: "alpine",
 		}

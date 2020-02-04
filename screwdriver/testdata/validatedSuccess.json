@@ -13,7 +13,7 @@
           }
         ],
         "environment": {
-          "test_env": "hoge"
+          "TEST_ENV": "hoge"
         },
         "image": "alpine"
       }
