@@ -15,15 +15,15 @@ import (
 
 var testDir string = "./testdata"
 
-func newBuildConfig() *BuildConfig {
+func newBuildConfig() *buildConfig {
 	buf, _ := ioutil.ReadFile(filepath.Join(testDir, "job.json"))
 
 	job := screwdriver.Job{}
 
 	json.Unmarshal(buf, &job)
-	return &BuildConfig{
+	return &buildConfig{
 		ID: 0,
-		Environment: []EnvVar{{
+		Environment: []envVar{{
 			"SD_ARTIFACTS_DIR": "/test/artifacts",
 			"SD_API_URL":       "http://api-test.screwdriver.cd",
 			"SD_STORE_URL":     "http://store-test.screwdriver.cd",
@@ -92,7 +92,7 @@ type mockRunner struct {
 	errorSetupBin error
 }
 
-func (m *mockRunner) RunBuild(buildConfig BuildConfig) error {
+func (m *mockRunner) RunBuild(buildConfig buildConfig) error {
 	return m.errorRunBuild
 }
 
@@ -109,9 +109,9 @@ func TestRun(t *testing.T) {
 		json.Unmarshal(buf, &job)
 
 		launch := Launch{
-			buildConfig: BuildConfig{
+			buildConfig: buildConfig{
 				ID: 0,
-				Environment: []EnvVar{{
+				Environment: []envVar{{
 					"SD_ARTIFACTS_DIR": "/sd/workspace/artifacts",
 					"SD_API_URL":       "http://api-test.screwdriver.cd",
 					"SD_STORE_URL":     "http://store-test.screwdriver.cd",
@@ -154,9 +154,9 @@ func TestRun(t *testing.T) {
 		json.Unmarshal(buf, &job)
 
 		launch := Launch{
-			buildConfig: BuildConfig{
+			buildConfig: buildConfig{
 				ID: 0,
-				Environment: []EnvVar{{
+				Environment: []envVar{{
 					"SD_ARTIFACTS_DIR": "/sd/workspace/artifacts",
 					"SD_API_URL":       "http://api-test.screwdriver.cd",
 					"SD_STORE_URL":     "http://store-test.screwdriver.cd",
@@ -199,9 +199,9 @@ func TestRun(t *testing.T) {
 		json.Unmarshal(buf, &job)
 
 		launch := Launch{
-			buildConfig: BuildConfig{
+			buildConfig: buildConfig{
 				ID: 0,
-				Environment: []EnvVar{{
+				Environment: []envVar{{
 					"SD_ARTIFACTS_DIR": "/sd/workspace/artifacts",
 					"SD_API_URL":       "http://api-test.screwdriver.cd",
 					"SD_STORE_URL":     "http://store-test.screwdriver.cd",
@@ -244,9 +244,9 @@ func TestRun(t *testing.T) {
 		json.Unmarshal(buf, &job)
 
 		launch := Launch{
-			buildConfig: BuildConfig{
+			buildConfig: buildConfig{
 				ID: 0,
-				Environment: []EnvVar{{
+				Environment: []envVar{{
 					"SD_ARTIFACTS_DIR": "/sd/workspace/artifacts",
 					"SD_API_URL":       "http://api-test.screwdriver.cd",
 					"SD_STORE_URL":     "http://store-test.screwdriver.cd",

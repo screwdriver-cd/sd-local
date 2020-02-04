@@ -11,7 +11,7 @@ import (
 )
 
 const (
-	JobName string = "main"
+	jobName string = "main"
 )
 
 func main() {
@@ -32,12 +32,12 @@ func main() {
 		log.Fatal(err)
 	}
 
-	job, err := api.Job(JobName, "./screwdriver.yaml")
+	job, err := api.Job(jobName, "./screwdriver.yaml")
 	if err != nil {
 		log.Fatal(err)
 	}
 
-	err = launch.New(job, config, JobName, api.JWT()).Run()
+	err = launch.New(job, config, jobName, api.JWT()).Run()
 	if err != nil {
 		log.Fatal(err)
 	}

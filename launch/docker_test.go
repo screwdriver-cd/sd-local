@@ -144,10 +144,8 @@ func TestHelperProcess(t *testing.T) {
 		}
 		os.Exit(1)
 	case "SUCCESS_RUN_BUILD":
-		fmt.Println("hello world")
 		os.Exit(0)
 	case "FAIL_BUILD_CONTAINER_RUN":
-		fmt.Fprintln(os.Stderr, "something happen")
 		os.Exit(1)
 	}
 }

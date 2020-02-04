@@ -10,21 +10,25 @@ import (
 
 var lookPath = exec.LookPath
 
+// Runner prepares binaries to run builds and run the specified build.
 type Runner interface {
-	RunBuild(buildConfig BuildConfig) error
+	// RunBuild runs the specified build.
+	RunBuild(buildConfig buildConfig) error
+	// SetupBin prepares binaries to run builds.
 	SetupBin() error
 }
 
+// Launch has config to run build.
 type Launch struct {
-	buildConfig BuildConfig
+	buildConfig buildConfig
 	runner      Runner
 }
 
-type EnvVar map[string]string
+type envVar map[string]string
 
-type BuildConfig struct {
+type buildConfig struct {
 	ID            int                    `json:"id"`
-	Environment   []EnvVar               `json:"environment"`
+	Environment   []envVar               `json:"environment"`
 	EventID       int                    `json:"eventId"`
 	JobID         int                    `json:"jobId"`
 	ParentBuildID []int                  `json:"parentBuildId"`
@@ -35,27 +39,21 @@ type BuildConfig struct {
 	JobName       string                 `json:"-"`
 }
 
-type BuildEnvironment struct {
-	SD_ARTIFACTS_DIR string
-	SD_API_URL       string
-	SD_STORE_URL     string
-}
-
 const (
 	defaultArtDir = "/sd/workspace/artifacts"
 )
 
-func mergeEnv(env, userEnv EnvVar) []EnvVar {
+func mergeEnv(env, userEnv envVar) []envVar {
 
 	for k, v := range userEnv {
 		env[k] = v
 	}
 
-	return []EnvVar{env}
+	return []envVar{env}
 }
 
-func createBuildConfig(config config.Config, job screwdriver.Job, jobName, jwt string) BuildConfig {
-	defaultEnv := EnvVar{
+func createBuildConfig(config config.Config, job screwdriver.Job, jobName, jwt string) buildConfig {
+	defaultEnv := envVar{
 		"SD_TOKEN":         jwt,
 		"SD_ARTIFACTS_DIR": defaultArtDir,
 		"SD_API_URL":       config.APIURL,
@@ -63,7 +61,7 @@ func createBuildConfig(config config.Config, job screwdriver.Job, jobName, jwt s
 	}
 	env := mergeEnv(defaultEnv, job.Environment)
 
-	return BuildConfig{
+	return buildConfig{
 		ID:            0,
 		Environment:   env,
 		EventID:       0,
@@ -77,6 +75,7 @@ func createBuildConfig(config config.Config, job screwdriver.Job, jobName, jwt s
 	}
 }
 
+// New creates new Launch struct.
 func New(job screwdriver.Job, config config.Config, jobName, jwt string) *Launch {
 	l := new(Launch)
 
@@ -91,6 +90,7 @@ func (l *Launch) runBuild(image, jobName, apiURL, storeURL string) error {
 	return nil
 }
 
+// Run runs the build specified.
 func (l *Launch) Run() error {
 	if _, err := lookPath("docker"); err != nil {
 		return fmt.Errorf("`docker` command is not found in $PATH: %v", err)
