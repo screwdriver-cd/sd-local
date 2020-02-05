@@ -78,3 +78,40 @@ func TestRun(t *testing.T) {
 		assert.Equal(t, strings.Join(expected, ""), writer.String())
 	})
 }
+
+type compareableLog struct {
+	ctx    context.Context
+	file   string
+	writer io.Writer
+	cancel context.CancelFunc
+}
+
+func TestNew(t *testing.T) {
+	t.Run("success", func(t *testing.T) {
+		tmpFile, err := ioutil.TempFile("", "")
+		if err != nil {
+			t.Fatal(err)
+		}
+
+		writer := bytes.NewBuffer(nil)
+
+		logger, err := New(context.Background(), tmpFile.Name(), writer)
+		if err != nil {
+			t.Fatal(err)
+		}
+
+		log, ok := logger.(log)
+		if !ok {
+			t.Fatal("Failed to convert Logger to log")
+		}
+
+		file, ok := log.file.(*os.File)
+		if !ok {
+			t.Fatal("Failed to convert Reader to File")
+		}
+
+		assert.Equal(t, tmpFile.Name(), file.Name())
+		assert.Equal(t, writer, log.writer)
+	})
+
+}
