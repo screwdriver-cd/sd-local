@@ -14,7 +14,7 @@ var readInterval time.Duration = 10 * time.Millisecond
 
 // Logger outputs logs
 type Logger interface {
-	Run() chan error
+	Run()
 	Stop()
 }
 
@@ -49,10 +49,9 @@ func New(ctx context.Context, filepath string, writer io.Writer) (Logger, error)
 	return log, nil
 }
 
-func (l log) Run() chan error {
+func (l log) Run() {
 	errChan := make(chan error)
 	go l.run(errChan)
-	return errChan
 }
 
 func (l log) Stop() {
@@ -77,7 +76,7 @@ func (l log) run(errChan chan error) {
 func (l log) output(reader *bufio.Reader) error {
 	line, _, err := reader.ReadLine()
 	if err != nil {
-		return nil
+		return fmt.Errorf("failed to read logfile: %w", err)
 	}
 
 	parsedLog, err := parse(line)

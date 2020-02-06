@@ -49,6 +49,7 @@ func TestRun(t *testing.T) {
 		if err != nil {
 			t.Fatal(err)
 		}
+		defer tmpFile.Close()
 
 		testInputs := []string{
 			`{"t": 1580198209, "m": "test 1", "n": 0, "s": "main"}` + "\n",
@@ -65,8 +66,7 @@ func TestRun(t *testing.T) {
 			cancel: cancel,
 		}
 
-		errChan := l.Run()
-		_ = errChan
+		l.Run()
 
 		time.Sleep(3 * time.Second)
 		l.Stop()
@@ -81,11 +81,12 @@ func TestRun(t *testing.T) {
 }
 
 func TestStop(t *testing.T) {
-	t.Run("success", func(t *testing.T) {
+	t.Run("success, confirm not to write log after stopped", func(t *testing.T) {
 		tmpFile, err := ioutil.TempFile("", "")
 		if err != nil {
 			t.Fatal(err)
 		}
+		defer tmpFile.Close()
 
 		testInputs := []string{
 			`{"t": 1580198209, "m": "test 1", "n": 0, "s": "main"}` + "\n",
@@ -107,13 +108,13 @@ func TestStop(t *testing.T) {
 			cancel: cancel,
 		}
 
-		errChan := l.Run()
-		_ = errChan
+		l.Run()
 
 		time.Sleep(3 * time.Second)
 		l.Stop()
 
 		go write(t, tmpFile.Name(), testInputsNotWritten)
+		time.Sleep(3 * time.Second)
 
 		expected := []string{
 			"2020-01-28 16:56:49 +0900 JST: test 1\n",
@@ -124,19 +125,13 @@ func TestStop(t *testing.T) {
 
 }
 
-type compareableLog struct {
-	ctx    context.Context
-	file   string
-	writer io.Writer
-	cancel context.CancelFunc
-}
-
 func TestNew(t *testing.T) {
 	t.Run("success", func(t *testing.T) {
 		tmpFile, err := ioutil.TempFile("", "")
 		if err != nil {
 			t.Fatal(err)
 		}
+		defer tmpFile.Close()
 
 		writer := bytes.NewBuffer(nil)
 
