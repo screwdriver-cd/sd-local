@@ -84,18 +84,18 @@ func TestNew(t *testing.T) {
 
 	t.Run("failure by makeURL", func(t *testing.T) {
 		testURL := "http://example.com:yyy"
-		testMsg := "failed to make request url:"
 		testToken := "token"
 		_, err := New(testURL, testToken)
-		assert.Contains(t, err.Error(), testMsg)
+		msg := err.Error()
+		assert.Equal(t, 0, strings.Index(msg, "failed to make request url: "), fmt.Sprintf("expected error is `failed to make request url: ...`, actual: `%v`", msg))
 	})
 
 	t.Run("failure by sd.request", func(t *testing.T) {
 		testURL := "http://localhost"
-		testMsg := "connection refused"
 		testToken := "testToken"
 		_, err := New(testURL, testToken)
-		assert.Contains(t, err.Error(), testMsg)
+		msg := err.Error()
+		assert.Equal(t, 0, strings.Index(msg, "failed to send request: "), fmt.Sprintf("expected error is `failed to send request: ...`, actual: `%v`", msg))
 	})
 }
 
@@ -148,7 +148,7 @@ func TestJob(t *testing.T) {
 		testAPI := sdAPI{
 			HTTPClient: http.DefaultClient,
 			UserToken:  "dummy",
-			APIURL:     string(0x7f),
+			APIURL:     "http://example.com:yyy",
 			SDJWT:      "jwt",
 		}
 

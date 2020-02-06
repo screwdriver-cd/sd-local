@@ -118,7 +118,7 @@ func (sd *sdAPI) jwt() (string, error) {
 
 	res, err := sd.request(http.MethodGet, fullpath.String(), nil)
 	if err != nil {
-		return "", err
+		return "", fmt.Errorf("failed to send request: %v", err)
 	}
 	if res.StatusCode != http.StatusOK {
 		return "", fmt.Errorf("failed to get JWT: StatusCode %d", res.StatusCode)
