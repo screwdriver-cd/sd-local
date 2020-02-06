@@ -12,6 +12,7 @@ import (
 
 var readInterval time.Duration = 10 * time.Millisecond
 
+// Logger outputs logs
 type Logger interface {
 	Run() chan error
 	Stop()
@@ -31,6 +32,7 @@ type logLine struct {
 	StepName string `json:"s"`
 }
 
+// New creates new Logger interface.
 func New(ctx context.Context, filepath string, writer io.Writer) (Logger, error) {
 	log := log{
 		writer: writer,

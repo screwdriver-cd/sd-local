@@ -77,6 +77,51 @@ func TestRun(t *testing.T) {
 		}
 		assert.Equal(t, strings.Join(expected, ""), writer.String())
 	})
+
+}
+
+func TestStop(t *testing.T) {
+	t.Run("success", func(t *testing.T) {
+		tmpFile, err := ioutil.TempFile("", "")
+		if err != nil {
+			t.Fatal(err)
+		}
+
+		testInputs := []string{
+			`{"t": 1580198209, "m": "test 1", "n": 0, "s": "main"}` + "\n",
+			`{"t": 1580198222, "m": "test 2", "n": 1, "s": "main"}` + "\n",
+		}
+
+		testInputsNotWritten := []string{
+			`{test}` + "\n",
+		}
+
+		go write(t, tmpFile.Name(), testInputs)
+
+		parent, cancel := context.WithCancel(context.Background())
+		writer := bytes.NewBuffer(nil)
+		l := log{
+			file:   tmpFile,
+			writer: writer,
+			ctx:    parent,
+			cancel: cancel,
+		}
+
+		errChan := l.Run()
+		_ = errChan
+
+		time.Sleep(3 * time.Second)
+		l.Stop()
+
+		go write(t, tmpFile.Name(), testInputsNotWritten)
+
+		expected := []string{
+			"2020-01-28 16:56:49 +0900 JST: test 1\n",
+			"2020-01-28 16:57:02 +0900 JST: test 2\n",
+		}
+		assert.Equal(t, strings.Join(expected, ""), writer.String())
+	})
+
 }
 
 type compareableLog struct {
