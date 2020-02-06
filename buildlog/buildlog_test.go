@@ -3,6 +3,7 @@ package buildlog
 import (
 	"bytes"
 	"context"
+	"fmt"
 	"io"
 	"io/ioutil"
 	"os"
@@ -34,7 +35,6 @@ func write(tb testing.TB, filepath string, inputs []string) {
 		if err != nil {
 			tb.Fatal(err)
 		}
-		//time.Sleep(1 * time.Second)
 
 		err = file.Close()
 		if err != nil {
@@ -152,6 +152,21 @@ func TestNew(t *testing.T) {
 
 		assert.Equal(t, tmpFile.Name(), file.Name())
 		assert.Equal(t, writer, log.writer)
+	})
+
+	t.Run("failure", func(t *testing.T) {
+		writer := bytes.NewBuffer(nil)
+
+		logger, err := New(context.Background(), "/", writer)
+
+		expected := log{
+			writer: writer,
+			file:   (*os.File)(nil),
+		}
+
+		msg := err.Error()
+		assert.Equal(t, expected, logger)
+		assert.Equal(t, 0, strings.Index(msg, "failed to open raw build log file: "), fmt.Sprintf("expected error is `failed to open raw build log file: ...`, actual: `%v`", msg))
 	})
 
 }

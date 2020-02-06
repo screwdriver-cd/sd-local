@@ -41,7 +41,7 @@ func New(ctx context.Context, filepath string, writer io.Writer) (Logger, error)
 	var err error
 	log.file, err = os.OpenFile(filepath, os.O_RDONLY|os.O_CREATE|os.O_TRUNC, 0666)
 	if err != nil {
-		return log, fmt.Errorf("failed to open raw build log file :%w", err)
+		return log, fmt.Errorf("failed to open raw build log file: %w", err)
 	}
 
 	log.ctx, log.cancel = context.WithCancel(ctx)
