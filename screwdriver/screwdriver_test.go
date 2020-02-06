@@ -63,6 +63,10 @@ func TestNew(t *testing.T) {
 		testToken := "token"
 		_, err := New(server.URL, testToken)
 		assert.NotNil(t, err)
+
+		testMsg := "failed to parse JWT response:"
+		assert.Contains(t, err.Error(), testMsg)
+
 	})
 
 	t.Run("failure by status", func(t *testing.T) {
@@ -76,6 +80,22 @@ func TestNew(t *testing.T) {
 
 		testMsg := "failed to get JWT: StatusCode 500"
 		assert.Equal(t, testMsg, err.Error())
+	})
+
+	t.Run("failure by makeURL", func(t *testing.T) {
+		testURL := "http://example.com:yyy"
+		testMsg := "failed to make request url:"
+		testToken := "token"
+		_, err := New(testURL, testToken)
+		assert.Contains(t, err.Error(), testMsg)
+	})
+
+	t.Run("failure by sd.request", func(t *testing.T) {
+		testURL := "http://localhost"
+		testMsg := "connection refused"
+		testToken := "testToken"
+		_, err := New(testURL, testToken)
+		assert.Contains(t, err.Error(), testMsg)
 	})
 }
 
@@ -136,7 +156,7 @@ func TestJob(t *testing.T) {
 		assert.NotNil(t, err)
 
 		msg := err.Error()
-		assert.Equal(t, 0, strings.Index(msg, "failed to create api endpoint URL: "), fmt.Sprintf("expected error is `failed to create api endpoint URL: ...`, actual: `%v`", msg))
+		assert.Equal(t, 0, strings.Index(msg, "failed to make request url: "), fmt.Sprintf("expected error is `failed to create api endpoint URL: ...`, actual: `%v`", msg))
 	})
 
 	t.Run("failure by invalid JSON", func(t *testing.T) {

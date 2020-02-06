@@ -127,6 +127,9 @@ func (sd *sdAPI) jwt() (string, error) {
 
 	tokenResponse := new(tokenResponse)
 	err = json.NewDecoder(res.Body).Decode(tokenResponse)
+	if err != nil {
+		return "", fmt.Errorf("failed to parse JWT response: %v", err)
+	}
 
 	return tokenResponse.JWT, err
 }
@@ -142,7 +145,7 @@ func readScrewdriverYAML(filePath string) (string, error) {
 func (sd *sdAPI) validate(filePath string) (*validatorResponse, error) {
 	fullpath, err := sd.makeURL(validatorEndpoint)
 	if err != nil {
-		return &validatorResponse{}, fmt.Errorf("failed to create api endpoint URL: %v", err)
+		return &validatorResponse{}, fmt.Errorf("failed to make request url: %v", err)
 	}
 
 	yaml, err := readScrewdriverYAML(filePath)
@@ -157,6 +160,7 @@ func (sd *sdAPI) validate(filePath string) (*validatorResponse, error) {
 	if err != nil {
 		return &validatorResponse{}, fmt.Errorf("failed to send request: %v", err)
 	}
+	defer res.Body.Close()
 
 	if res.StatusCode != http.StatusOK {
 		return &validatorResponse{}, fmt.Errorf("failed to post validator: StatusCode %d", res.StatusCode)
