@@ -1,7 +1,6 @@
 package screwdriver
 
 import (
-	"bytes"
 	"encoding/json"
 	"fmt"
 	"io"
@@ -145,31 +144,31 @@ func readScrewdriverYAML(filePath string) (string, error) {
 func (sd *sdAPI) validate(filePath string) (*validatorResponse, error) {
 	fullpath, err := sd.makeURL(validatorEndpoint)
 	if err != nil {
-		return &validatorResponse{}, fmt.Errorf("failed to make request url: %v", err)
+		return nil, fmt.Errorf("failed to make request url: %v", err)
 	}
 
 	yaml, err := readScrewdriverYAML(filePath)
 	if err != nil {
-		return &validatorResponse{}, err
+		return nil, err
 	}
 
-	escapedYaml := strings.ReplaceAll(string(yaml), "\"", "\\\"")
-	body := fmt.Sprintf(`{"yaml": "%s"}`, strings.ReplaceAll(string(escapedYaml), "\n", "\\n"))
+	escapedYaml := strings.ReplaceAll(yaml, "\"", "\\\"")
+	body := fmt.Sprintf(`{"yaml": "%s"}`, strings.ReplaceAll(escapedYaml, "\n", "\\n"))
 
-	res, err := sd.request(http.MethodPost, fullpath.String(), bytes.NewBuffer([]byte(body)))
+	res, err := sd.request(http.MethodPost, fullpath.String(), strings.NewReader(body))
 	if err != nil {
-		return &validatorResponse{}, fmt.Errorf("failed to send request: %v", err)
+		return nil, fmt.Errorf("failed to send request: %v", err)
 	}
 	defer res.Body.Close()
 
 	if res.StatusCode != http.StatusOK {
-		return &validatorResponse{}, fmt.Errorf("failed to post validator: StatusCode %d", res.StatusCode)
+		return nil, fmt.Errorf("failed to post validator: StatusCode %d", res.StatusCode)
 	}
 
 	v := new(validatorResponse)
 	err = json.NewDecoder(res.Body).Decode(v)
 	if err != nil {
-		return &validatorResponse{}, fmt.Errorf("failed to parse validator response: %v", err)
+		return nil, fmt.Errorf("failed to parse validator response: %v", err)
 	}
 
 	return v, nil
