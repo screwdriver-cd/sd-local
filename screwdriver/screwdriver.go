@@ -130,7 +130,7 @@ func (sd *sdAPI) jwt() (string, error) {
 		return "", fmt.Errorf("failed to parse JWT response: %v", err)
 	}
 
-	return tokenResponse.JWT, err
+	return tokenResponse.JWT, nil
 }
 
 func readScrewdriverYAML(filePath string) (string, error) {
