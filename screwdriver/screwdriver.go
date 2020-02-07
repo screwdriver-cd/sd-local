@@ -141,7 +141,7 @@ func readScrewdriverYAML(filePath string) (string, error) {
 	return string(yaml), nil
 }
 
-func (sd *sdAPI) validate(filePath string) (*jobs, error) {
+func (sd *sdAPI) validate(filePath string) (jobs, error) {
 	fullpath, err := sd.makeURL(validatorEndpoint)
 	if err != nil {
 		return nil, fmt.Errorf("failed to make request url: %v", err)
@@ -175,7 +175,7 @@ func (sd *sdAPI) validate(filePath string) (*jobs, error) {
 		return nil, fmt.Errorf("failed to parse screwdriver.yaml: %v", v.Errors)
 	}
 
-	return &v.Jobs, nil
+	return v.Jobs, nil
 }
 
 // Job returns job represented by "jobName"
@@ -185,7 +185,7 @@ func (sd *sdAPI) Job(jobName, filepath string) (Job, error) {
 		return Job{}, err
 	}
 
-	job, ok := (*jobs)[jobName]
+	job, ok := jobs[jobName]
 	if !ok {
 		return Job{}, fmt.Errorf("not found '%s' in parsed screwdriver.yaml", jobName)
 	}
