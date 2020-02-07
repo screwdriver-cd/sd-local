@@ -32,14 +32,14 @@ func newDocker(setupImage, setupImageVer string) runner {
 }
 
 func (d *docker) setupBin() error {
-	err := execCommand("sudo", "docker", "volume", "create", "--name", d.volume).Run()
+	err := execCommand("docker", "volume", "create", "--name", d.volume).Run()
 	if err != nil {
 		return fmt.Errorf("failed to create docker volume")
 	}
 
 	mount := fmt.Sprintf("%s:/opt/sd/", d.volume)
 	image := fmt.Sprintf("%s:%s", d.setupImage, d.setupImageVersion)
-	cmd := execCommand("sudo", "docker", "container", "run", "--rm", "-v", mount, image, "--entrypoint", "/bin/echo set up bin")
+	cmd := execCommand("docker", "container", "run", "--rm", "-v", mount, image, "--entrypoint", "/bin/echo set up bin")
 	cmd.Stdout = os.Stdout
 	cmd.Stderr = os.Stderr
 	err = cmd.Run()
@@ -73,8 +73,7 @@ func (d *docker) runBuild(buildConfig buildConfig) error {
 		return err
 	}
 
-	c := []string{"docker", "container", "run", "--rm", "-v", srcVol, "-v", artVol, "-v", binVol, buildImage, "/opt/sd/local_run.sh", string(configJSON), buildConfig.JobName, environment["SD_API_URL"], environment["SD_STORE_URL"], logfilePath}
-	cmd := execCommand("sudo", c...)
+	cmd := execCommand("docker", "container", "run", "--rm", "-v", srcVol, "-v", artVol, "-v", binVol, buildImage, "/opt/sd/local_run.sh", string(configJSON), buildConfig.JobName, environment["SD_API_URL"], environment["SD_STORE_URL"], logfilePath)
 	cmd.Stdout = os.Stdout
 	cmd.Stderr = os.Stderr
 	err = cmd.Run()

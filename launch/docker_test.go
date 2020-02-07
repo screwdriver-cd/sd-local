@@ -128,8 +128,8 @@ func TestHelperProcess(t *testing.T) {
 		os.Exit(2)
 	}
 
-	cmd, subcmd, subsubcmd, args := args[0], args[1], args[2], args[3:]
-	_, _, _ = cmd, subcmd, args
+	cmd, subcmd, args := args[0], args[1], args[2:]
+	_, _ = cmd, args
 
 	switch os.Getenv("GO_TEST_MODE") {
 	case "":
@@ -139,7 +139,7 @@ func TestHelperProcess(t *testing.T) {
 	case "FAIL_CREATING_VOLUME":
 		os.Exit(1)
 	case "FAIL_CONTAINER_RUN":
-		if subsubcmd == "volume" {
+		if subcmd == "volume" {
 			os.Exit(0)
 		}
 		os.Exit(1)
