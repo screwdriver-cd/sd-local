@@ -49,17 +49,12 @@ func New(ctx context.Context, filepath string, writer io.Writer) (Logger, error)
 	return log, nil
 }
 
-func (l log) Run() {
-	errChan := make(chan error)
-	go l.run(errChan)
-}
-
 func (l log) Stop() {
 	l.cancel()
 	return
 }
 
-func (l log) run(errChan chan error) {
+func (l log) Run() {
 	reader := bufio.NewReader(l.file)
 
 	for {
@@ -67,7 +62,11 @@ func (l log) run(errChan chan error) {
 		case <-l.ctx.Done():
 			break
 		default:
-			l.output(reader)
+			err := l.output(reader)
+			if err != nil {
+				fmt.Printf("failed to run logger: %w\n", err)
+				l.cancel()
+			}
 		}
 		time.Sleep(readInterval)
 	}
@@ -76,7 +75,10 @@ func (l log) run(errChan chan error) {
 func (l log) output(reader *bufio.Reader) error {
 	line, _, err := reader.ReadLine()
 	if err != nil {
-		return fmt.Errorf("failed to read logfile: %w", err)
+		if err != io.EOF {
+			return fmt.Errorf("failed to read logfile: %w", err)
+		}
+		return nil
 	}
 
 	parsedLog, err := parse(line)

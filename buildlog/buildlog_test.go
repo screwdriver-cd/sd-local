@@ -66,7 +66,7 @@ func TestRun(t *testing.T) {
 			cancel: cancel,
 		}
 
-		l.Run()
+		go l.Run()
 
 		time.Sleep(3 * time.Second)
 		l.Stop()
@@ -108,7 +108,7 @@ func TestStop(t *testing.T) {
 			cancel: cancel,
 		}
 
-		l.Run()
+		go l.Run()
 
 		time.Sleep(3 * time.Second)
 		l.Stop()
