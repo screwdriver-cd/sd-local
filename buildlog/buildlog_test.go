@@ -14,6 +14,17 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
+const (
+	intervalTime = 500
+)
+
+var (
+	testInputs = []string{
+		`{"t": 1580198209, "m": "test 1", "n": 0, "s": "main"}` + "\n",
+		`{"t": 1580198222, "m": "test 2", "n": 1, "s": "main"}` + "\n",
+	}
+)
+
 type writeCloser struct {
 	io.Writer
 }
@@ -51,10 +62,6 @@ func TestRun(t *testing.T) {
 		}
 		defer tmpFile.Close()
 
-		testInputs := []string{
-			`{"t": 1580198209, "m": "test 1", "n": 0, "s": "main"}` + "\n",
-			`{"t": 1580198222, "m": "test 2", "n": 1, "s": "main"}` + "\n",
-		}
 		go write(t, tmpFile.Name(), testInputs)
 
 		parent, cancel := context.WithCancel(context.Background())
@@ -68,7 +75,7 @@ func TestRun(t *testing.T) {
 
 		go l.Run()
 
-		time.Sleep(3 * time.Second)
+		time.Sleep(intervalTime * time.Millisecond)
 		l.Stop()
 
 		expected := []string{
@@ -85,11 +92,11 @@ func TestRun(t *testing.T) {
 		}
 		defer tmpFile.Close()
 
-		testInputs := []string{
+		testInvalidInputs := []string{
 			`{"t": 1580198209, "m": "test 1", "n": 0, "s": "main"}` + "\n",
-			`{"t": 1580198222, "m": "test 2", "n": 1, "s": "main"` + "\n",
+			`{` + "\n",
 		}
-		go write(t, tmpFile.Name(), testInputs)
+		go write(t, tmpFile.Name(), testInvalidInputs)
 
 		parent, cancel := context.WithCancel(context.Background())
 		writer := bytes.NewBuffer(nil)
@@ -102,7 +109,7 @@ func TestRun(t *testing.T) {
 
 		go l.Run()
 
-		time.Sleep(3 * time.Second)
+		time.Sleep(intervalTime * time.Millisecond)
 		l.Stop()
 
 		expected := "2020-01-28 16:56:49 +0900 JST: test 1\n"
@@ -118,11 +125,6 @@ func TestStop(t *testing.T) {
 			t.Fatal(err)
 		}
 		defer tmpFile.Close()
-
-		testInputs := []string{
-			`{"t": 1580198209, "m": "test 1", "n": 0, "s": "main"}` + "\n",
-			`{"t": 1580198222, "m": "test 2", "n": 1, "s": "main"}` + "\n",
-		}
 
 		testInputsNotWritten := []string{
 			`{test}` + "\n",
@@ -141,11 +143,11 @@ func TestStop(t *testing.T) {
 
 		go l.Run()
 
-		time.Sleep(3 * time.Second)
+		time.Sleep(intervalTime * time.Millisecond)
 		l.Stop()
 
 		go write(t, tmpFile.Name(), testInputsNotWritten)
-		time.Sleep(3 * time.Second)
+		time.Sleep(intervalTime * time.Millisecond)
 
 		expected := []string{
 			"2020-01-28 16:56:49 +0900 JST: test 1\n",
