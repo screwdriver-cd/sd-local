@@ -41,7 +41,12 @@ func newBuildCmd() *cobra.Command {
 				log.Fatal(err)
 			}
 
-			log, err := buildlog.New(context.Background(), path.Join(launch.ArtifactsDir, launch.LogFile), os.Stdout)
+			cwd, err := os.Getwd()
+			if err != nil {
+				log.Fatal(err)
+			}
+
+			log, err := buildlog.New(context.Background(), path.Join(cwd, launch.ArtifactsDir, launch.LogFile), os.Stdout)
 			if err != nil {
 				log.Fatal(err)
 			}
