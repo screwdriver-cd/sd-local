@@ -19,8 +19,8 @@ var _ runner = (*docker)(nil)
 var execCommand = exec.Command
 
 const (
-	artifactsDir = "artifacts"
-	logFile      = "builds.log"
+	ArtifactsDir = "artifacts"
+	LogFile      = "builds.log"
 )
 
 func newDocker(setupImage, setupImageVer string) runner {
@@ -60,10 +60,10 @@ func (d *docker) runBuild(buildConfig buildConfig) error {
 	environment := buildConfig.Environment[0]
 
 	srcDir := cwd
-	hostArtDir := filepath.Join(cwd, artifactsDir)
+	hostArtDir := filepath.Join(cwd, ArtifactsDir)
 	containerArtDir := environment["SD_ARTIFACTS_DIR"]
 	buildImage := buildConfig.Image
-	logfilePath := path.Join(containerArtDir, logFile)
+	logfilePath := path.Join(containerArtDir, LogFile)
 
 	srcVol := fmt.Sprintf("%s/:/sd/workspace", srcDir)
 	artVol := fmt.Sprintf("%s/:%s", hostArtDir, containerArtDir)
