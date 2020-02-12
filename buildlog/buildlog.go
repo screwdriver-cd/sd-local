@@ -94,11 +94,11 @@ func (l log) output(reader *bufio.Reader, isBuildFinished bool) (bool, error) {
 
 	parsedLog, err := parse(line)
 	if err != nil {
-		return fmt.Errorf("failed to output log: %w", err)
+		return false, fmt.Errorf("failed to output log: %w", err)
 	}
 
 	fmt.Fprintln(l.writer, parsedLog)
-	return nil
+	return false, nil
 }
 
 func parse(rawLog []byte) (string, error) {
