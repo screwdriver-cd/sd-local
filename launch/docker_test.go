@@ -9,8 +9,6 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
-const launchImage = "launcher:latest"
-
 type fakeExecCommand struct {
 	id      string
 	execCmd func(command string, args ...string) *exec.Cmd
@@ -104,7 +102,6 @@ func TestRunBuild(t *testing.T) {
 			} else {
 				assert.Nil(t, err)
 			}
-
 		})
 	}
 }

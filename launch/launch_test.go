@@ -18,7 +18,8 @@ var testDir string = "./testdata"
 func newBuildConfig() buildConfig {
 	buf, _ := ioutil.ReadFile(filepath.Join(testDir, "job.json"))
 	job := screwdriver.Job{}
-	json.Unmarshal(buf, &job)
+	_ = json.Unmarshal(buf, &job)
+
 	return buildConfig{
 		ID: 0,
 		Environment: []envVar{{
@@ -43,7 +44,7 @@ func TestNew(t *testing.T) {
 	t.Run("success with custom artifacts dir", func(t *testing.T) {
 		buf, _ := ioutil.ReadFile(filepath.Join(testDir, "job.json"))
 		job := screwdriver.Job{}
-		json.Unmarshal(buf, &job)
+		_ = json.Unmarshal(buf, &job)
 		job.Environment["SD_ARTIFACTS_DIR"] = "/test/artifacts"
 
 		config := config.Config{
@@ -64,7 +65,7 @@ func TestNew(t *testing.T) {
 	t.Run("success with default artifacts dir", func(t *testing.T) {
 		buf, _ := ioutil.ReadFile(filepath.Join(testDir, "job.json"))
 		job := screwdriver.Job{}
-		json.Unmarshal(buf, &job)
+		_ = json.Unmarshal(buf, &job)
 
 		config := config.Config{
 			APIURL:   "http://api-test.screwdriver.cd",
@@ -100,7 +101,7 @@ func TestRun(t *testing.T) {
 	t.Run("success", func(t *testing.T) {
 		buf, _ := ioutil.ReadFile(filepath.Join(testDir, "job.json"))
 		job := screwdriver.Job{}
-		json.Unmarshal(buf, &job)
+		_ = json.Unmarshal(buf, &job)
 
 		launch := launch{
 			buildConfig: newBuildConfig(),
@@ -126,7 +127,7 @@ func TestRun(t *testing.T) {
 	t.Run("failure in lookPath", func(t *testing.T) {
 		buf, _ := ioutil.ReadFile(filepath.Join(testDir, "job.json"))
 		job := screwdriver.Job{}
-		json.Unmarshal(buf, &job)
+		_ = json.Unmarshal(buf, &job)
 
 		launch := launch{
 			buildConfig: newBuildConfig(),
@@ -152,7 +153,7 @@ func TestRun(t *testing.T) {
 	t.Run("failure in SetupBin", func(t *testing.T) {
 		buf, _ := ioutil.ReadFile(filepath.Join(testDir, "job.json"))
 		job := screwdriver.Job{}
-		json.Unmarshal(buf, &job)
+		_ = json.Unmarshal(buf, &job)
 
 		launch := launch{
 			buildConfig: newBuildConfig(),
@@ -178,7 +179,7 @@ func TestRun(t *testing.T) {
 	t.Run("failure in RunBuild", func(t *testing.T) {
 		buf, _ := ioutil.ReadFile(filepath.Join(testDir, "job.json"))
 		job := screwdriver.Job{}
-		json.Unmarshal(buf, &job)
+		_ = json.Unmarshal(buf, &job)
 
 		launch := launch{
 			buildConfig: newBuildConfig(),

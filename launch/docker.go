@@ -21,6 +21,8 @@ var execCommand = exec.Command
 const (
 	ArtifactsDir = "artifacts"
 	LogFile      = "builds.log"
+	ScmHost      = "screwdriver.cd"
+	OrgRepo      = "sd-local/local-build"
 )
 
 func newDocker(setupImage, setupImageVer string) runner {
@@ -32,6 +34,8 @@ func newDocker(setupImage, setupImageVer string) runner {
 }
 
 func (d *docker) setupBin() error {
+	_ = execCommand("docker", "volume", "rm", "--force", d.volume).Run()
+
 	err := execCommand("docker", "volume", "create", "--name", d.volume).Run()
 	if err != nil {
 		return fmt.Errorf("failed to create docker volume")
@@ -65,7 +69,7 @@ func (d *docker) runBuild(buildConfig buildConfig) error {
 	buildImage := buildConfig.Image
 	logfilePath := path.Join(containerArtDir, LogFile)
 
-	srcVol := fmt.Sprintf("%s/:/sd/workspace", srcDir)
+	srcVol := fmt.Sprintf("%s/:/sd/workspace/src/%s/%s", srcDir, ScmHost, OrgRepo)
 	artVol := fmt.Sprintf("%s/:%s", hostArtDir, containerArtDir)
 	binVol := fmt.Sprintf("%s:%s", d.volume, "/opt/sd")
 	configJSON, err := json.Marshal(buildConfig)
