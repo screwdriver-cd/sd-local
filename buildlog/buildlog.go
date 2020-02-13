@@ -19,11 +19,10 @@ type Logger interface {
 }
 
 type log struct {
-	ctx             context.Context
-	file            io.Reader
-	writer          io.Writer
-	cancel          context.CancelFunc
-	isBuildFinished chan bool
+	ctx    context.Context
+	file   io.Reader
+	writer io.Writer
+	cancel context.CancelFunc
 }
 
 type logLine struct {
@@ -36,8 +35,7 @@ type logLine struct {
 // New creates new Logger interface.
 func New(ctx context.Context, filepath string, writer io.Writer) (Logger, error) {
 	log := log{
-		writer:          writer,
-		isBuildFinished: make(chan bool, 1),
+		writer: writer,
 	}
 
 	var err error
@@ -52,26 +50,21 @@ func New(ctx context.Context, filepath string, writer io.Writer) (Logger, error)
 }
 
 func (l log) Stop() {
-	l.isBuildFinished <- true
+	l.cancel()
 	return
 }
 
 func (l log) Run() {
 	reader := bufio.NewReader(l.file)
-	isBuildFinished := false
 
 	for {
 		select {
 		case <-l.ctx.Done():
 			break
-		case isBuildFinished = <-l.isBuildFinished:
 		default:
-			isLoggerFinished, err := l.output(reader, isBuildFinished)
+			err := l.output(reader)
 			if err != nil {
 				fmt.Printf("failed to run logger: %w\n", err)
-				l.cancel()
-			}
-			if isLoggerFinished {
 				l.cancel()
 			}
 		}
@@ -79,26 +72,22 @@ func (l log) Run() {
 	}
 }
 
-func (l log) output(reader *bufio.Reader, isBuildFinished bool) (bool, error) {
+func (l log) output(reader *bufio.Reader) error {
 	line, _, err := reader.ReadLine()
-
 	if err != nil {
 		if err != io.EOF {
-			return false, fmt.Errorf("failed to read logfile: %w", err)
+			return fmt.Errorf("failed to read logfile: %w", err)
 		}
-		if err == io.EOF && isBuildFinished {
-			return true, nil
-		}
-		return false, nil
+		return nil
 	}
 
 	parsedLog, err := parse(line)
 	if err != nil {
-		return false, fmt.Errorf("failed to output log: %w", err)
+		return fmt.Errorf("failed to output log: %w", err)
 	}
 
 	fmt.Fprintln(l.writer, parsedLog)
-	return false, nil
+	return nil
 }
 
 func parse(rawLog []byte) (string, error) {
