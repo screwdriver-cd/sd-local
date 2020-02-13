@@ -5,6 +5,7 @@ import (
 	"log"
 	"os"
 	"path"
+	"time"
 
 	"github.com/mitchellh/go-homedir"
 	"github.com/screwdriver-cd/sd-local/buildlog"
@@ -12,6 +13,10 @@ import (
 	"github.com/screwdriver-cd/sd-local/launch"
 	"github.com/screwdriver-cd/sd-local/screwdriver"
 	"github.com/spf13/cobra"
+)
+
+const (
+	WAIT_IO = 1
 )
 
 func newBuildCmd() *cobra.Command {
@@ -46,20 +51,23 @@ func newBuildCmd() *cobra.Command {
 				log.Fatal(err)
 			}
 
-			log, err := buildlog.New(context.Background(), path.Join(cwd, launch.ArtifactsDir, launch.LogFile), os.Stdout)
+			logger, err := buildlog.New(context.Background(), path.Join(cwd, launch.ArtifactsDir, launch.LogFile), os.Stdout)
 			if err != nil {
 				log.Fatal(err)
 			}
-			go log.Run()
+			go logger.Run()
 
 			// lauch.Newには API interfaceを渡すように修正したい。
 			launch := launch.New(job, config, args[0], api.JWT())
 
 			err = launch.Run()
 			if err != nil {
+				log.Fatal(err)
 			}
 
-			log.Stop()
+			// Wait for I/O processing.
+			time.Sleep(time.Second * WAIT_IO)
+			logger.Stop()
 
 			return
 		},
