@@ -8,6 +8,7 @@ import (
 	"net/http"
 	"net/url"
 	"path"
+	"strconv"
 	"strings"
 )
 
@@ -152,8 +153,8 @@ func (sd *sdAPI) validate(filePath string) (jobs, error) {
 		return nil, err
 	}
 
-	escapedYaml := strings.ReplaceAll(yaml, "\"", "\\\"")
-	body := fmt.Sprintf(`{"yaml": "%s"}`, strings.ReplaceAll(escapedYaml, "\n", "\\n"))
+	escapedYaml := strconv.Quote(yaml)
+	body := fmt.Sprintf(`{"yaml": %s}`, escapedYaml)
 
 	res, err := sd.request(http.MethodPost, fullpath.String(), strings.NewReader(body))
 	if err != nil {
