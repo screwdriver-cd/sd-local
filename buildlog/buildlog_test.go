@@ -7,6 +7,7 @@ import (
 	"io"
 	"io/ioutil"
 	"os"
+	"regexp"
 	"strings"
 	"testing"
 	"time"
@@ -16,12 +17,13 @@ import (
 
 const (
 	intervalTime = 500
+	timeRegEx    = `[\d]{4}-[\d]{2}-[\d]{2} [\d]{2}:[\d]{2}:[\d]{2}`
 )
 
 var (
 	testInputs = []string{
-		`{"t": 1580198209, "m": "test 1", "n": 0, "s": "main"}` + "\n",
-		`{"t": 1580198222, "m": "test 2", "n": 1, "s": "main"}` + "\n",
+		`{"t": 1581662022394, "m": "test 1", "n": 0, "s": "main"}` + "\n",
+		`{"t": 1581662022395, "m": "test 2", "n": 1, "s": "main"}` + "\n",
 	}
 )
 
@@ -78,11 +80,8 @@ func TestRun(t *testing.T) {
 		time.Sleep(intervalTime * time.Millisecond)
 		l.Stop()
 
-		expected := []string{
-			"2020-01-28 16:56:49 +0900 JST: test 1\n",
-			"2020-01-28 16:57:02 +0900 JST: test 2\n",
-		}
-		assert.Equal(t, strings.Join(expected, ""), writer.String())
+		expected := regexp.MustCompile(timeRegEx + " test 1\n" + timeRegEx + " test 2\n")
+		assert.Regexpf(t, expected, writer.String(), "time format is invalid")
 	})
 
 	t.Run("failure by parsing error", func(t *testing.T) {
@@ -93,7 +92,7 @@ func TestRun(t *testing.T) {
 		defer tmpFile.Close()
 
 		testInvalidInputs := []string{
-			`{"t": 1580198209, "m": "test 1", "n": 0, "s": "main"}` + "\n",
+			`{"t": 1581662022394, "m": "test 1", "n": 0, "s": "main"}` + "\n",
 			`{` + "\n",
 		}
 		go write(t, tmpFile.Name(), testInvalidInputs)
@@ -112,9 +111,8 @@ func TestRun(t *testing.T) {
 		time.Sleep(intervalTime * time.Millisecond)
 		l.Stop()
 
-		expected := "2020-01-28 16:56:49 +0900 JST: test 1\n"
-
-		assert.Equal(t, expected, writer.String())
+		expected := regexp.MustCompile(timeRegEx + " test 1\n")
+		assert.Regexpf(t, expected, writer.String(), "time format is invalid")
 	})
 }
 
@@ -149,11 +147,8 @@ func TestStop(t *testing.T) {
 		go write(t, tmpFile.Name(), testInputsNotWritten)
 		time.Sleep(intervalTime * time.Millisecond)
 
-		expected := []string{
-			"2020-01-28 16:56:49 +0900 JST: test 1\n",
-			"2020-01-28 16:57:02 +0900 JST: test 2\n",
-		}
-		assert.Equal(t, strings.Join(expected, ""), writer.String())
+		expected := regexp.MustCompile(timeRegEx + " test 1\n" + timeRegEx + " test 2\n")
+		assert.Regexpf(t, expected, writer.String(), "time format is invalid")
 	})
 }
 
