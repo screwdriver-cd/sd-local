@@ -21,9 +21,9 @@ var execCommand = exec.Command
 const (
 	ArtifactsDir = "artifacts"
 	LogFile      = "builds.log"
-  // The definition of "ScmHost" and "OrgRepo" is in "PipelineFromID" of "screwdriver/screwdriver_local.go" 
-	ScmHost      = "screwdriver.cd"
-	OrgRepo      = "sd-local/local-build"
+	// The definition of "ScmHost" and "OrgRepo" is in "PipelineFromID" of "screwdriver/screwdriver_local.go"
+	ScmHost = "screwdriver.cd"
+	OrgRepo = "sd-local/local-build"
 )
 
 func newDocker(setupImage, setupImageVer string) runner {
