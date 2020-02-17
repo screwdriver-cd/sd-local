@@ -16,7 +16,7 @@ import (
 )
 
 const (
-	WAIT_IO = 1
+	waitIO = 1
 )
 
 func newBuildCmd() *cobra.Command {
@@ -70,7 +70,7 @@ func newBuildCmd() *cobra.Command {
 			}
 
 			// Wait for I/O processing.
-			time.Sleep(time.Second * WAIT_IO)
+			time.Sleep(time.Second * waitIO)
 			logger.Stop()
 
 			return
