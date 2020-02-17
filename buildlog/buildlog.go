@@ -100,7 +100,7 @@ func parse(rawLog []byte) (string, error) {
 		return "", fmt.Errorf("failed to parse raw log: %w", err)
 	}
 
-	ISOTime := time.Unix(0, ll.Time*int64(time.Millisecond)).Format("2006-01-02 03:04:05")
+	ISOTime := time.Unix(0, ll.Time*int64(time.Millisecond)).Format("2006-01-02 15:04:05")
 
 	return fmt.Sprintf("%s %s", ISOTime, ll.Message), nil
 }
