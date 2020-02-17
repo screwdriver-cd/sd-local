@@ -4,7 +4,6 @@ import (
 	"bytes"
 	"context"
 	"fmt"
-	"io"
 	"io/ioutil"
 	"os"
 	"regexp"
@@ -26,14 +25,6 @@ var (
 		`{"t": 1581662022395, "m": "test 2", "n": 1, "s": "main"}` + "\n",
 	}
 )
-
-type writeCloser struct {
-	io.Writer
-}
-
-func (wc writeCloser) Close() error {
-	return nil
-}
 
 func write(tb testing.TB, filepath string, inputs []string) {
 	tb.Helper()
