@@ -22,8 +22,8 @@ const (
 	ArtifactsDir = "artifacts"
 	LogFile      = "builds.log"
 	// The definition of "ScmHost" and "OrgRepo" is in "PipelineFromID" of "screwdriver/screwdriver_local.go"
-	ScmHost = "screwdriver.cd"
-	OrgRepo = "sd-local/local-build"
+	scmHost = "screwdriver.cd"
+	orgRepo = "sd-local/local-build"
 )
 
 func newDocker(setupImage, setupImageVer string) runner {
@@ -70,7 +70,7 @@ func (d *docker) runBuild(buildConfig buildConfig) error {
 	buildImage := buildConfig.Image
 	logfilePath := path.Join(containerArtDir, LogFile)
 
-	srcVol := fmt.Sprintf("%s/:/sd/workspace/src/%s/%s", srcDir, ScmHost, OrgRepo)
+	srcVol := fmt.Sprintf("%s/:/sd/workspace/src/%s/%s", srcDir, scmHost, orgRepo)
 	artVol := fmt.Sprintf("%s/:%s", hostArtDir, containerArtDir)
 	binVol := fmt.Sprintf("%s:%s", d.volume, "/opt/sd")
 	configJSON, err := json.Marshal(buildConfig)
