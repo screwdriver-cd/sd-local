@@ -8,6 +8,8 @@ import (
 	"io"
 	"os"
 	"time"
+
+	"github.com/sirupsen/logrus"
 )
 
 var readInterval time.Duration = 10 * time.Millisecond
@@ -64,7 +66,8 @@ func (l log) Run() {
 		default:
 			err := l.output(reader)
 			if err != nil {
-				fmt.Printf("failed to run logger: %w\n", err)
+				logrus.Errorf("failed to run logger: %w\n", err)
+				logrus.Info("But build is not stopping")
 				l.cancel()
 			}
 		}
