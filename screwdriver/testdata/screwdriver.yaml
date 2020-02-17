@@ -1,0 +1,8 @@
+jobs:
+    main:
+        image: alpine
+        steps:
+            - install: echo install
+            - publish: echo publish
+        environment:
+            TEST_ENV: hoge

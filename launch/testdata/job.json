@@ -1,0 +1,12 @@
+{
+    "commands": [
+        {
+            "name": "test",
+            "command": "npm test"
+        }
+    ],
+    "environment": {
+        "FOO": "foo"
+    },
+    "image": "node:12"
+}
