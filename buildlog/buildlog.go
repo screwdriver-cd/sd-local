@@ -53,7 +53,6 @@ func New(filepath string, writer io.Writer) (Logger, error) {
 
 func (l log) Stop() {
 	l.cancel()
-	return
 }
 
 func (l log) Run() {
