@@ -1,7 +1,6 @@
 package cmd
 
 import (
-	"context"
 	"os"
 	"path"
 	"time"
@@ -58,7 +57,7 @@ func newBuildCmd() *cobra.Command {
 			if err != nil {
 				logrus.Fatal(err)
 			}
-			logger, err := buildlog.New(context.Background(), path.Join(artifactsPath, launch.LogFile), os.Stdout)
+			logger, err := buildlog.New(path.Join(artifactsPath, launch.LogFile), os.Stdout)
 			if err != nil {
 				logrus.Fatal(err)
 			}
