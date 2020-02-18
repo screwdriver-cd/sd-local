@@ -22,7 +22,7 @@ const (
 func newBuildCmd() *cobra.Command {
 	buildCmd := &cobra.Command{
 		Use:   "build [job name]",
-		Short: "Run screwdriver build of the specified job name.",
+		Short: "Run screwdriver build.",
 		Long:  `Run screwdriver build of the specified job name.`,
 		Args:  cobra.MinimumNArgs(1),
 		Run: func(cmd *cobra.Command, args []string) {
@@ -41,15 +41,18 @@ func newBuildCmd() *cobra.Command {
 				log.Fatal(err)
 			}
 
-			job, err := api.Job(args[0], "./screwdriver.yaml")
-			if err != nil {
-				log.Fatal(err)
-			}
+			jobName := args[0]
 
 			cwd, err := os.Getwd()
 			if err != nil {
 				log.Fatal(err)
 			}
+			sdYAMLPath := path.Join(cwd, "screwdriver.yaml")
+			job, err := api.Job(jobName, sdYAMLPath)
+			if err != nil {
+				log.Fatal(err)
+			}
+
 			artifactsPath := path.Join(cwd, launch.ArtifactsDir)
 			err = os.MkdirAll(artifactsPath, 0666)
 			if err != nil {
@@ -61,8 +64,7 @@ func newBuildCmd() *cobra.Command {
 			}
 			go logger.Run()
 
-			// lauch.Newには API interfaceを渡すように修正したい。
-			launch := launch.New(job, config, args[0], api.JWT())
+			launch := launch.New(job, config, jobName, api.JWT())
 
 			err = launch.Run()
 			if err != nil {
