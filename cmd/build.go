@@ -18,24 +18,31 @@ const (
 	waitIO = 1
 )
 
+var (
+	readConfig  = config.ReadConfig
+	apiNew      = screwdriver.New
+	buildLogNew = buildlog.New
+	launchNew   = launch.New
+)
+
 func newBuildCmd() *cobra.Command {
 	buildCmd := &cobra.Command{
 		Use:   "build [job name]",
 		Short: "Run screwdriver build.",
 		Long:  `Run screwdriver build of the specified job name.`,
-		Args:  cobra.MinimumNArgs(1),
+		Args:  cobra.ExactArgs(1),
 		Run: func(cmd *cobra.Command, args []string) {
 			homedir, err := homedir.Dir()
 			if err != nil {
 				logrus.Fatal(err)
 			}
 
-			config, err := config.ReadConfig(path.Join(homedir, ".sdlocal", "config"))
+			config, err := readConfig(path.Join(homedir, ".sdlocal", "config"))
 			if err != nil {
 				logrus.Fatal(err)
 			}
 
-			api, err := screwdriver.New(config.APIURL, config.Token)
+			api, err := apiNew(config.APIURL, config.Token)
 			if err != nil {
 				logrus.Fatal(err)
 			}
@@ -57,13 +64,13 @@ func newBuildCmd() *cobra.Command {
 			if err != nil {
 				logrus.Fatal(err)
 			}
-			logger, err := buildlog.New(path.Join(artifactsPath, launch.LogFile), os.Stdout)
+			logger, err := buildLogNew(path.Join(artifactsPath, launch.LogFile), os.Stdout)
 			if err != nil {
 				logrus.Fatal(err)
 			}
 			go logger.Run()
 
-			launch := launch.New(job, config, jobName, api.JWT())
+			launch := launchNew(job, config, jobName, api.JWT())
 
 			err = launch.Run()
 			if err != nil {
@@ -73,8 +80,6 @@ func newBuildCmd() *cobra.Command {
 			// Wait for I/O processing.
 			time.Sleep(time.Second * waitIO)
 			logger.Stop()
-
-			return
 		},
 	}
 	return buildCmd

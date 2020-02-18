@@ -8,10 +8,40 @@ import (
 )
 
 func TestBuildCmd(t *testing.T) {
-	buf := bytes.NewBuffer(nil)
-	root := newRootCmd()
-	root.SetArgs([]string{"build", "main"})
-	root.SetOutput(buf)
-	err := root.Execute()
-	assert.Nil(t, err)
+	setupTest()
+
+	t.Run("Success build cmd", func(t *testing.T) {
+		root := newBuildCmd()
+		root.SetArgs([]string{"test"})
+		buf := bytes.NewBuffer(nil)
+		root.SetOut(buf)
+		err := root.Execute()
+		want := ""
+		assert.Equal(t, want, buf.String())
+		assert.Nil(t, err)
+	})
+
+	t.Run("Failed build cmd when to many args", func(t *testing.T) {
+		root := newBuildCmd()
+		root.SetArgs([]string{"test"})
+
+		buf := bytes.NewBuffer(nil)
+		root.SetOut(buf)
+		err := root.Execute()
+		want := ""
+		assert.NotEqual(t, want, buf.String())
+		assert.NotNil(t, err)
+	})
+
+	t.Run("Failed build cmd when to little args", func(t *testing.T) {
+		root := newBuildCmd()
+		root.SetArgs([]string{})
+
+		buf := bytes.NewBuffer(nil)
+		root.SetOut(buf)
+		err := root.Execute()
+		want := ""
+		assert.NotEqual(t, want, buf.String())
+		assert.NotNil(t, err)
+	})
 }
