@@ -23,8 +23,7 @@ func TestBuildCmd(t *testing.T) {
 
 	t.Run("Failed build cmd when to many args", func(t *testing.T) {
 		root := newBuildCmd()
-		root.SetArgs([]string{"test"})
-
+		root.SetArgs([]string{"test", "main"})
 		buf := bytes.NewBuffer(nil)
 		root.SetOut(buf)
 		err := root.Execute()
