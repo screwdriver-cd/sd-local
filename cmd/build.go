@@ -2,7 +2,6 @@ package cmd
 
 import (
 	"context"
-	"log"
 	"os"
 	"path"
 	"time"
@@ -12,6 +11,7 @@ import (
 	"github.com/screwdriver-cd/sd-local/config"
 	"github.com/screwdriver-cd/sd-local/launch"
 	"github.com/screwdriver-cd/sd-local/screwdriver"
+	"github.com/sirupsen/logrus"
 	"github.com/spf13/cobra"
 )
 
@@ -28,39 +28,39 @@ func newBuildCmd() *cobra.Command {
 		Run: func(cmd *cobra.Command, args []string) {
 			homedir, err := homedir.Dir()
 			if err != nil {
-				log.Fatal(err)
+				logrus.Fatal(err)
 			}
 
 			config, err := config.ReadConfig(path.Join(homedir, ".sdlocal", "config"))
 			if err != nil {
-				log.Fatal(err)
+				logrus.Fatal(err)
 			}
 
 			api, err := screwdriver.New(config.APIURL, config.Token)
 			if err != nil {
-				log.Fatal(err)
+				logrus.Fatal(err)
 			}
 
 			jobName := args[0]
 
 			cwd, err := os.Getwd()
 			if err != nil {
-				log.Fatal(err)
+				logrus.Fatal(err)
 			}
 			sdYAMLPath := path.Join(cwd, "screwdriver.yaml")
 			job, err := api.Job(jobName, sdYAMLPath)
 			if err != nil {
-				log.Fatal(err)
+				logrus.Fatal(err)
 			}
 
 			artifactsPath := path.Join(cwd, launch.ArtifactsDir)
 			err = os.MkdirAll(artifactsPath, 0666)
 			if err != nil {
-				log.Fatal(err)
+				logrus.Fatal(err)
 			}
 			logger, err := buildlog.New(context.Background(), path.Join(artifactsPath, launch.LogFile), os.Stdout)
 			if err != nil {
-				log.Fatal(err)
+				logrus.Fatal(err)
 			}
 			go logger.Run()
 
@@ -68,7 +68,7 @@ func newBuildCmd() *cobra.Command {
 
 			err = launch.Run()
 			if err != nil {
-				log.Fatal(err)
+				logrus.Fatal(err)
 			}
 
 			// Wait for I/O processing.
