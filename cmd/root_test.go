@@ -3,6 +3,7 @@ package cmd
 import (
 	"bytes"
 	"io"
+	"os"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -30,7 +31,7 @@ func (mock mockLogger) Stop() {}
 
 func (mock mockLaunch) Run() error { return nil }
 
-func setupTest() {
+func setup() {
 	readConfig = func(confPath string) (config.Config, error) { return config.Config{}, nil }
 	apiNew = func(url, token string) (screwdriver.API, error) { return mockAPI{}, nil }
 	buildLogNew = func(filepath string, writer io.Writer) (logger buildlog.Logger, err error) { return mockLogger{}, nil }
@@ -39,9 +40,13 @@ func setupTest() {
 	}
 }
 
-func TestRootCmd(t *testing.T) {
-	setupTest()
+func TestMain(m *testing.M) {
+	setup()
+	ret := m.Run()
+	os.Exit(ret)
+}
 
+func TestRootCmd(t *testing.T) {
 	t.Run("Success root cmd", func(t *testing.T) {
 		root := newRootCmd()
 		root.AddCommand(newBuildCmd())

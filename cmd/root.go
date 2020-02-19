@@ -7,7 +7,7 @@ import (
 func newRootCmd() *cobra.Command {
 	rootCmd := &cobra.Command{
 		Use:   "sd-local",
-		Short: "Enable to build in local",
+		Short: "Run build in local",
 		Long: `Run build instantly on your local machine with
 a mostly the same environment as Screwdriver.cd's`,
 	}

@@ -8,8 +8,6 @@ import (
 )
 
 func TestBuildCmd(t *testing.T) {
-	setupTest()
-
 	t.Run("Success build cmd", func(t *testing.T) {
 		root := newBuildCmd()
 		root.SetArgs([]string{"test"})
@@ -21,26 +19,26 @@ func TestBuildCmd(t *testing.T) {
 		assert.Nil(t, err)
 	})
 
-	t.Run("Failed build cmd when to many args", func(t *testing.T) {
+	t.Run("Failed build cmd when too many args", func(t *testing.T) {
 		root := newBuildCmd()
 		root.SetArgs([]string{"test", "main"})
 		buf := bytes.NewBuffer(nil)
 		root.SetOut(buf)
 		err := root.Execute()
-		want := ""
-		assert.NotEqual(t, want, buf.String())
+		want := "Error: accepts 1 arg(s), received 2\nUsage:\n  build [job name] [flags]\n\nFlags:\n  -h, --help   help for build\n\n"
+		assert.Equal(t, want, buf.String())
 		assert.NotNil(t, err)
 	})
 
-	t.Run("Failed build cmd when to little args", func(t *testing.T) {
+	t.Run("Failed build cmd when too little args", func(t *testing.T) {
 		root := newBuildCmd()
 		root.SetArgs([]string{})
 
 		buf := bytes.NewBuffer(nil)
 		root.SetOut(buf)
 		err := root.Execute()
-		want := ""
-		assert.NotEqual(t, want, buf.String())
+		want := "Error: accepts 1 arg(s), received 0\nUsage:\n  build [job name] [flags]\n\nFlags:\n  -h, --help   help for build\n\n"
+		assert.Equal(t, want, buf.String())
 		assert.NotNil(t, err)
 	})
 }
