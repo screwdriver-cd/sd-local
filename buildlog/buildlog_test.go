@@ -153,7 +153,7 @@ func TestNew(t *testing.T) {
 
 		writer := bytes.NewBuffer(nil)
 
-		logger, err := New(context.Background(), tmpFile.Name(), writer)
+		logger, err := New(tmpFile.Name(), writer)
 		if err != nil {
 			t.Fatal(err)
 		}
@@ -175,7 +175,10 @@ func TestNew(t *testing.T) {
 	t.Run("failure", func(t *testing.T) {
 		writer := bytes.NewBuffer(nil)
 
-		logger, err := New(context.Background(), "/", writer)
+		logger, err := New("/", writer)
+		if err == nil {
+			t.Fatal("failure err is nil")
+		}
 
 		expected := log{
 			writer: writer,

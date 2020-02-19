@@ -35,7 +35,7 @@ type logLine struct {
 }
 
 // New creates new Logger interface.
-func New(ctx context.Context, filepath string, writer io.Writer) (Logger, error) {
+func New(filepath string, writer io.Writer) (Logger, error) {
 	log := log{
 		writer: writer,
 	}
@@ -46,14 +46,13 @@ func New(ctx context.Context, filepath string, writer io.Writer) (Logger, error)
 		return log, fmt.Errorf("failed to open raw build log file: %w", err)
 	}
 
-	log.ctx, log.cancel = context.WithCancel(ctx)
+	log.ctx, log.cancel = context.WithCancel(context.Background())
 
 	return log, nil
 }
 
 func (l log) Stop() {
 	l.cancel()
-	return
 }
 
 func (l log) Run() {
