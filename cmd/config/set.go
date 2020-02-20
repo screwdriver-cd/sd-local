@@ -1,11 +1,14 @@
 package config
 
 import (
-	"fmt"
-
+	"github.com/screwdriver-cd/sd-local/config"
 	"github.com/sirupsen/logrus"
 
 	"github.com/spf13/cobra"
+)
+
+var (
+	configNew = config.New
 )
 
 func newConfigSetCmd() *cobra.Command {
@@ -14,7 +17,7 @@ func newConfigSetCmd() *cobra.Command {
 		Short: "Short usage",
 		Long:  `Long usage`,
 		Args:  cobra.ExactArgs(2),
-		Run: func(cmd *cobra.Command, args []string) {
+		RunE: func(cmd *cobra.Command, args []string) error {
 			isLocalOpt, err := cmd.Flags().GetBool("local")
 			if err != nil {
 				logrus.Fatal(err)
@@ -23,9 +26,22 @@ func newConfigSetCmd() *cobra.Command {
 			key := args[0]
 			value := args[1]
 
-			fmt.Println("Execute Set")
-			fmt.Println("Local opt:", isLocalOpt)
-			fmt.Printf("Key: %s\tValue: %s\n", key, value)
+			path, err := filePath(isLocalOpt)
+			if err != nil {
+				logrus.Fatal(err)
+			}
+
+			conf, err := configNew(path)
+			if err != nil {
+				logrus.Fatal(err)
+			}
+
+			err = conf.Set(key, value)
+			if err != nil {
+				logrus.Fatal(err)
+			}
+
+			return nil
 		},
 	}
 

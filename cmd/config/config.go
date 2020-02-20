@@ -2,9 +2,32 @@ package config
 
 import (
 	"log"
+	"os"
+	"path"
 
+	"github.com/mitchellh/go-homedir"
 	"github.com/spf13/cobra"
 )
+
+const (
+	configFileName = "config"
+	configDirName  = ".sdlocal"
+)
+
+func filePath(isLocalOpt bool) (string, error) {
+	if isLocalOpt {
+		pwd, err := os.Getwd()
+		if err != nil {
+			return "", err
+		}
+		return path.Join(pwd, configDirName, configFileName), nil
+	}
+	home, err := homedir.Dir()
+	if err != nil {
+		return "", err
+	}
+	return path.Join(home, configDirName, configFileName), nil
+}
 
 func NewConfigCmd() *cobra.Command {
 	configCmd := &cobra.Command{

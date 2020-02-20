@@ -90,6 +90,8 @@ func (c *Config) Set(key, value string) error {
 			value = "screwdrivercd/launcher"
 		}
 		c.Launcher.Image = value
+	default:
+		return fmt.Errorf("invalid key %s", key)
 	}
 
 	file, err := os.Create(c.filePath)

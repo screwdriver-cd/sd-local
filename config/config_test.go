@@ -171,6 +171,27 @@ func TestSetConfig(t *testing.T) {
 				filePath: cnfPath,
 			},
 		},
+		{
+			name: "invalid key",
+			setting: map[string]string{
+				"api-url":          "override-example-api.com",
+				"store-url":        "override-example-store.com",
+				"token":            "override-dummy-token",
+				"launcher-version": "",
+				"launcher-image":   "",
+				"invalidKey":       "invalidValue",
+			},
+			expectConf: Config{
+				APIURL:   "override-example-api.com",
+				StoreURL: "override-example-store.com",
+				Token:    "override-dummy-token",
+				Launcher: Launcher{
+					Version: "stable",
+					Image:   "screwdrivercd/launcher",
+				},
+				filePath: cnfPath,
+			},
+		},
 	}
 
 	for _, tt := range testCases {
@@ -181,7 +202,11 @@ func TestSetConfig(t *testing.T) {
 
 			for key, val := range tt.setting {
 				err := c.Set(key, val)
-				assert.Nil(t, err)
+				if key == "invalidKey" {
+					assert.NotNil(t, err)
+				} else {
+					assert.Nil(t, err)
+				}
 			}
 			assert.Equal(t, tt.expectConf, c)
 
