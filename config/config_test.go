@@ -2,17 +2,75 @@ package config
 
 import (
 	"fmt"
+	"math/rand"
+	"os"
 	"path"
 	"strings"
 	"testing"
+	"time"
+
+	"github.com/go-yaml/yaml"
 
 	"github.com/stretchr/testify/assert"
 )
 
 var testDir string = "./testdata"
 
-func TestReadConfig(t *testing.T) {
+func TestCreateConfig(t *testing.T) {
 	t.Run("success", func(t *testing.T) {
+		rand.Seed(time.Now().UnixNano())
+		cnfPath := path.Join(testDir, fmt.Sprintf("%vconfig", rand.Int()))
+		defer os.Remove(cnfPath)
+
+		expect := Config{
+			APIURL:   "",
+			StoreURL: "",
+			Token:    "",
+			Launcher: Launcher{
+				Version: "stable",
+				Image:   "screwdrivercd/launcher",
+			},
+		}
+
+		err := create(cnfPath)
+		assert.Nil(t, err)
+		file, _ := os.Open(cnfPath)
+		actual := Config{}
+		_ = yaml.NewDecoder(file).Decode(&actual)
+		assert.Equal(t, expect, actual)
+	})
+
+	t.Run("success by exists file", func(t *testing.T) {
+		rand.Seed(time.Now().UnixNano())
+		cnfPath := path.Join(testDir, fmt.Sprintf("%vconfig", rand.Int()))
+		defer os.Remove(cnfPath)
+
+		expect := Config{
+			APIURL:   "",
+			StoreURL: "",
+			Token:    "",
+			Launcher: Launcher{
+				Version: "stable",
+				Image:   "screwdrivercd/launcher",
+			},
+		}
+
+		err := create(cnfPath)
+		assert.Nil(t, err)
+		err = create(cnfPath)
+		assert.Nil(t, err)
+
+		file, _ := os.Open(cnfPath)
+		actual := Config{}
+		_ = yaml.NewDecoder(file).Decode(&actual)
+		assert.Equal(t, expect, actual)
+	})
+}
+
+func TestNew(t *testing.T) {
+	t.Run("success", func(t *testing.T) {
+		cnfPath := path.Join(testDir, "successConfig")
+
 		testConfig := Config{
 			APIURL:   "api-url",
 			StoreURL: "store-api-url",
@@ -21,30 +79,117 @@ func TestReadConfig(t *testing.T) {
 				Version: "latest",
 				Image:   "screwdrivercd/launcher",
 			},
+			filePath: cnfPath,
 		}
 
-		cnfPath := path.Join(testDir, "successConfig")
-		actual, err := ReadConfig(cnfPath)
+		actual, err := New(cnfPath)
 
 		assert.Nil(t, err)
+		assert.Equal(t, actual.filePath, cnfPath)
 		assert.Equal(t, testConfig, actual)
-	})
-
-	t.Run("failure by no entry", func(t *testing.T) {
-		emptyConfig := Config{}
-		actual, err := ReadConfig("./not-exist")
-		assert.NotNil(t, err, fmt.Sprintf("There is no error when reading config files"))
-
-		assert.Equal(t, emptyConfig, actual)
-
-		msg := err.Error()
-		assert.Equal(t, 0, strings.Index(msg, "failed to read config file: "), fmt.Sprintf("expected error is `failed to read config file: ...`, actual: `%v`", msg))
 	})
 
 	t.Run("failure by invalid yaml", func(t *testing.T) {
 		cnfPath := path.Join(testDir, "failureConfig")
-		_, err := ReadConfig(cnfPath)
+		_, err := New(cnfPath)
 
 		assert.Equal(t, 0, strings.Index(err.Error(), "failed to parse config file: "), fmt.Sprintf("expected error is `failed to parse config file: ...`, actual: `%v`", err))
 	})
+}
+
+func TestSetConfig(t *testing.T) {
+	rand.Seed(time.Now().UnixNano())
+	cnfPath := path.Join(testDir, fmt.Sprintf("%vconfig", rand.Int()))
+	defer os.Remove(cnfPath)
+
+	testCases := []struct {
+		name       string
+		setting    map[string]string
+		expectConf Config
+	}{
+		{
+
+			name: "success",
+			setting: map[string]string{
+				"api-url":          "example-api.com",
+				"store-url":        "example-store.com",
+				"token":            "dummy-token",
+				"launcher-version": "1.0.0",
+				"launcher-image":   "alpine",
+				"invalidKey":       "invalidValue",
+			},
+			expectConf: Config{
+				APIURL:   "example-api.com",
+				StoreURL: "example-store.com",
+				Token:    "dummy-token",
+				Launcher: Launcher{
+					Version: "1.0.0",
+					Image:   "alpine",
+				},
+				filePath: cnfPath,
+			},
+		},
+		{
+			name: "success override",
+			setting: map[string]string{
+				"api-url":          "override-example-api.com",
+				"store-url":        "override-example-store.com",
+				"token":            "override-dummy-token",
+				"launcher-version": "override-1.0.0",
+				"launcher-image":   "override-alpine",
+				"invalidKey":       "override-invalidValue",
+			},
+			expectConf: Config{
+				APIURL:   "override-example-api.com",
+				StoreURL: "override-example-store.com",
+				Token:    "override-dummy-token",
+				Launcher: Launcher{
+					Version: "override-1.0.0",
+					Image:   "override-alpine",
+				},
+				filePath: cnfPath,
+			},
+		},
+		{
+			name: "used default value",
+			setting: map[string]string{
+				"api-url":          "override-example-api.com",
+				"store-url":        "override-example-store.com",
+				"token":            "override-dummy-token",
+				"launcher-version": "",
+				"launcher-image":   "",
+				"invalidKey":       "override-invalidValue",
+			},
+			expectConf: Config{
+				APIURL:   "override-example-api.com",
+				StoreURL: "override-example-store.com",
+				Token:    "override-dummy-token",
+				Launcher: Launcher{
+					Version: "stable",
+					Image:   "screwdrivercd/launcher",
+				},
+				filePath: cnfPath,
+			},
+		},
+	}
+
+	for _, tt := range testCases {
+		t.Run(tt.name, func(t *testing.T) {
+			c := Config{
+				filePath: cnfPath,
+			}
+
+			for key, val := range tt.setting {
+				err := c.Set(key, val)
+				assert.Nil(t, err)
+			}
+			assert.Equal(t, tt.expectConf, c)
+
+			_, err := os.Stat(cnfPath)
+			assert.Nil(t, err)
+
+			actual, _ := New(cnfPath)
+			assert.Equal(t, tt.expectConf, actual)
+		})
+	}
 }

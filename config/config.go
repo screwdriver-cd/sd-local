@@ -2,7 +2,7 @@ package config
 
 import (
 	"fmt"
-	"io/ioutil"
+	"os"
 
 	"github.com/go-yaml/yaml"
 )
@@ -19,21 +19,88 @@ type Config struct {
 	StoreURL string   `yaml:"store-url"`
 	Token    string   `yaml:"token"`
 	Launcher Launcher `yaml:"launcher"`
+	filePath string   `yaml:"-"`
+}
+
+func create(configPath string) error {
+	_, err := os.Stat(configPath)
+	// if file exists return nil
+	if err == nil {
+		return nil
+	}
+
+	file, err := os.Create(configPath)
+	if err != nil {
+		return err
+	}
+	defer file.Close()
+
+	err = yaml.NewEncoder(file).Encode(Config{
+		Launcher: Launcher{
+			Version: "stable",
+			Image:   "screwdrivercd/launcher",
+		},
+	})
+	if err != nil {
+		return err
+	}
+
+	return nil
 }
 
 // ReadConfig returns parsed config
-func ReadConfig(configPath string) (Config, error) {
-	buf, err := ioutil.ReadFile(configPath)
+func New(configPath string) (Config, error) {
+	err := create(configPath)
+	if err != nil {
+		return Config{}, err
+	}
+
+	file, err := os.Open(configPath)
 	if err != nil {
 		return Config{}, fmt.Errorf("failed to read config file: %v", err)
 	}
 
-	config := Config{}
+	var config = Config{
+		filePath: configPath,
+	}
 
-	err = yaml.Unmarshal(buf, &config)
+	err = yaml.NewDecoder(file).Decode(&config)
 	if err != nil {
-		return Config{}, fmt.Errorf("failed to parse config file: %v\ncontents:\n\n%v", err, string(buf))
+		return Config{}, fmt.Errorf("failed to parse config file: %v\ncontents:\n\n", err)
 	}
 
 	return config, nil
+}
+
+func (c *Config) Set(key, value string) error {
+	switch key {
+	case "api-url":
+		c.APIURL = value
+	case "store-url":
+		c.StoreURL = value
+	case "token":
+		c.Token = value
+	case "launcher-version":
+		if value == "" {
+			value = "stable"
+		}
+		c.Launcher.Version = value
+	case "launcher-image":
+		if value == "" {
+			value = "screwdrivercd/launcher"
+		}
+		c.Launcher.Image = value
+	}
+
+	file, err := os.Create(c.filePath)
+	if err != nil {
+		return err
+	}
+
+	err = yaml.NewEncoder(file).Encode(c)
+	if err != nil {
+		return err
+	}
+
+	return nil
 }

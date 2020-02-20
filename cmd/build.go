@@ -19,7 +19,7 @@ const (
 )
 
 var (
-	readConfig  = config.ReadConfig
+	configNew   = config.New
 	apiNew      = screwdriver.New
 	buildLogNew = buildlog.New
 	launchNew   = launch.New
@@ -37,7 +37,7 @@ func newBuildCmd() *cobra.Command {
 				logrus.Fatal(err)
 			}
 
-			config, err := readConfig(path.Join(homedir, ".sdlocal", "config"))
+			config, err := configNew(path.Join(homedir, ".sdlocal", "config"))
 			if err != nil {
 				logrus.Fatal(err)
 			}
