@@ -1,6 +1,7 @@
 package cmd
 
 import (
+	"github.com/screwdriver-cd/sd-local/cmd/config"
 	"github.com/spf13/cobra"
 )
 
@@ -17,6 +18,9 @@ a mostly the same environment as Screwdriver.cd's`,
 // Execute executes the root command.
 func Execute() error {
 	rootCmd := newRootCmd()
-	rootCmd.AddCommand(newBuildCmd())
+	rootCmd.AddCommand(
+		newBuildCmd(),
+		config.NewConfigCmd(),
+	)
 	return rootCmd.Execute()
 }
