@@ -32,8 +32,8 @@ var filePath = func(isLocalOpt bool) (string, error) {
 func NewConfigCmd() *cobra.Command {
 	configCmd := &cobra.Command{
 		Use:   "config",
-		Short: "Short usage",
-		Long:  `Long usage`,
+		Short: "Can settings related to sd-local.",
+		Long:  `Can settings related to sd-local.`,
 		Run: func(cmd *cobra.Command, args []string) {
 			err := cmd.Help()
 			if err != nil {

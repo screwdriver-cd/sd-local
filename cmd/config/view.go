@@ -11,8 +11,8 @@ import (
 func newConfigViewCmd() *cobra.Command {
 	configViewCmd := &cobra.Command{
 		Use:   "view",
-		Short: "Short usage",
-		Long:  `Long usage`,
+		Short: "View the config of sd-local.",
+		Long:  `View the config of sd-local.`,
 		Run: func(cmd *cobra.Command, args []string) {
 			isLocalOpt, err := cmd.Flags().GetBool("local")
 			if err != nil {

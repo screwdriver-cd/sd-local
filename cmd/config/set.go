@@ -14,9 +14,10 @@ var (
 func newConfigSetCmd() *cobra.Command {
 	configSetCmd := &cobra.Command{
 		Use:   "set [key] [value]",
-		Short: "Short usage",
-		Long:  `Long usage`,
-		Args:  cobra.ExactArgs(2),
+		Short: "Set the config of sd-local",
+		Long: `Set the config of sd-local.
+The config of "sd-local" can be viewed in "sd-local config view".`,
+		Args: cobra.ExactArgs(2),
 		RunE: func(cmd *cobra.Command, args []string) error {
 			isLocalOpt, err := cmd.Flags().GetBool("local")
 			if err != nil {
