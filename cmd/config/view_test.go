@@ -5,8 +5,9 @@ import (
 	"os"
 	"testing"
 
-	"github.com/screwdriver-cd/sd-local/config"
 	"github.com/stretchr/testify/assert"
+
+	"github.com/screwdriver-cd/sd-local/config"
 )
 
 func Example_newConfigViewCmd() {
@@ -58,19 +59,6 @@ func TestViewCmd(t *testing.T) {
 		filePath = fp
 	}()
 
-	cmd := NewConfigCmd()
-	cmd.SetArgs([]string{"view"})
-	buf := bytes.NewBuffer(nil)
-	cmd.SetOut(buf)
-	// c := config.Config{
-	// 	APIURL:   "api.screwdriver.com",
-	// 	StoreURL: "store.screwdriver.com",
-	// 	Token:    "sd-token",
-	// 	Launcher: config.Launcher{
-	// 		Version: "1.0.0",
-	// 		Image:   "screwdrivercd/launcher",
-	// 	},
-	// }
 	filePath = func(isLocal bool) (string, error) {
 		if isLocal {
 			return "./testdata/local_config", nil
@@ -78,15 +66,43 @@ func TestViewCmd(t *testing.T) {
 		return "./testdata/config", nil
 	}
 
-	cmd.Execute()
-
-	expect := `KEY               VALUE
+	testCase := []struct {
+		name   string
+		args   []string
+		expect string
+	}{
+		{
+			name: "success by not use local config",
+			args: []string{"view"},
+			expect: `KEY               VALUE
 api-url           api.screwdriver.com
 store-url         store.screwdriver.com
 token             sd-token
 launcher-version  1.0.0
 launcher-image    screwdrivercd/launcher
-`
+`,
+		},
+		{
+			name: "success by use local config",
+			args: []string{"view", "--local"},
+			expect: `KEY               VALUE
+api-url           local.api.screwdriver.com
+store-url         local.store.screwdriver.com
+token             local.sd-token
+launcher-version  stable
+launcher-image    screwdrivercd/launcher
+`,
+		},
+	}
 
-	assert.Equal(t, expect, buf.String())
+	for _, tt := range testCase {
+		t.Run(tt.name, func(t *testing.T) {
+			cmd := NewConfigCmd()
+			cmd.SetArgs(tt.args)
+			buf := bytes.NewBuffer(nil)
+			cmd.SetOut(buf)
+			cmd.Execute()
+			assert.Equal(t, tt.expect, buf.String())
+		})
+	}
 }
