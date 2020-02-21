@@ -3,7 +3,7 @@ package config
 import (
 	"log"
 	"os"
-	"path"
+	"path/filepath"
 
 	"github.com/mitchellh/go-homedir"
 	"github.com/spf13/cobra"
@@ -20,13 +20,13 @@ func filePath(isLocalOpt bool) (string, error) {
 		if err != nil {
 			return "", err
 		}
-		return path.Join(pwd, configDirName, configFileName), nil
+		return filepath.Join(pwd, configDirName, configFileName), nil
 	}
 	home, err := homedir.Dir()
 	if err != nil {
 		return "", err
 	}
-	return path.Join(home, configDirName, configFileName), nil
+	return filepath.Join(home, configDirName, configFileName), nil
 }
 
 func NewConfigCmd() *cobra.Command {

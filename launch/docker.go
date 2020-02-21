@@ -5,7 +5,6 @@ import (
 	"fmt"
 	"os"
 	"os/exec"
-	"path"
 	"path/filepath"
 )
 
@@ -68,7 +67,7 @@ func (d *docker) runBuild(buildConfig buildConfig) error {
 	hostArtDir := filepath.Join(cwd, ArtifactsDir)
 	containerArtDir := environment["SD_ARTIFACTS_DIR"]
 	buildImage := buildConfig.Image
-	logfilePath := path.Join(containerArtDir, LogFile)
+	logfilePath := filepath.Join(containerArtDir, LogFile)
 
 	srcVol := fmt.Sprintf("%s/:/sd/workspace/src/%s/%s", srcDir, scmHost, orgRepo)
 	artVol := fmt.Sprintf("%s/:%s", hostArtDir, containerArtDir)

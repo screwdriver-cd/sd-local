@@ -4,7 +4,7 @@ import (
 	"fmt"
 	"math/rand"
 	"os"
-	"path"
+	"path/filepath"
 	"strings"
 	"testing"
 	"time"
@@ -19,7 +19,7 @@ var testDir string = "./testdata"
 func TestCreateConfig(t *testing.T) {
 	t.Run("success", func(t *testing.T) {
 		rand.Seed(time.Now().UnixNano())
-		cnfPath := path.Join(testDir, fmt.Sprintf("%vconfig", rand.Int()))
+		cnfPath := filepath.Join(testDir, fmt.Sprintf("%vconfig", rand.Int()))
 		defer os.Remove(cnfPath)
 
 		expect := Config{
@@ -42,7 +42,7 @@ func TestCreateConfig(t *testing.T) {
 
 	t.Run("success by exists file", func(t *testing.T) {
 		rand.Seed(time.Now().UnixNano())
-		cnfPath := path.Join(testDir, fmt.Sprintf("%vconfig", rand.Int()))
+		cnfPath := filepath.Join(testDir, fmt.Sprintf("%vconfig", rand.Int()))
 		defer os.Remove(cnfPath)
 
 		expect := Config{
@@ -69,7 +69,7 @@ func TestCreateConfig(t *testing.T) {
 
 func TestNew(t *testing.T) {
 	t.Run("success", func(t *testing.T) {
-		cnfPath := path.Join(testDir, "successConfig")
+		cnfPath := filepath.Join(testDir, "successConfig")
 
 		testConfig := Config{
 			APIURL:   "api-url",
@@ -90,7 +90,7 @@ func TestNew(t *testing.T) {
 	})
 
 	t.Run("failure by invalid yaml", func(t *testing.T) {
-		cnfPath := path.Join(testDir, "failureConfig")
+		cnfPath := filepath.Join(testDir, "failureConfig")
 		_, err := New(cnfPath)
 
 		assert.Equal(t, 0, strings.Index(err.Error(), "failed to parse config file: "), fmt.Sprintf("expected error is `failed to parse config file: ...`, actual: `%v`", err))
@@ -99,7 +99,7 @@ func TestNew(t *testing.T) {
 
 func TestSetConfig(t *testing.T) {
 	rand.Seed(time.Now().UnixNano())
-	cnfPath := path.Join(testDir, fmt.Sprintf("%vconfig", rand.Int()))
+	cnfPath := filepath.Join(testDir, fmt.Sprintf("%vconfig", rand.Int()))
 	defer os.Remove(cnfPath)
 
 	testCases := []struct {
