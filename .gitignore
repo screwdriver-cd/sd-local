@@ -24,3 +24,4 @@ debug
 .DS_Store
 
 artifacts
+.sdlocal/

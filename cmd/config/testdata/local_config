@@ -1,0 +1,6 @@
+api-url: cd.screwdriver.cd
+store-url: ""
+token: ""
+launcher:
+  version: stable
+  image: screwdrivercd/launcher

@@ -18,6 +18,11 @@ func TestConfigSetCmd(t *testing.T) {
 	cnfPath := fmt.Sprintf("%vconfig", rand.Int())
 	defer os.Remove(cnfPath)
 
+	cnew := configNew
+	defer func() {
+		configNew = cnew
+	}()
+
 	configNew = func(configPath string) (c config.Config, err error) {
 		return config.New(cnfPath)
 	}

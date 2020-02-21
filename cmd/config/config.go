@@ -14,7 +14,7 @@ const (
 	configDirName  = ".sdlocal"
 )
 
-func filePath(isLocalOpt bool) (string, error) {
+var filePath = func(isLocalOpt bool) (string, error) {
 	if isLocalOpt {
 		pwd, err := os.Getwd()
 		if err != nil {

@@ -1,0 +1,6 @@
+api-url: api.screwdriver.com
+store-url: store.screwdriver.com
+token: sd-token
+launcher:
+  version: 1.0.0
+  image: screwdrivercd/launcher
