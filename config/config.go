@@ -3,6 +3,7 @@ package config
 import (
 	"fmt"
 	"os"
+	"path/filepath"
 
 	"github.com/go-yaml/yaml"
 )
@@ -29,6 +30,11 @@ func create(configPath string) error {
 		return nil
 	}
 
+	dir := filepath.Dir(configPath)
+	err = os.MkdirAll(dir, 0777)
+	if err != nil {
+		return err
+	}
 	file, err := os.Create(configPath)
 	if err != nil {
 		return err
@@ -48,7 +54,7 @@ func create(configPath string) error {
 	return nil
 }
 
-// ReadConfig returns parsed config
+// New returns parsed config
 func New(configPath string) (Config, error) {
 	err := create(configPath)
 	if err != nil {
@@ -94,7 +100,7 @@ func (c *Config) Set(key, value string) error {
 		return fmt.Errorf("invalid key %s", key)
 	}
 
-	file, err := os.Create(c.filePath)
+	file, err := os.OpenFile(c.filePath, os.O_RDWR, 0666)
 	if err != nil {
 		return err
 	}

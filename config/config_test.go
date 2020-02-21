@@ -99,8 +99,8 @@ func TestNew(t *testing.T) {
 
 func TestSetConfig(t *testing.T) {
 	rand.Seed(time.Now().UnixNano())
-	cnfPath := filepath.Join(testDir, fmt.Sprintf("%vconfig", rand.Int()))
-	defer os.Remove(cnfPath)
+	cnfPath := filepath.Join(testDir, ".sdlocal", fmt.Sprintf("%vconfig", rand.Int()))
+	defer os.RemoveAll(filepath.Join(testDir, ".sdlocal"))
 
 	testCases := []struct {
 		name       string
@@ -196,10 +196,7 @@ func TestSetConfig(t *testing.T) {
 
 	for _, tt := range testCases {
 		t.Run(tt.name, func(t *testing.T) {
-			c := Config{
-				filePath: cnfPath,
-			}
-
+			c, _ := New(cnfPath)
 			for key, val := range tt.setting {
 				err := c.Set(key, val)
 				if key == "invalidKey" {
