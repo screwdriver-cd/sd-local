@@ -12,7 +12,13 @@ func newConfigViewCmd() *cobra.Command {
 	configViewCmd := &cobra.Command{
 		Use:   "view",
 		Short: "View the config of sd-local.",
-		Long:  `View the config of sd-local.`,
+		Long: `View the config of sd-local.
+Can see the below settings:
+* Screwdriver.cd API URL
+* Screwdriver.cd Store URL
+* Screwdriver.cd Token
+* Screwdriver.cd launcher version
+* Screwdriver.cd launcher image`,
 		Run: func(cmd *cobra.Command, args []string) {
 			isLocalOpt, err := cmd.Flags().GetBool("local")
 			if err != nil {

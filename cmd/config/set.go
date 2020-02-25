@@ -16,7 +16,12 @@ func newConfigSetCmd() *cobra.Command {
 		Use:   "set [key] [value]",
 		Short: "Set the config of sd-local",
 		Long: `Set the config of sd-local.
-The config of "sd-local" can be viewed in "sd-local config view".`,
+Can set the below settings:
+* Screwdriver.cd API URL as "api-url"
+* Screwdriver.cd Store URL as "store-url"
+* Screwdriver.cd Token as "token"
+* Screwdriver.cd launcher version as "launcher-version"
+* Screwdriver.cd launcher image as "launcher-image"`,
 		Args: cobra.ExactArgs(2),
 		RunE: func(cmd *cobra.Command, args []string) error {
 			isLocalOpt, err := cmd.Flags().GetBool("local")
