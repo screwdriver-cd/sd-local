@@ -72,12 +72,13 @@ func New(configPath string) (Config, error) {
 
 	err = yaml.NewDecoder(file).Decode(&config)
 	if err != nil {
-		return Config{}, fmt.Errorf("failed to parse config file: %v\ncontents:\n\n", err)
+		return Config{}, fmt.Errorf("failed to parse config file: %v", err)
 	}
 
 	return config, nil
 }
 
+// Set preserve sd-local config with new value.
 func (c *Config) Set(key, value string) error {
 	switch key {
 	case "api-url":

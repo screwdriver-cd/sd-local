@@ -29,6 +29,7 @@ var filePath = func(isLocalOpt bool) (string, error) {
 	return filepath.Join(home, configDirName, configFileName), nil
 }
 
+// NewConfigCmd return config command.
 func NewConfigCmd() *cobra.Command {
 	configCmd := &cobra.Command{
 		Use:   "config",
