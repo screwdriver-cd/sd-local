@@ -101,7 +101,7 @@ func (c *Config) Set(key, value string) error {
 		return fmt.Errorf("invalid key %s", key)
 	}
 
-	file, err := os.OpenFile(c.filePath, os.O_RDWR, 0666)
+	file, err := os.OpenFile(c.filePath, os.O_RDWR|os.O_TRUNC, 0666)
 	if err != nil {
 		return err
 	}
