@@ -23,7 +23,7 @@ Can set the below settings:
 * Screwdriver.cd launcher version as "launcher-version"
 * Screwdriver.cd launcher image as "launcher-image"`,
 		Args: cobra.ExactArgs(2),
-		RunE: func(cmd *cobra.Command, args []string) error {
+		Run: func(cmd *cobra.Command, args []string) {
 			isLocalOpt, err := cmd.Flags().GetBool("local")
 			if err != nil {
 				logrus.Fatal(err)
@@ -46,8 +46,6 @@ Can set the below settings:
 			if err != nil {
 				logrus.Fatal(err)
 			}
-
-			return nil
 		},
 	}
 
