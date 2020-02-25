@@ -85,7 +85,7 @@ func TestNew(t *testing.T) {
 		actual, err := New(cnfPath)
 
 		assert.Nil(t, err)
-		assert.Equal(t, actual.filePath, cnfPath)
+		assert.Equal(t, cnfPath, actual.filePath)
 		assert.Equal(t, testConfig, actual)
 	})
 
