@@ -1,15 +1,20 @@
 package config
 
 import (
+	"strings"
+
 	"github.com/screwdriver-cd/sd-local/config"
 	"github.com/sirupsen/logrus"
-
 	"github.com/spf13/cobra"
 )
 
 var (
 	configNew = config.New
 )
+
+func isInvalidKeyError(err error) bool {
+	return strings.Contains(err.Error(), "invalid key")
+}
 
 func newConfigSetCmd() *cobra.Command {
 	configSetCmd := &cobra.Command{
@@ -29,7 +34,6 @@ Can set the below settings:
 				logrus.Fatal(err)
 			}
 
-			key := args[0]
 			key, value := args[0], args[1]
 
 			path, err := filePath(isLocalOpt)
@@ -44,7 +48,14 @@ Can set the below settings:
 
 			err = conf.Set(key, value)
 			if err != nil {
-				logrus.Fatal(err)
+				if isInvalidKeyError(err) {
+					err := cmd.Usage()
+					if err != nil {
+						logrus.Fatal(err)
+					}
+				} else {
+					logrus.Fatal(err)
+				}
 			}
 		},
 	}
