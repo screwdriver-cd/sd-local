@@ -49,7 +49,7 @@ Can set the below settings:
 			err = conf.Set(key, value)
 			if err != nil {
 				if isInvalidKeyError(err) {
-					err := cmd.Usage()
+					err := cmd.Help()
 					if err != nil {
 						logrus.Fatal(err)
 					}
