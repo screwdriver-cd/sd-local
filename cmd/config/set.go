@@ -30,7 +30,7 @@ Can set the below settings:
 			}
 
 			key := args[0]
-			value := args[1]
+			key, value := args[0], args[1]
 
 			path, err := filePath(isLocalOpt)
 			if err != nil {
