@@ -5,7 +5,7 @@ import (
 	"io/ioutil"
 	"net/http"
 	"net/http/httptest"
-	"path"
+	"path/filepath"
 	"strings"
 	"testing"
 
@@ -110,7 +110,7 @@ func TestJob(t *testing.T) {
 			w.WriteHeader(200)
 			w.Header().Set("Content-Type", "application/json")
 
-			testJSON, err := ioutil.ReadFile(path.Join(testDir, "validatedSuccess.json"))
+			testJSON, err := ioutil.ReadFile(filepath.Join(testDir, "validatedSuccess.json"))
 			assert.Nil(t, err)
 			fmt.Fprintln(w, string(testJSON))
 		}))
@@ -139,7 +139,7 @@ func TestJob(t *testing.T) {
 			Image: "alpine",
 		}
 
-		gotJob, err := testAPI.Job("main", path.Join(testDir, "screwdriver.yaml"))
+		gotJob, err := testAPI.Job("main", filepath.Join(testDir, "screwdriver.yaml"))
 		assert.Nil(t, err)
 		assert.Equal(t, testJob, gotJob)
 	})
@@ -152,7 +152,7 @@ func TestJob(t *testing.T) {
 			SDJWT:      "jwt",
 		}
 
-		_, err := testAPI.Job("main", path.Join(testDir, "screwdriver.yaml"))
+		_, err := testAPI.Job("main", filepath.Join(testDir, "screwdriver.yaml"))
 		assert.NotNil(t, err)
 
 		msg := err.Error()
@@ -175,7 +175,7 @@ func TestJob(t *testing.T) {
 			SDJWT:      "jwt",
 		}
 
-		_, err := testAPI.Job("main", path.Join(testDir, "screwdriver.yaml"))
+		_, err := testAPI.Job("main", filepath.Join(testDir, "screwdriver.yaml"))
 		assert.NotNil(t, err)
 
 		msg := err.Error()
@@ -210,7 +210,7 @@ func TestJob(t *testing.T) {
 			SDJWT:      "jwt",
 		}
 
-		_, err := testAPI.Job("main", path.Join(testDir, "screwdriver.yaml"))
+		_, err := testAPI.Job("main", filepath.Join(testDir, "screwdriver.yaml"))
 		assert.NotNil(t, err)
 
 		msg := err.Error()
@@ -230,7 +230,7 @@ func TestJob(t *testing.T) {
 			SDJWT:      "jwt",
 		}
 
-		_, err := testAPI.Job("main", path.Join(testDir, "screwdriver.yaml"))
+		_, err := testAPI.Job("main", filepath.Join(testDir, "screwdriver.yaml"))
 
 		assert.NotNil(t, err)
 
@@ -243,7 +243,7 @@ func TestJob(t *testing.T) {
 			w.WriteHeader(200)
 			w.Header().Set("Content-Type", "application/json")
 
-			testJSON, err := ioutil.ReadFile(path.Join(testDir, "validatedFailed.json"))
+			testJSON, err := ioutil.ReadFile(filepath.Join(testDir, "validatedFailed.json"))
 			assert.Nil(t, err)
 
 			fmt.Fprintln(w, string(testJSON))
@@ -256,7 +256,7 @@ func TestJob(t *testing.T) {
 			SDJWT:      "jwt",
 		}
 
-		_, err := testAPI.Job("main", path.Join(testDir, "screwdriver.yaml"))
+		_, err := testAPI.Job("main", filepath.Join(testDir, "screwdriver.yaml"))
 		assert.NotNil(t, err)
 
 		msg := err.Error()
@@ -268,7 +268,7 @@ func TestJob(t *testing.T) {
 			w.WriteHeader(200)
 			w.Header().Set("Content-Type", "application/json")
 
-			testJSON, err := ioutil.ReadFile(path.Join(testDir, "validatedSuccess.json"))
+			testJSON, err := ioutil.ReadFile(filepath.Join(testDir, "validatedSuccess.json"))
 			assert.Nil(t, err)
 			fmt.Fprintln(w, string(testJSON))
 		}))
@@ -280,7 +280,7 @@ func TestJob(t *testing.T) {
 			SDJWT:      "jwt",
 		}
 
-		_, err := testAPI.Job("nyancat", path.Join(testDir, "screwdriver.yaml"))
+		_, err := testAPI.Job("nyancat", filepath.Join(testDir, "screwdriver.yaml"))
 		assert.NotNil(t, err)
 		msg := err.Error()
 		assert.Equal(t, "not found 'nyancat' in parsed screwdriver.yaml", msg)

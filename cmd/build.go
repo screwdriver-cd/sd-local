@@ -2,7 +2,7 @@ package cmd
 
 import (
 	"os"
-	"path"
+	"path/filepath"
 	"time"
 
 	"github.com/mitchellh/go-homedir"
@@ -19,7 +19,7 @@ const (
 )
 
 var (
-	readConfig  = config.ReadConfig
+	configNew   = config.New
 	apiNew      = screwdriver.New
 	buildLogNew = buildlog.New
 	launchNew   = launch.New
@@ -37,7 +37,7 @@ func newBuildCmd() *cobra.Command {
 				logrus.Fatal(err)
 			}
 
-			config, err := readConfig(path.Join(homedir, ".sdlocal", "config"))
+			config, err := configNew(filepath.Join(homedir, ".sdlocal", "config"))
 			if err != nil {
 				logrus.Fatal(err)
 			}
@@ -53,18 +53,18 @@ func newBuildCmd() *cobra.Command {
 			if err != nil {
 				logrus.Fatal(err)
 			}
-			sdYAMLPath := path.Join(cwd, "screwdriver.yaml")
+			sdYAMLPath := filepath.Join(cwd, "screwdriver.yaml")
 			job, err := api.Job(jobName, sdYAMLPath)
 			if err != nil {
 				logrus.Fatal(err)
 			}
 
-			artifactsPath := path.Join(cwd, launch.ArtifactsDir)
+			artifactsPath := filepath.Join(cwd, launch.ArtifactsDir)
 			err = os.MkdirAll(artifactsPath, 0666)
 			if err != nil {
 				logrus.Fatal(err)
 			}
-			logger, err := buildLogNew(path.Join(artifactsPath, launch.LogFile), os.Stdout)
+			logger, err := buildLogNew(filepath.Join(artifactsPath, launch.LogFile), os.Stdout)
 			if err != nil {
 				logrus.Fatal(err)
 			}

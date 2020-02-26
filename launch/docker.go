@@ -5,7 +5,6 @@ import (
 	"fmt"
 	"os"
 	"os/exec"
-	"path"
 	"path/filepath"
 )
 
@@ -19,8 +18,10 @@ var _ runner = (*docker)(nil)
 var execCommand = exec.Command
 
 const (
+	// ArtifactsDir is default artifact directory name
 	ArtifactsDir = "artifacts"
-	LogFile      = "builds.log"
+	// LogFile is default logfile name for build log
+	LogFile = "builds.log"
 	// The definition of "ScmHost" and "OrgRepo" is in "PipelineFromID" of "screwdriver/screwdriver_local.go"
 	scmHost = "screwdriver.cd"
 	orgRepo = "sd-local/local-build"
@@ -68,7 +69,7 @@ func (d *docker) runBuild(buildConfig buildConfig) error {
 	hostArtDir := filepath.Join(cwd, ArtifactsDir)
 	containerArtDir := environment["SD_ARTIFACTS_DIR"]
 	buildImage := buildConfig.Image
-	logfilePath := path.Join(containerArtDir, LogFile)
+	logfilePath := filepath.Join(containerArtDir, LogFile)
 
 	srcVol := fmt.Sprintf("%s/:/sd/workspace/src/%s/%s", srcDir, scmHost, orgRepo)
 	artVol := fmt.Sprintf("%s/:%s", hostArtDir, containerArtDir)
