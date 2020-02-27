@@ -66,7 +66,15 @@ func TestRootCmd(t *testing.T) {
 		buf := bytes.NewBuffer(nil)
 		root.SetOut(buf)
 		err := root.Execute()
-		want := "Error: accepts 1 arg(s), received 0\nUsage:\n  sd-local build [job name] [flags]\n\nFlags:\n  -h, --help   help for build\n\n"
+		want := `Error: accepts 1 arg(s), received 0
+Usage:
+  sd-local build [job name] [flags]
+
+Flags:
+      --artifacts-dir string   Path to the host side directory which is mounted into $SD_ARTIFACTS_DIR. (default "sd-artifacts")
+  -h, --help                   help for build
+
+`
 		assert.Equal(t, want, buf.String())
 		assert.NotNil(t, err)
 	})

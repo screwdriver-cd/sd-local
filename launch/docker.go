@@ -19,7 +19,7 @@ var execCommand = exec.Command
 
 const (
 	// ArtifactsDir is default artifact directory name
-	ArtifactsDir = "artifacts"
+	ArtifactsDir = "sd-artifacts"
 	// LogFile is default logfile name for build log
 	LogFile = "builds.log"
 	// The definition of "ScmHost" and "OrgRepo" is in "PipelineFromID" of "screwdriver/screwdriver_local.go"
