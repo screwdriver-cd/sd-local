@@ -19,10 +19,11 @@ const (
 )
 
 var (
-	configNew   = config.New
-	apiNew      = screwdriver.New
-	buildLogNew = buildlog.New
-	launchNew   = launch.New
+	configNew    = config.New
+	apiNew       = screwdriver.New
+	buildLogNew  = buildlog.New
+	launchNew    = launch.New
+	artifactsDir = launch.ArtifactsDir
 )
 
 func newBuildCmd() *cobra.Command {
@@ -53,13 +54,18 @@ func newBuildCmd() *cobra.Command {
 			if err != nil {
 				logrus.Fatal(err)
 			}
+
 			sdYAMLPath := filepath.Join(cwd, "screwdriver.yaml")
 			job, err := api.Job(jobName, sdYAMLPath)
 			if err != nil {
 				logrus.Fatal(err)
 			}
 
-			artifactsPath := filepath.Join(cwd, launch.ArtifactsDir)
+			artifactsPath, err := filepath.Abs(artifactsDir)
+			if err != nil {
+				logrus.Fatal(err)
+			}
+
 			err = os.MkdirAll(artifactsPath, 0666)
 			if err != nil {
 				logrus.Fatal(err)
@@ -70,7 +76,7 @@ func newBuildCmd() *cobra.Command {
 			}
 			go logger.Run()
 
-			launch := launchNew(job, config, jobName, api.JWT())
+			launch := launchNew(job, config, jobName, api.JWT(), artifactsPath)
 
 			err = launch.Run()
 			if err != nil {
@@ -82,5 +88,12 @@ func newBuildCmd() *cobra.Command {
 			logger.Stop()
 		},
 	}
+
+	buildCmd.Flags().StringVar(
+		&artifactsDir,
+		"artifacts-dir",
+		launch.ArtifactsDir,
+		"Path to the host side directory which is mounted into $SD_ARTIFACTS_DIR.")
+
 	return buildCmd
 }

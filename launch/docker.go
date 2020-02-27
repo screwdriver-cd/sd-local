@@ -19,7 +19,7 @@ var execCommand = exec.Command
 
 const (
 	// ArtifactsDir is default artifact directory name
-	ArtifactsDir = "artifacts"
+	ArtifactsDir = "sd-artifacts"
 	// LogFile is default logfile name for build log
 	LogFile = "builds.log"
 	// The definition of "ScmHost" and "OrgRepo" is in "PipelineFromID" of "screwdriver/screwdriver_local.go"
@@ -66,7 +66,7 @@ func (d *docker) runBuild(buildConfig buildConfig) error {
 	environment := buildConfig.Environment[0]
 
 	srcDir := cwd
-	hostArtDir := filepath.Join(cwd, ArtifactsDir)
+	hostArtDir := buildConfig.ArtifactsPath
 	containerArtDir := environment["SD_ARTIFACTS_DIR"]
 	buildImage := buildConfig.Image
 	logfilePath := filepath.Join(containerArtDir, LogFile)

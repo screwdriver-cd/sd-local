@@ -40,6 +40,7 @@ type buildConfig struct {
 	Steps         []screwdriver.Step     `json:"steps"`
 	Image         string                 `json:"-"`
 	JobName       string                 `json:"-"`
+	ArtifactsPath string                 `json:"-"`
 }
 
 const (
@@ -54,7 +55,7 @@ func mergeEnv(env, userEnv envVar) []envVar {
 	return []envVar{env}
 }
 
-func createBuildConfig(config config.Config, job screwdriver.Job, jobName, jwt string) buildConfig {
+func createBuildConfig(config config.Config, job screwdriver.Job, jobName, jwt, artifactsPath string) buildConfig {
 	defaultEnv := envVar{
 		"SD_TOKEN":         jwt,
 		"SD_ARTIFACTS_DIR": defaultArtDir,
@@ -74,15 +75,16 @@ func createBuildConfig(config config.Config, job screwdriver.Job, jobName, jwt s
 		Steps:         job.Steps,
 		Image:         job.Image,
 		JobName:       jobName,
+		ArtifactsPath: artifactsPath,
 	}
 }
 
 // New creates new Launcher interface.
-func New(job screwdriver.Job, config config.Config, jobName, jwt string) Launcher {
+func New(job screwdriver.Job, config config.Config, jobName, jwt, artifactsPath string) Launcher {
 	l := new(launch)
 
 	l.runner = newDocker(config.Launcher.Image, config.Launcher.Version)
-	l.buildConfig = createBuildConfig(config, job, jobName, jwt)
+	l.buildConfig = createBuildConfig(config, job, jobName, jwt, artifactsPath)
 
 	return l
 }
