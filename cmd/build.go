@@ -43,22 +43,30 @@ func newBuildCmd() *cobra.Command {
 			}
 
 			sdlocalDir := filepath.Join(homedir, ".sdlocal")
-			scm, err := scmNew(sdlocalDir, srcUrl)
+			cwd, err := os.Getwd()
 			if err != nil {
 				logrus.Fatal(err)
 			}
-			defer func() {
-				err = scm.Clean()
+			srcPath := cwd
+
+			if srcUrl != "" {
+				scm, err := scmNew(sdlocalDir, srcUrl)
 				if err != nil {
 					logrus.Fatal(err)
 				}
-			}()
+				defer func() {
+					err = scm.Clean()
+					if err != nil {
+						logrus.Fatal(err)
+					}
+				}()
 
-			err = scm.Pull()
-			if err != nil {
-				logrus.Fatal(err)
+				err = scm.Pull()
+				if err != nil {
+					logrus.Fatal(err)
+				}
+				srcPath = scm.LocalPath()
 			}
-			srcPath := scm.LocalPath()
 
 			config, err := configNew(filepath.Join(sdlocalDir, "config"))
 			if err != nil {
