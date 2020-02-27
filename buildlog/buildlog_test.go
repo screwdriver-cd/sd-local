@@ -69,7 +69,7 @@ func TestRun(t *testing.T) {
 		time.Sleep(intervalTime * time.Millisecond)
 		l.Stop()
 
-		expected := "test 1\ntest 2\n"
+		expected := "main: test 1\nmain: test 2\n"
 		assert.Equal(t, expected, writer.String())
 	})
 
@@ -100,7 +100,7 @@ func TestRun(t *testing.T) {
 		time.Sleep(intervalTime * time.Millisecond)
 		l.Stop()
 
-		expected := "test 1\n"
+		expected := "main: test 1\n"
 		assert.Equal(t, expected, writer.String())
 	})
 }
@@ -136,7 +136,7 @@ func TestStop(t *testing.T) {
 		go write(t, tmpFile.Name(), testInputsNotWritten)
 		time.Sleep(intervalTime * time.Millisecond)
 
-		expected := "test 1\ntest 2\n"
+		expected := "main: test 1\nmain: test 2\n"
 		assert.Equal(t, expected, writer.String())
 	})
 }

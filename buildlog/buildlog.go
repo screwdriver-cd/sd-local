@@ -99,5 +99,5 @@ func parse(rawLog []byte) (string, error) {
 		return "", fmt.Errorf("failed to parse raw log: %w", err)
 	}
 
-	return fmt.Sprintf("%s", ll.Message), nil
+	return fmt.Sprintf("%s: %s", ll.StepName, ll.Message), nil
 }
