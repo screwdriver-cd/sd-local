@@ -28,32 +28,39 @@ var (
 	scmNew       = scm.New
 )
 
-func makeSrcPath(srcUrl string) (string, error) {
-	return "/Users/shoyoshi/.sdlocal/repo/ghe.corp.yahoo.co.jp/shoyoshi/test", nil
-}
-
 func newBuildCmd() *cobra.Command {
+	var srcUrl string
+
 	buildCmd := &cobra.Command{
 		Use:   "build [job name]",
 		Short: "Run screwdriver build.",
 		Long:  `Run screwdriver build of the specified job name.`,
 		Args:  cobra.ExactArgs(1),
 		Run: func(cmd *cobra.Command, args []string) {
-			srcUrl, err := cmd.Flags().GetString("src-url")
-
-			scm, err := scmNew(srcUrl)
-			if err != nil {
-				logrus.Fatal(err)
-			}
-
-			srcPath := scm.LocalPath()
-
 			homedir, err := homedir.Dir()
 			if err != nil {
 				logrus.Fatal(err)
 			}
 
-			config, err := configNew(filepath.Join(homedir, ".sdlocal", "config"))
+			sdlocalDir := filepath.Join(homedir, ".sdlocal")
+			scm, err := scmNew(sdlocalDir, srcUrl)
+			if err != nil {
+				logrus.Fatal(err)
+			}
+			defer func() {
+				err = scm.Clean()
+				if err != nil {
+					logrus.Fatal(err)
+				}
+			}()
+
+			err = scm.Pull()
+			if err != nil {
+				logrus.Fatal(err)
+			}
+			srcPath := scm.LocalPath()
+
+			config, err := configNew(filepath.Join(sdlocalDir, "config"))
 			if err != nil {
 				logrus.Fatal(err)
 			}
@@ -105,9 +112,11 @@ func newBuildCmd() *cobra.Command {
 		launch.ArtifactsDir,
 		"Path to the host side directory which is mounted into $SD_ARTIFACTS_DIR.")
 
-	buildCmd.PersistentFlags().String("src-url", "",
+	buildCmd.Flags().StringVar(
+		&srcUrl,
+		"src-url",
+		"",
 		`Specify the source url to build.
-ex) git@github.com/org/repo#branch
-`)
+ex) git@github.com/org/repo#branch`)
 	return buildCmd
 }

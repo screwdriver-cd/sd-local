@@ -1,35 +1,80 @@
 package scm
 
+import (
+	"fmt"
+	"os"
+	"os/exec"
+	"path/filepath"
+	"regexp"
+)
+
+var (
+	srcUrlRegex = regexp.MustCompile(`^((?:(?:https://(?:[^@/:\s]+@)?)|git@)+([^/:\s]+)(?:/|:)([^/:\s]+)/([^\s]+?)(?:\.git))?(#[^\s]+)?$`)
+	execCommand = exec.Command
+)
+
 type SCM interface {
 	Pull() error
+	Clean() error
 	LocalPath() string
 }
 
 type scm struct {
+	baseDir   string
 	remoteUrl string
-	localPath string
+	instance  string
+	org       string
+	repo      string
+	branch    string
 }
 
-func makeLocalPath(srcUrl string) (string, error) {
-	return "", nil
-}
+func New(baseDir, srcUrl string) (SCM, error) {
+	results := srcUrlRegex.FindStringSubmatch(srcUrl)
+	remoteUrl, instance, org, repo, branch := results[1], results[2], results[3], results[4], results[5]
 
-func New(srcUrl string) (SCM, error) {
-	localPath, err := makeLocalPath(srcUrl)
-	if err != nil {
-		return nil, err
+	scm := &scm{
+		baseDir:   baseDir,
+		remoteUrl: remoteUrl,
+		instance:  instance,
+		org:       org,
+		repo:      repo,
+		branch:    branch,
 	}
 
-	return &scm{
-		remoteUrl: srcUrl,
-		localPath: localPath,
-	}, nil
+	fmt.Println(scm.LocalPath())
+	err := os.MkdirAll(scm.LocalPath(), 0777)
+	if err != nil {
+		return nil, fmt.Errorf("failed to make local source directory: %w", err)
+	}
+
+	return scm, nil
 }
 
 func (scm *scm) Pull() error {
+	args := []string{"clone"}
+	if scm.branch != "" {
+		args = append(args, "-b", scm.branch[1:])
+	}
+	args = append(args, scm.remoteUrl)
+	fmt.Println(args)
+	cmd := execCommand("git", args...)
+	cmd.Dir = filepath.Join(scm.baseDir, scm.instance, scm.org)
+	err := cmd.Run()
+	if err != nil {
+		return fmt.Errorf("failed to clone remote repository: %w", err)
+	}
+
+	return nil
+}
+
+func (scm *scm) Clean() error {
+	err := os.RemoveAll(scm.LocalPath())
+	if err != nil {
+		return fmt.Errorf("failed to remove local source directory: %w", err)
+	}
 	return nil
 }
 
 func (scm *scm) LocalPath() string {
-	return scm.localPath
+	return filepath.Join(scm.baseDir, scm.instance, scm.org, scm.repo)
 }
