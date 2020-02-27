@@ -1,8 +1,10 @@
 package launch
 
 import (
+	"bytes"
 	"encoding/json"
 	"fmt"
+	"io"
 	"os"
 	"os/exec"
 	"path/filepath"
@@ -46,11 +48,11 @@ func (d *docker) setupBin() error {
 	mount := fmt.Sprintf("%s:/opt/sd/", d.volume)
 	image := fmt.Sprintf("%s:%s", d.setupImage, d.setupImageVersion)
 	cmd := execCommand("docker", "container", "run", "--rm", "-v", mount, image, "--entrypoint", "/bin/echo set up bin")
-	cmd.Stdout = os.Stdout
-	cmd.Stderr = os.Stderr
+	buf := bytes.NewBuffer(nil)
+	cmd.Stderr = buf
 	err = cmd.Run()
-
 	if err != nil {
+		io.Copy(os.Stderr, buf)
 		return fmt.Errorf("failed to prepare build scripts")
 	}
 
@@ -80,10 +82,12 @@ func (d *docker) runBuild(buildConfig buildConfig) error {
 	}
 
 	cmd := execCommand("docker", "container", "run", "--rm", "-v", srcVol, "-v", artVol, "-v", binVol, buildImage, "/opt/sd/local_run.sh", string(configJSON), buildConfig.JobName, environment["SD_API_URL"], environment["SD_STORE_URL"], logfilePath)
-	cmd.Stdout = os.Stdout
-	cmd.Stderr = os.Stderr
+
+	buf := bytes.NewBuffer(nil)
+	cmd.Stderr = buf
 	err = cmd.Run()
 	if err != nil {
+		io.Copy(os.Stderr, buf)
 		return err
 	}
 
