@@ -46,7 +46,7 @@ func newBuildCmd() *cobra.Command {
 				logrus.Fatal(err)
 			}
 
-			srcPath := scm.localPath
+			srcPath := scm.LocalPath()
 
 			homedir, err := homedir.Dir()
 			if err != nil {
