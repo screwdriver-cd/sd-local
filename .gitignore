@@ -23,5 +23,5 @@ debug
 # mac
 .DS_Store
 
-artifacts
+sd-artifacts
 .sdlocal/
