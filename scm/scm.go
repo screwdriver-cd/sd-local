@@ -10,6 +10,7 @@ import (
 
 var (
 	srcUrlRegex = regexp.MustCompile(`^((?:(?:https://(?:[^@/:\s]+@)?)|git@)+([^/:\s]+)(?:/|:)([^/:\s]+)/([^\s]+?)(?:\.git))?(#[^\s]+)?$`)
+	osMkdirAll  = os.MkdirAll
 	execCommand = exec.Command
 )
 
@@ -38,11 +39,13 @@ func New(baseDir, srcUrl string) (SCM, error) {
 		instance:  instance,
 		org:       org,
 		repo:      repo,
-		branch:    branch,
+	}
+	if branch != "" {
+		scm.branch = branch[1:]
 	}
 
 	fmt.Println(scm.LocalPath())
-	err := os.MkdirAll(scm.LocalPath(), 0777)
+	err := osMkdirAll(scm.LocalPath(), 0777)
 	if err != nil {
 		return nil, fmt.Errorf("failed to make local source directory: %w", err)
 	}
@@ -53,7 +56,7 @@ func New(baseDir, srcUrl string) (SCM, error) {
 func (scm *scm) Pull() error {
 	args := []string{"clone"}
 	if scm.branch != "" {
-		args = append(args, "-b", scm.branch[1:])
+		args = append(args, "-b", scm.branch)
 	}
 	args = append(args, scm.remoteUrl)
 	fmt.Println(args)
@@ -76,5 +79,5 @@ func (scm *scm) Clean() error {
 }
 
 func (scm *scm) LocalPath() string {
-	return filepath.Join(scm.baseDir, scm.instance, scm.org, scm.repo)
+	return filepath.Join(scm.baseDir, "repo", scm.instance, scm.org, scm.repo)
 }
