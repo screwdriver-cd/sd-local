@@ -66,7 +66,7 @@ func (d *docker) runBuild(buildConfig buildConfig) error {
 	environment := buildConfig.Environment[0]
 
 	srcDir := cwd
-	hostArtDir := filepath.Join(cwd, ArtifactsDir)
+	hostArtDir := buildConfig.ArtifactsPath
 	containerArtDir := environment["SD_ARTIFACTS_DIR"]
 	buildImage := buildConfig.Image
 	logfilePath := filepath.Join(containerArtDir, LogFile)

@@ -76,7 +76,7 @@ func newBuildCmd() *cobra.Command {
 			}
 			go logger.Run()
 
-			launch := launchNew(job, config, jobName, api.JWT())
+			launch := launchNew(job, config, jobName, api.JWT(), artifactsPath)
 
 			err = launch.Run()
 			if err != nil {

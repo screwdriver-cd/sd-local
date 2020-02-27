@@ -37,6 +37,7 @@ func newBuildConfig() buildConfig {
 		Steps:         job.Steps,
 		Image:         job.Image,
 		JobName:       "test",
+		ArtifactsPath: "sd-artifacts",
 	}
 }
 
@@ -56,7 +57,7 @@ func TestNew(t *testing.T) {
 
 		expectedBuildConfig := newBuildConfig()
 
-		launcher := New(job, config, "test", "testjwt")
+		launcher := New(job, config, "test", "testjwt", "sd-artifacts")
 		l, ok := launcher.(*launch)
 		assert.True(t, ok)
 		assert.Equal(t, expectedBuildConfig, l.buildConfig)
@@ -77,7 +78,7 @@ func TestNew(t *testing.T) {
 		expectedBuildConfig := newBuildConfig()
 		expectedBuildConfig.Environment[0]["SD_ARTIFACTS_DIR"] = "/sd/workspace/artifacts"
 
-		launcher := New(job, config, "test", "testjwt")
+		launcher := New(job, config, "test", "testjwt", "sd-artifacts")
 		l, ok := launcher.(*launch)
 		assert.True(t, ok)
 		assert.Equal(t, expectedBuildConfig, l.buildConfig)
