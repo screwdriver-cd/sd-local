@@ -9,6 +9,7 @@ import (
 	"github.com/screwdriver-cd/sd-local/buildlog"
 	"github.com/screwdriver-cd/sd-local/config"
 	"github.com/screwdriver-cd/sd-local/launch"
+	"github.com/screwdriver-cd/sd-local/scm"
 	"github.com/screwdriver-cd/sd-local/screwdriver"
 	"github.com/sirupsen/logrus"
 	"github.com/spf13/cobra"
@@ -24,7 +25,12 @@ var (
 	buildLogNew  = buildlog.New
 	launchNew    = launch.New
 	artifactsDir = launch.ArtifactsDir
+	scmNew       = scm.New
 )
+
+func makeSrcPath(srcUrl string) (string, error) {
+	return "/Users/shoyoshi/.sdlocal/repo/ghe.corp.yahoo.co.jp/shoyoshi/test", nil
+}
 
 func newBuildCmd() *cobra.Command {
 	buildCmd := &cobra.Command{
@@ -33,6 +39,15 @@ func newBuildCmd() *cobra.Command {
 		Long:  `Run screwdriver build of the specified job name.`,
 		Args:  cobra.ExactArgs(1),
 		Run: func(cmd *cobra.Command, args []string) {
+			srcUrl, err := cmd.Flags().GetString("src-url")
+
+			scm, err := scmNew(srcUrl)
+			if err != nil {
+				logrus.Fatal(err)
+			}
+
+			srcPath := scm.localPath
+
 			homedir, err := homedir.Dir()
 			if err != nil {
 				logrus.Fatal(err)
@@ -50,12 +65,7 @@ func newBuildCmd() *cobra.Command {
 
 			jobName := args[0]
 
-			cwd, err := os.Getwd()
-			if err != nil {
-				logrus.Fatal(err)
-			}
-
-			sdYAMLPath := filepath.Join(cwd, "screwdriver.yaml")
+			sdYAMLPath := filepath.Join(srcPath, "screwdriver.yaml")
 			job, err := api.Job(jobName, sdYAMLPath)
 			if err != nil {
 				logrus.Fatal(err)
@@ -76,7 +86,7 @@ func newBuildCmd() *cobra.Command {
 			}
 			go logger.Run()
 
-			launch := launchNew(job, config, jobName, api.JWT(), artifactsPath)
+			launch := launchNew(job, config, jobName, api.JWT(), artifactsPath, srcPath)
 
 			err = launch.Run()
 			if err != nil {
@@ -95,5 +105,9 @@ func newBuildCmd() *cobra.Command {
 		launch.ArtifactsDir,
 		"Path to the host side directory which is mounted into $SD_ARTIFACTS_DIR.")
 
+	buildCmd.PersistentFlags().String("src-url", "",
+		`Specify the source url to build.
+ex) git@github.com/org/repo#branch
+`)
 	return buildCmd
 }
