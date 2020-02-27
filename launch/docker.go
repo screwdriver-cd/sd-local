@@ -47,15 +47,14 @@ func (d *docker) setupBin() error {
 	image := fmt.Sprintf("%s:%s", d.setupImage, d.setupImageVersion)
 	err = execCommand("docker", "pull", image).Run()
 	if err != nil {
-		return fmt.Errorf("failed to pull launcher image")
+		return fmt.Errorf("failed to pull launcher image %v", err)
 	}
 	cmd := execCommand("docker", "container", "run", "--rm", "-v", mount, image, "--entrypoint", "/bin/echo set up bin")
 	cmd.Stdout = os.Stdout
 	cmd.Stderr = os.Stderr
 	err = cmd.Run()
-
 	if err != nil {
-		return fmt.Errorf("failed to prepare build scripts %v", err)
+		return fmt.Errorf("failed to prepare build scripts")
 	}
 
 	return nil
