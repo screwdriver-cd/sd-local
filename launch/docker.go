@@ -45,13 +45,17 @@ func (d *docker) setupBin() error {
 
 	mount := fmt.Sprintf("%s:/opt/sd/", d.volume)
 	image := fmt.Sprintf("%s:%s", d.setupImage, d.setupImageVersion)
+	err = execCommand("docker", "pull", image).Run()
+	if err != nil {
+		return fmt.Errorf("failed to pull launcher image")
+	}
 	cmd := execCommand("docker", "container", "run", "--rm", "-v", mount, image, "--entrypoint", "/bin/echo set up bin")
 	cmd.Stdout = os.Stdout
 	cmd.Stderr = os.Stderr
 	err = cmd.Run()
 
 	if err != nil {
-		return fmt.Errorf("failed to prepare build scripts")
+		return fmt.Errorf("failed to prepare build scripts %v", err)
 	}
 
 	return nil
@@ -79,6 +83,10 @@ func (d *docker) runBuild(buildConfig buildConfig) error {
 		return err
 	}
 
+	err = execCommand("docker", "pull", buildImage).Run()
+	if err != nil {
+		return fmt.Errorf("failed to pull user image %v", err)
+	}
 	cmd := execCommand("docker", "container", "run", "--rm", "-v", srcVol, "-v", artVol, "-v", binVol, buildImage, "/opt/sd/local_run.sh", string(configJSON), buildConfig.JobName, environment["SD_API_URL"], environment["SD_STORE_URL"], logfilePath)
 	cmd.Stdout = os.Stdout
 	cmd.Stderr = os.Stderr
