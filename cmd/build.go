@@ -125,6 +125,7 @@ func newBuildCmd() *cobra.Command {
 		"src-url",
 		"",
 		`Specify the source url to build.
-ex) git@github.com/org/repo#branch`)
+ex) git@github.com:<org>/<repo>.git[#<branch>]
+    https://github.com/<org>/<repo>.git[#<branch>]`)
 	return buildCmd
 }
