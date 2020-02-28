@@ -44,7 +44,6 @@ func New(baseDir, srcUrl string) (SCM, error) {
 		scm.branch = branch[1:]
 	}
 
-	fmt.Println(scm.LocalPath())
 	err := osMkdirAll(scm.LocalPath(), 0777)
 	if err != nil {
 		return nil, fmt.Errorf("failed to make local source directory: %w", err)
@@ -59,9 +58,9 @@ func (scm *scm) Pull() error {
 		args = append(args, "-b", scm.branch)
 	}
 	args = append(args, scm.remoteUrl)
-	fmt.Println(args)
+
 	cmd := execCommand("git", args...)
-	cmd.Dir = filepath.Join(scm.baseDir, scm.instance, scm.org)
+	cmd.Dir = filepath.Join(scm.baseDir, "repo", scm.instance, scm.org)
 	err := cmd.Run()
 	if err != nil {
 		return fmt.Errorf("failed to clone remote repository: %w", err)
