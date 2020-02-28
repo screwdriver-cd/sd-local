@@ -8,6 +8,7 @@ import (
 	"testing"
 
 	"github.com/stretchr/testify/assert"
+	"os/exec"
 )
 
 func TestNew(t *testing.T) {
@@ -76,6 +77,50 @@ func TestNew(t *testing.T) {
 }
 
 func TestLocalPath(t *testing.T) {
-	t.Run("", func(t *testing.T) {
+	t.Run("success", func(t *testing.T) {
+		s := &scm{
+			baseDir:   "/path/to/base/dir",
+			remoteUrl: "https://github.com/screwdriver-cd/sd-local.git",
+			instance:  "github.com",
+			org:       "screwdriver-cd",
+			repo:      "sd-local",
+			branch:    "test",
+		}
+
+		assert.Equal(
+			t,
+			"/path/to/base/dir/repo/github.com/screwdriver-cd/sd-local",
+			s.LocalPath(),
+		)
+
+	})
+}
+
+func TestClean(t *testing.T) {
+	t.Run("success", func(t *testing.T) {
+		baseDir := os.TempDir()
+		defer os.RemoveAll(baseDir)
+		s := &scm{
+			baseDir:   baseDir,
+			remoteUrl: "https://github.com/screwdriver-cd/sd-local.git",
+			instance:  "github.com",
+			org:       "screwdriver-cd",
+			repo:      "sd-local",
+			branch:    "test",
+		}
+
+		localPath := s.LocalPath()
+
+		err := os.MkdirAll(localPath, 0777)
+
+		if err != nil {
+			t.Fatal(err)
+		}
+
+		s.Clean()
+
+		_, err = os.Stat(localPath)
+
+		assert.True(t, os.IsNotExist(err))
 	})
 }
