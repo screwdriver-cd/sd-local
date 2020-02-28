@@ -63,7 +63,7 @@ func (d *docker) setupBin() error {
 func (d *docker) runBuild(buildConfig buildConfig) error {
 	environment := buildConfig.Environment[0]
 
-	srcDir := buildConfig.srcPath
+	srcDir := buildConfig.SrcPath
 	hostArtDir := buildConfig.ArtifactsPath
 	containerArtDir := environment["SD_ARTIFACTS_DIR"]
 	buildImage := buildConfig.Image

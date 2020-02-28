@@ -41,7 +41,7 @@ type buildConfig struct {
 	Image         string                 `json:"-"`
 	JobName       string                 `json:"-"`
 	ArtifactsPath string                 `json:"-"`
-	srcPath       string                 `json:"-"`
+	SrcPath       string                 `json:"-"`
 }
 
 const (
@@ -77,7 +77,7 @@ func createBuildConfig(config config.Config, job screwdriver.Job, jobName, jwt, 
 		Image:         job.Image,
 		JobName:       jobName,
 		ArtifactsPath: artifactsPath,
-		srcPath:       srcPath,
+		SrcPath:       srcPath,
 	}
 }
 
