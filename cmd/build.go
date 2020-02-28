@@ -66,7 +66,7 @@ func newBuildCmd() *cobra.Command {
 				logrus.Fatal(err)
 			}
 
-			err = os.MkdirAll(artifactsPath, 0666)
+			err = os.MkdirAll(artifactsPath, 0777)
 			if err != nil {
 				logrus.Fatal(err)
 			}
