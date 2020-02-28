@@ -9,7 +9,7 @@ import (
 )
 
 var (
-	srcUrlRegex = regexp.MustCompile(`^((?:(?:https://(?:[^@/:\s]+@)?)|git@)+([^/:\s]+)(?:/|:)([^/:\s]+)/([^\s]+?)(?:\.git))?(#[^\s]+)?$`)
+	srcUrlRegex = regexp.MustCompile(`^((?:(?:https://(?:[^@/:\s]+@)?)|git@)+([^/:\s]+)(?:/|:)([^/:\s]+)/([^\s]+?)(?:\.git)?)(?:#([^\s]+))?$`)
 	osMkdirAll  = os.MkdirAll
 	execCommand = exec.Command
 )
@@ -39,9 +39,7 @@ func New(baseDir, srcUrl string) (SCM, error) {
 		instance:  instance,
 		org:       org,
 		repo:      repo,
-	}
-	if branch != "" {
-		scm.branch = branch[1:]
+		branch:    branch,
 	}
 
 	err := osMkdirAll(scm.LocalPath(), 0777)
