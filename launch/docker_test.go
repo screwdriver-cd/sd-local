@@ -4,26 +4,29 @@ import (
 	"fmt"
 	"os"
 	"os/exec"
+	"strings"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
 )
 
 type fakeExecCommand struct {
-	id      string
-	execCmd func(command string, args ...string) *exec.Cmd
+	id       string
+	execCmd  func(command string, args ...string) *exec.Cmd
+	commands []string
 }
 
 func newFakeExecCommand(id string) *fakeExecCommand {
-	c := &fakeExecCommand{
-		id: id,
-		execCmd: func(name string, args ...string) *exec.Cmd {
-			cs := []string{"-test.run=TestHelperProcess", "--", name}
-			cs = append(cs, args...)
-			cmd := exec.Command(os.Args[0], cs...)
-			cmd.Env = []string{"GO_WANT_HELPER_PROCESS=1", fmt.Sprintf("GO_TEST_MODE=%s", id)}
-			return cmd
-		},
+	c := &fakeExecCommand{}
+	c.id = id
+	c.commands = make([]string, 0, 5)
+	c.execCmd = func(name string, args ...string) *exec.Cmd {
+		c.commands = append(c.commands, fmt.Sprintf("%s %s", name, strings.Join(args, " ")))
+		cs := []string{"-test.run=TestHelperProcess", "--", name}
+		cs = append(cs, args...)
+		cmd := exec.Command(os.Args[0], cs...)
+		cmd.Env = []string{"GO_WANT_HELPER_PROCESS=1", fmt.Sprintf("GO_TEST_MODE=%s", id)}
+		return cmd
 	}
 	return c
 }
@@ -88,13 +91,17 @@ func TestRunBuild(t *testing.T) {
 	}
 
 	testCase := []struct {
-		name        string
-		id          string
-		expectError error
+		name             string
+		id               string
+		expectError      error
+		expectedCommands []string
 	}{
-		{"success", "SUCCESS_RUN_BUILD", nil},
-		{"failure build run", "FAIL_BUILD_CONTAINER_RUN", fmt.Errorf("failed to run build container: exit status 1")},
-		{"failure build image pull", "FAIL_BUILD_IMAGE_PULL", fmt.Errorf("failed to pull user image exit status 1")},
+		{"success", "SUCCESS_RUN_BUILD", nil,
+			[]string{
+				fmt.Sprintf("docker pull %s", buildConfig.Image),
+				fmt.Sprintf("docker container run --rm -v %s/:/sd/workspace/src/screwdriver.cd/sd-local/local-build -v %s/:%s -v %s:/opt/sd %s /opt/sd/local_run.sh ", buildConfig.SrcPath, buildConfig.ArtifactsPath, buildConfig.Environment[0]["SD_ARTIFACTS_DIR"], d.volume, buildConfig.Image)}},
+		{"failure build run", "FAIL_BUILD_CONTAINER_RUN", fmt.Errorf("failed to run build container: exit status 1"), []string{}},
+		{"failure build image pull", "FAIL_BUILD_IMAGE_PULL", fmt.Errorf("failed to pull user image exit status 1"), []string{}},
 	}
 
 	for _, tt := range testCase {
@@ -102,6 +109,9 @@ func TestRunBuild(t *testing.T) {
 			c := newFakeExecCommand(tt.id)
 			execCommand = c.execCmd
 			err := d.runBuild(buildConfig)
+			for i, expectedCommand := range tt.expectedCommands {
+				assert.True(t, strings.Contains(c.commands[i], expectedCommand), "expect %q \nbut got \n%q", expectedCommand, c.commands[i])
+			}
 			if tt.expectError != nil {
 				assert.Equal(t, tt.expectError.Error(), err.Error())
 			} else {

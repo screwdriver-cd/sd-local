@@ -56,8 +56,9 @@ func TestNew(t *testing.T) {
 		}
 
 		expectedBuildConfig := newBuildConfig()
+		expectedBuildConfig.SrcPath = "/test/sd-local/build/repo"
 
-		launcher := New(job, config, "test", "testjwt", "sd-artifacts", "")
+		launcher := New(job, config, "test", "testjwt", "sd-artifacts", "/test/sd-local/build/repo")
 		l, ok := launcher.(*launch)
 		assert.True(t, ok)
 		assert.Equal(t, expectedBuildConfig, l.buildConfig)
