@@ -76,6 +76,9 @@ func TestSetupBin(t *testing.T) {
 }
 
 func TestRunBuild(t *testing.T) {
+	defer func() {
+		execCommand = exec.Command
+	}()
 	buildConfig := newBuildConfig()
 
 	d := &docker{

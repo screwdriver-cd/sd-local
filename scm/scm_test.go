@@ -98,7 +98,7 @@ func TestLocalPath(t *testing.T) {
 func TestClean(t *testing.T) {
 	t.Run("success", func(t *testing.T) {
 		baseDir := os.TempDir()
-		defer os.RemoveAll(baseDir)
+		defer os.RemoveAll(filepath.Join(baseDir, "repo"))
 		s := &scm{
 			baseDir:   baseDir,
 			remoteUrl: "https://github.com/screwdriver-cd/sd-local.git",
