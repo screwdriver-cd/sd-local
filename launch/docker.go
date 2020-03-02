@@ -38,26 +38,23 @@ func newDocker(setupImage, setupImageVer string) runner {
 }
 
 func (d *docker) setupBin() error {
-	_ = execCommand("docker", "volume", "rm", "--force", d.volume).Run()
+	_ = execDockerCommand("volume", "rm", "--force", d.volume)
 
-	err := execCommand("docker", "volume", "create", "--name", d.volume).Run()
+	err := execDockerCommand("volume", "create", "--name", d.volume)
 	if err != nil {
-		return fmt.Errorf("failed to create docker volume")
+		return fmt.Errorf("failed to create docker volume: %v", err)
 	}
 
 	mount := fmt.Sprintf("%s:/opt/sd/", d.volume)
 	image := fmt.Sprintf("%s:%s", d.setupImage, d.setupImageVersion)
-	err = execCommand("docker", "pull", image).Run()
+	err = execDockerCommand("pull", image)
 	if err != nil {
-		return fmt.Errorf("failed to pull launcher image %v", err)
+		return fmt.Errorf("failed to pull launcher image: %v", err)
 	}
-	cmd := execCommand("docker", "container", "run", "--rm", "-v", mount, image, "--entrypoint", "/bin/echo set up bin")
-	buf := bytes.NewBuffer(nil)
-	cmd.Stderr = buf
-	err = cmd.Run()
+
+	err = execDockerCommand("container", "run", "--rm", "-v", mount, image, "--entrypoint", "/bin/echo set up bin")
 	if err != nil {
-		io.Copy(os.Stderr, buf)
-		return fmt.Errorf("failed to prepare build scripts")
+		return fmt.Errorf("failed to prepare build scripts: %v", err)
 	}
 
 	return nil
@@ -85,19 +82,27 @@ func (d *docker) runBuild(buildConfig buildConfig) error {
 		return err
 	}
 
-	err = execCommand("docker", "pull", buildImage).Run()
+	err = execDockerCommand("pull", buildImage)
 	if err != nil {
 		return fmt.Errorf("failed to pull user image %v", err)
 	}
-	cmd := execCommand("docker", "container", "run", "--rm", "-v", srcVol, "-v", artVol, "-v", binVol, buildImage, "/opt/sd/local_run.sh", string(configJSON), buildConfig.JobName, environment["SD_API_URL"], environment["SD_STORE_URL"], logfilePath)
 
+	err = execDockerCommand("container", "run", "--rm", "-v", srcVol, "-v", artVol, "-v", binVol, buildImage, "/opt/sd/local_run.sh", string(configJSON), buildConfig.JobName, environment["SD_API_URL"], environment["SD_STORE_URL"], logfilePath)
+	if err != nil {
+		return fmt.Errorf("failed to run build container: %v", err)
+	}
+
+	return nil
+}
+
+func execDockerCommand(args ...string) error {
+	cmd := execCommand("docker", args...)
 	buf := bytes.NewBuffer(nil)
 	cmd.Stderr = buf
-	err = cmd.Run()
+	err := cmd.Run()
 	if err != nil {
 		io.Copy(os.Stderr, buf)
 		return err
 	}
-
 	return nil
 }
