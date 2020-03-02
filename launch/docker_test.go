@@ -59,9 +59,9 @@ func TestSetupBin(t *testing.T) {
 		expectError error
 	}{
 		{"success", "SUCCESS_SETUP_BIN", nil},
-		{"failure volume create", "FAIL_CREATING_VOLUME", fmt.Errorf("failed to create docker volume")},
-		{"failure container run", "FAIL_CONTAINER_RUN", fmt.Errorf("failed to prepare build scripts")},
-		{"failure launcher image pull", "FAIL_LAUNCHER_PULL", fmt.Errorf("failed to pull launcher image exit status 1")},
+		{"failure volume create", "FAIL_CREATING_VOLUME", fmt.Errorf("failed to create docker volume: exit status 1")},
+		{"failure container run", "FAIL_CONTAINER_RUN", fmt.Errorf("failed to prepare build scripts: exit status 1")},
+		{"failure launcher image pull", "FAIL_LAUNCHER_PULL", fmt.Errorf("failed to pull launcher image: exit status 1")},
 	}
 
 	for _, tt := range testCase {
@@ -90,7 +90,7 @@ func TestRunBuild(t *testing.T) {
 		expectError error
 	}{
 		{"success", "SUCCESS_RUN_BUILD", nil},
-		{"failure build run", "FAIL_BUILD_CONTAINER_RUN", fmt.Errorf("exit status 1")},
+		{"failure build run", "FAIL_BUILD_CONTAINER_RUN", fmt.Errorf("failed to run build container: exit status 1")},
 		{"failure build image pull", "FAIL_BUILD_IMAGE_PULL", fmt.Errorf("failed to pull user image exit status 1")},
 	}
 

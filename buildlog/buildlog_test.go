@@ -6,7 +6,6 @@ import (
 	"fmt"
 	"io/ioutil"
 	"os"
-	"regexp"
 	"strings"
 	"testing"
 	"time"
@@ -16,7 +15,6 @@ import (
 
 const (
 	intervalTime = 500
-	timeRegEx    = `[\d]{4}-[\d]{2}-[\d]{2} [\d]{2}:[\d]{2}:[\d]{2}`
 )
 
 var (
@@ -71,8 +69,8 @@ func TestRun(t *testing.T) {
 		time.Sleep(intervalTime * time.Millisecond)
 		l.Stop()
 
-		expected := regexp.MustCompile(timeRegEx + " test 1\n" + timeRegEx + " test 2\n")
-		assert.Regexpf(t, expected, writer.String(), "time format is invalid")
+		expected := "main: test 1\nmain: test 2\n"
+		assert.Equal(t, expected, writer.String())
 	})
 
 	t.Run("failure by parsing error", func(t *testing.T) {
@@ -102,8 +100,8 @@ func TestRun(t *testing.T) {
 		time.Sleep(intervalTime * time.Millisecond)
 		l.Stop()
 
-		expected := regexp.MustCompile(timeRegEx + " test 1\n")
-		assert.Regexpf(t, expected, writer.String(), "time format is invalid")
+		expected := "main: test 1\n"
+		assert.Equal(t, expected, writer.String())
 	})
 }
 
@@ -138,8 +136,8 @@ func TestStop(t *testing.T) {
 		go write(t, tmpFile.Name(), testInputsNotWritten)
 		time.Sleep(intervalTime * time.Millisecond)
 
-		expected := regexp.MustCompile(timeRegEx + " test 1\n" + timeRegEx + " test 2\n")
-		assert.Regexpf(t, expected, writer.String(), "time format is invalid")
+		expected := "main: test 1\nmain: test 2\n"
+		assert.Equal(t, expected, writer.String())
 	})
 }
 
