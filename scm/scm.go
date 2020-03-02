@@ -38,6 +38,11 @@ type scm struct {
 // New create new SCM instance
 func New(baseDir, srcURL string) (SCM, error) {
 	results := srcURLRegex.FindStringSubmatch(srcURL)
+
+	if len(results) == 0 {
+		return nil, fmt.Errorf("failed to fetch source code with invalid URL: %s", srcURL)
+	}
+
 	remoteURL, branch := results[1], results[2]
 
 	s := &scm{

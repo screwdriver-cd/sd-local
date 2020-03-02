@@ -74,7 +74,7 @@ func TestNew(t *testing.T) {
 		assert.Nil(t, err)
 	})
 
-	t.Run("failure", func(t *testing.T) {
+	t.Run("failure with making directory", func(t *testing.T) {
 		osMkdirAll = func(path string, per os.FileMode) error { return fmt.Errorf("test") }
 
 		baseDir := os.TempDir()
@@ -86,6 +86,22 @@ func TestNew(t *testing.T) {
 		assert.Nil(t, scm)
 		msg := err.Error()
 		assert.Equal(t, 0, strings.Index(msg, "failed to make local source directory: "), fmt.Sprintf("expected error is `failed to make local source directory: ...`, actual: `%v`", msg))
+
+		_, err = os.Stat(filepath.Join(baseDir, "repo", "github.com", "screwdriver-cd", "sd-local"))
+		assert.NotNil(t, err)
+	})
+
+	t.Run("failure with invalid url", func(t *testing.T) {
+		osMkdirAll = func(path string, per os.FileMode) error { return fmt.Errorf("test") }
+
+		baseDir := os.TempDir()
+		srcURL := "https://github.com/screwdriver-cd"
+
+		scm, err := New(baseDir, srcURL)
+		defer os.RemoveAll(filepath.Join(baseDir, "repo"))
+
+		assert.Nil(t, scm)
+		assert.Equal(t, err.Error(), "failed to fetch source code with invalid URL: https://github.com/screwdriver-cd")
 
 		_, err = os.Stat(filepath.Join(baseDir, "repo", "github.com", "screwdriver-cd", "sd-local"))
 		assert.NotNil(t, err)

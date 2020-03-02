@@ -1,6 +1,7 @@
 package cmd
 
 import (
+	"fmt"
 	"os"
 	"path/filepath"
 	"time"
@@ -50,6 +51,8 @@ func newBuildCmd() *cobra.Command {
 			srcPath := cwd
 
 			if srcURL != "" {
+				fmt.Printf("Pulling the source code from %s...\n", srcURL)
+
 				scm, err := scmNew(sdlocalDir, srcURL)
 				if err != nil {
 					logrus.Fatal(err)
@@ -103,6 +106,7 @@ func newBuildCmd() *cobra.Command {
 
 			launch := launchNew(job, config, jobName, api.JWT(), artifactsPath, srcPath)
 
+			fmt.Println("Prepare to start build...")
 			err = launch.Run()
 			if err != nil {
 				logrus.Fatal(err)
