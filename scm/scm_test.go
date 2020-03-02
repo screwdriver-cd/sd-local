@@ -34,47 +34,43 @@ func newFakeExecCommand(id string) *fakeExecCommand {
 func TestNew(t *testing.T) {
 	t.Run("success with https url", func(t *testing.T) {
 		baseDir := os.TempDir()
-		srcUrl := "https://github.com/screwdriver-cd/sd-local.git#test"
+		srcURL := "https://github.com/screwdriver-cd/sd-local.git#test"
 
 		expected := &scm{
 			baseDir:   baseDir,
-			remoteUrl: "https://github.com/screwdriver-cd/sd-local.git",
-			instance:  "github.com",
-			org:       "screwdriver-cd",
-			repo:      "sd-local",
+			remoteURL: "https://github.com/screwdriver-cd/sd-local.git",
 			branch:    "test",
 		}
 
-		scm, err := New(baseDir, srcUrl)
-		defer os.RemoveAll(filepath.Join(baseDir, "repo"))
+		s, err := New(baseDir, srcURL)
+		defer os.RemoveAll(s.LocalPath())
 
-		assert.Equal(t, expected, scm)
+		expected.localPath = s.LocalPath()
+		assert.Equal(t, expected, s)
 		assert.Nil(t, err)
 
-		_, err = os.Stat(filepath.Join(baseDir, "repo", "github.com", "screwdriver-cd", "sd-local"))
+		_, err = os.Stat(s.LocalPath())
 		assert.Nil(t, err)
 	})
 
 	t.Run("success with ssh url", func(t *testing.T) {
 		baseDir := os.TempDir()
-		srcUrl := "git@github.com:screwdriver-cd/sd-local.git#branch#test"
+		srcURL := "git@github.com:screwdriver-cd/sd-local.git#branch#test"
 
 		expected := &scm{
 			baseDir:   baseDir,
-			remoteUrl: "git@github.com:screwdriver-cd/sd-local.git",
-			instance:  "github.com",
-			org:       "screwdriver-cd",
-			repo:      "sd-local",
+			remoteURL: "git@github.com:screwdriver-cd/sd-local.git",
 			branch:    "branch#test",
 		}
 
-		scm, err := New(baseDir, srcUrl)
+		s, err := New(baseDir, srcURL)
 		defer os.RemoveAll(filepath.Join(baseDir, "repo"))
 
-		assert.Equal(t, expected, scm)
+		expected.localPath = s.LocalPath()
+		assert.Equal(t, expected, s)
 		assert.Nil(t, err)
 
-		_, err = os.Stat(filepath.Join(baseDir, "repo", "github.com", "screwdriver-cd", "sd-local"))
+		_, err = os.Stat(s.LocalPath())
 		assert.Nil(t, err)
 	})
 
@@ -82,9 +78,9 @@ func TestNew(t *testing.T) {
 		osMkdirAll = func(path string, per os.FileMode) error { return fmt.Errorf("test") }
 
 		baseDir := os.TempDir()
-		srcUrl := "https://github.com/screwdriver-cd/sd-local.git#test"
+		srcURL := "https://github.com/screwdriver-cd/sd-local.git#test"
 
-		scm, err := New(baseDir, srcUrl)
+		scm, err := New(baseDir, srcURL)
 		defer os.RemoveAll(filepath.Join(baseDir, "repo"))
 
 		assert.Nil(t, scm)
@@ -99,17 +95,12 @@ func TestNew(t *testing.T) {
 func TestLocalPath(t *testing.T) {
 	t.Run("success", func(t *testing.T) {
 		s := &scm{
-			baseDir:   "/path/to/base/dir",
-			remoteUrl: "https://github.com/screwdriver-cd/sd-local.git",
-			instance:  "github.com",
-			org:       "screwdriver-cd",
-			repo:      "sd-local",
-			branch:    "test",
+			localPath: "/path/to/base/dir/repo/foobar",
 		}
 
 		assert.Equal(
 			t,
-			"/path/to/base/dir/repo/github.com/screwdriver-cd/sd-local",
+			"/path/to/base/dir/repo/foobar",
 			s.LocalPath(),
 		)
 
@@ -122,11 +113,9 @@ func TestClean(t *testing.T) {
 		defer os.RemoveAll(filepath.Join(baseDir, "repo"))
 		s := &scm{
 			baseDir:   baseDir,
-			remoteUrl: "https://github.com/screwdriver-cd/sd-local.git",
-			instance:  "github.com",
-			org:       "screwdriver-cd",
-			repo:      "sd-local",
+			remoteURL: "https://github.com/screwdriver-cd/sd-local.git",
 			branch:    "test",
+			localPath: filepath.Join(baseDir, "repo/test"),
 		}
 
 		localPath := s.LocalPath()
@@ -151,11 +140,9 @@ func TestPull(t *testing.T) {
 		defer os.RemoveAll(filepath.Join(baseDir, "repo"))
 		s := &scm{
 			baseDir:   baseDir,
-			remoteUrl: "https://github.com/screwdriver-cd/sd-local.git",
-			instance:  "github.com",
-			org:       "screwdriver-cd",
-			repo:      "sd-local",
+			remoteURL: "https://github.com/screwdriver-cd/sd-local.git",
 			branch:    "test",
+			localPath: filepath.Join(baseDir, "repo/test"),
 		}
 		c := newFakeExecCommand("SUCCESS_PULL")
 		execCommand = c.execCmd
@@ -163,7 +150,7 @@ func TestPull(t *testing.T) {
 
 		err := s.Pull()
 		assert.Nil(t, err)
-		assert.Equal(t, "git clone -b test https://github.com/screwdriver-cd/sd-local.git", c.command)
+		assert.Equal(t, fmt.Sprintf("git clone -b test https://github.com/screwdriver-cd/sd-local.git %s", s.LocalPath()), c.command)
 	})
 
 	t.Run("success without branch", func(t *testing.T) {
@@ -171,10 +158,8 @@ func TestPull(t *testing.T) {
 		defer os.RemoveAll(filepath.Join(baseDir, "repo"))
 		s := &scm{
 			baseDir:   baseDir,
-			remoteUrl: "https://github.com/screwdriver-cd/sd-local.git",
-			instance:  "github.com",
-			org:       "screwdriver-cd",
-			repo:      "sd-local",
+			remoteURL: "https://github.com/screwdriver-cd/sd-local.git",
+			localPath: filepath.Join(baseDir, "repo/test"),
 		}
 		c := newFakeExecCommand("SUCCESS_PULL")
 		execCommand = c.execCmd
@@ -182,18 +167,12 @@ func TestPull(t *testing.T) {
 
 		err := s.Pull()
 		assert.Nil(t, err)
-		assert.Equal(t, "git clone https://github.com/screwdriver-cd/sd-local.git", c.command)
+		assert.Equal(t, fmt.Sprintf("git clone https://github.com/screwdriver-cd/sd-local.git %s", s.LocalPath()), c.command)
 	})
 
 	t.Run("failed to pull image", func(t *testing.T) {
-		baseDir := os.TempDir()
-		defer os.RemoveAll(filepath.Join(baseDir, "repo"))
 		s := &scm{
-			baseDir:   baseDir,
-			remoteUrl: "https://github.com/screwdriver-cd/sd-local.git",
-			instance:  "github.com",
-			org:       "screwdriver-cd",
-			repo:      "sd-local",
+			remoteURL: "https://github.com/screwdriver-cd/sd-local.git",
 		}
 		c := newFakeExecCommand("FAILED_PULL")
 		execCommand = c.execCmd

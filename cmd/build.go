@@ -29,7 +29,7 @@ var (
 )
 
 func newBuildCmd() *cobra.Command {
-	var srcUrl string
+	var srcURL string
 
 	buildCmd := &cobra.Command{
 		Use:   "build [job name]",
@@ -49,8 +49,8 @@ func newBuildCmd() *cobra.Command {
 			}
 			srcPath := cwd
 
-			if srcUrl != "" {
-				scm, err := scmNew(sdlocalDir, srcUrl)
+			if srcURL != "" {
+				scm, err := scmNew(sdlocalDir, srcURL)
 				if err != nil {
 					logrus.Fatal(err)
 				}
@@ -121,7 +121,7 @@ func newBuildCmd() *cobra.Command {
 		"Path to the host side directory which is mounted into $SD_ARTIFACTS_DIR.")
 
 	buildCmd.Flags().StringVar(
-		&srcUrl,
+		&srcURL,
 		"src-url",
 		"",
 		`Specify the source url to build.
