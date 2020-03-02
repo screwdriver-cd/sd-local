@@ -35,7 +35,7 @@ func setup() {
 	configNew = func(confPath string) (config.Config, error) { return config.Config{}, nil }
 	apiNew = func(url, token string) (screwdriver.API, error) { return mockAPI{}, nil }
 	buildLogNew = func(filepath string, writer io.Writer) (logger buildlog.Logger, err error) { return mockLogger{}, nil }
-	launchNew = func(job screwdriver.Job, config config.Config, jobName, jwt, artifactsPath string) launch.Launcher {
+	launchNew = func(job screwdriver.Job, config config.Config, jobName, jwt, artifactsPath, srcPath string) launch.Launcher {
 		return mockLaunch{}
 	}
 }

@@ -8,7 +8,6 @@ import (
 	"testing"
 
 	"github.com/stretchr/testify/assert"
-	"os/exec"
 )
 
 func TestNew(t *testing.T) {
