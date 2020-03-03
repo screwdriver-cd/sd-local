@@ -43,6 +43,15 @@ type buildConfig struct {
 	ArtifactsPath string                 `json:"-"`
 }
 
+// Option is option for launch New
+type Option struct {
+	Job           screwdriver.Job
+	Config        config.Config
+	JobName       string
+	JWT           string
+	ArtifactsPath string
+}
+
 const (
 	defaultArtDir = "/sd/workspace/artifacts"
 )
@@ -55,14 +64,14 @@ func mergeEnv(env, userEnv envVar) []envVar {
 	return []envVar{env}
 }
 
-func createBuildConfig(config config.Config, job screwdriver.Job, jobName, jwt, artifactsPath string) buildConfig {
+func createBuildConfig(option Option) buildConfig {
 	defaultEnv := envVar{
-		"SD_TOKEN":         jwt,
+		"SD_TOKEN":         option.JWT,
 		"SD_ARTIFACTS_DIR": defaultArtDir,
-		"SD_API_URL":       config.APIURL,
-		"SD_STORE_URL":     config.StoreURL,
+		"SD_API_URL":       option.Config.APIURL,
+		"SD_STORE_URL":     option.Config.StoreURL,
 	}
-	env := mergeEnv(defaultEnv, job.Environment)
+	env := mergeEnv(defaultEnv, option.Job.Environment)
 
 	return buildConfig{
 		ID:            0,
@@ -72,19 +81,19 @@ func createBuildConfig(config config.Config, job screwdriver.Job, jobName, jwt, 
 		ParentBuildID: []int{0},
 		Sha:           "dummy",
 		Meta:          map[string]interface{}{},
-		Steps:         job.Steps,
-		Image:         job.Image,
-		JobName:       jobName,
-		ArtifactsPath: artifactsPath,
+		Steps:         option.Job.Steps,
+		Image:         option.Job.Image,
+		JobName:       option.JobName,
+		ArtifactsPath: option.ArtifactsPath,
 	}
 }
 
 // New creates new Launcher interface.
-func New(job screwdriver.Job, config config.Config, jobName, jwt, artifactsPath string) Launcher {
+func New(option Option) Launcher {
 	l := new(launch)
 
-	l.runner = newDocker(config.Launcher.Image, config.Launcher.Version)
-	l.buildConfig = createBuildConfig(config, job, jobName, jwt, artifactsPath)
+	l.runner = newDocker(option.Config.Launcher.Image, option.Config.Launcher.Version)
+	l.buildConfig = createBuildConfig(option)
 
 	return l
 }

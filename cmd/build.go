@@ -76,7 +76,15 @@ func newBuildCmd() *cobra.Command {
 			}
 			go logger.Run()
 
-			launch := launchNew(job, config, jobName, api.JWT(), artifactsPath)
+			option := launch.Option{
+				Job:           job,
+				Config:        config,
+				JobName:       jobName,
+				JWT:           api.JWT(),
+				ArtifactsPath: artifactsPath,
+			}
+
+			launch := launchNew(option)
 
 			err = launch.Run()
 			if err != nil {
