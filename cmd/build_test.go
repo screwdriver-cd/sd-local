@@ -7,9 +7,7 @@ import (
 	"path/filepath"
 	"testing"
 
-	"github.com/screwdriver-cd/sd-local/config"
 	"github.com/screwdriver-cd/sd-local/launch"
-	"github.com/screwdriver-cd/sd-local/screwdriver"
 	"github.com/stretchr/testify/assert"
 )
 
@@ -68,8 +66,8 @@ func TestBuildCmd(t *testing.T) {
 			"foo":  "bar",
 		}
 
-		launchNew = func(job screwdriver.Job, config config.Config, jobName, jwt, artifactsPath string, optionEnv launch.EnvVar) launch.Launcher {
-			assert.Equal(t, expected, optionEnv)
+		launchNew = func(option launch.Option) launch.Launcher {
+			assert.Equal(t, expected, option.OptionEnv)
 			return mockLaunch{}
 		}
 
@@ -92,8 +90,8 @@ func TestBuildCmd(t *testing.T) {
 			"foo":  "bar",
 		}
 
-		launchNew = func(job screwdriver.Job, config config.Config, jobName, jwt, artifactsPath string, optionEnv launch.EnvVar) launch.Launcher {
-			assert.Equal(t, expected, optionEnv)
+		launchNew = func(option launch.Option) launch.Launcher {
+			assert.Equal(t, expected, option.OptionEnv)
 			return mockLaunch{}
 		}
 
@@ -117,8 +115,8 @@ func TestBuildCmd(t *testing.T) {
 			"baz":  "qux",
 		}
 
-		launchNew = func(job screwdriver.Job, config config.Config, jobName, jwt, artifactsPath string, optionEnv launch.EnvVar) launch.Launcher {
-			assert.Equal(t, expected, optionEnv)
+		launchNew = func(option launch.Option) launch.Launcher {
+			assert.Equal(t, expected, option.OptionEnv)
 			return mockLaunch{}
 		}
 
