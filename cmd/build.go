@@ -139,7 +139,7 @@ func newBuildCmd() *cobra.Command {
 		"memory",
 		"m",
 		"",
-		"Memory limit for build container. Same as the option for docker.")
+		"Memory limit for build container, which take a positive integer, followed by a suffix of b, k, m, g.")
 
 	buildCmd.Flags().StringVar(
 		&srcURL,
