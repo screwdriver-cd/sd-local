@@ -73,6 +73,7 @@ Usage:
 Flags:
       --artifacts-dir string   Path to the host side directory which is mounted into $SD_ARTIFACTS_DIR. (default "sd-artifacts")
   -h, --help                   help for build
+  -m, --memory string          Memory limit for build container. Same as the option for docker.
       --src-url string         Specify the source url to build.
                                ex) git@github.com:<org>/<repo>.git[#<branch>]
                                    https://github.com/<org>/<repo>.git[#<branch>]
