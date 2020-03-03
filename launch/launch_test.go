@@ -56,6 +56,7 @@ func TestNew(t *testing.T) {
 		}
 
 		expectedBuildConfig := newBuildConfig()
+		expectedBuildConfig.SrcPath = "/test/sd-local/build/repo"
 
 		option := Option{
 			Job:           job,
@@ -63,6 +64,7 @@ func TestNew(t *testing.T) {
 			JobName:       "test",
 			JWT:           "testjwt",
 			ArtifactsPath: "sd-artifacts",
+			SrcPath:       "/test/sd-local/build/repo",
 		}
 
 		launcher := New(option)
