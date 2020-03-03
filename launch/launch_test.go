@@ -15,12 +15,12 @@ import (
 
 var testDir string = "./testdata"
 
-func newBuildConfig() buildConfig {
+func newBuildConfig(options ...func(b *buildConfig)) buildConfig {
 	buf, _ := ioutil.ReadFile(filepath.Join(testDir, "job.json"))
 	job := screwdriver.Job{}
 	_ = json.Unmarshal(buf, &job)
 
-	return buildConfig{
+	b := buildConfig{
 		ID: 0,
 		Environment: []envVar{{
 			"SD_ARTIFACTS_DIR": "/test/artifacts",
@@ -39,6 +39,12 @@ func newBuildConfig() buildConfig {
 		JobName:       "test",
 		ArtifactsPath: "sd-artifacts",
 	}
+
+	for _, option := range options {
+		option(&b)
+	}
+
+	return b
 }
 
 func TestNew(t *testing.T) {
