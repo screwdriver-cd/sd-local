@@ -36,20 +36,16 @@ func TestNew(t *testing.T) {
 		baseDir := os.TempDir()
 		srcURL := "https://github.com/screwdriver-cd/sd-local.git#test"
 
-		expected := &scm{
-			baseDir:   baseDir,
-			remoteURL: "https://github.com/screwdriver-cd/sd-local.git",
-			branch:    "test",
-		}
-
 		s, err := New(baseDir, srcURL)
 		defer os.RemoveAll(s.LocalPath())
 
-		expected.localPath = s.LocalPath()
-		assert.Equal(t, expected, s)
-		assert.Nil(t, err)
+		scm := s.(*scm)
 
-		_, err = os.Stat(s.LocalPath())
+		assert.Equal(t, baseDir, scm.baseDir)
+		assert.Equal(t, "https://github.com/screwdriver-cd/sd-local.git", scm.remoteURL)
+		assert.Equal(t, "test", scm.branch)
+		assert.NotEmpty(t, scm.LocalPath())
+		assert.DirExists(t, scm.LocalPath())
 		assert.Nil(t, err)
 	})
 
@@ -57,20 +53,16 @@ func TestNew(t *testing.T) {
 		baseDir := os.TempDir()
 		srcURL := "git@github.com:screwdriver-cd/sd-local.git#branch#test"
 
-		expected := &scm{
-			baseDir:   baseDir,
-			remoteURL: "git@github.com:screwdriver-cd/sd-local.git",
-			branch:    "branch#test",
-		}
-
 		s, err := New(baseDir, srcURL)
-		defer os.RemoveAll(filepath.Join(baseDir, "repo"))
+		defer os.RemoveAll(s.LocalPath())
 
-		expected.localPath = s.LocalPath()
-		assert.Equal(t, expected, s)
-		assert.Nil(t, err)
+		scm := s.(*scm)
 
-		_, err = os.Stat(s.LocalPath())
+		assert.Equal(t, baseDir, scm.baseDir)
+		assert.Equal(t, "git@github.com:screwdriver-cd/sd-local.git", scm.remoteURL)
+		assert.Equal(t, "branch#test", scm.branch)
+		assert.NotEmpty(t, scm.LocalPath())
+		assert.DirExists(t, scm.LocalPath())
 		assert.Nil(t, err)
 	})
 
@@ -80,15 +72,11 @@ func TestNew(t *testing.T) {
 		baseDir := os.TempDir()
 		srcURL := "https://github.com/screwdriver-cd/sd-local.git#test"
 
-		scm, err := New(baseDir, srcURL)
-		defer os.RemoveAll(filepath.Join(baseDir, "repo"))
-
-		assert.Nil(t, scm)
+		s, err := New(baseDir, srcURL)
 		msg := err.Error()
-		assert.Equal(t, 0, strings.Index(msg, "failed to make local source directory: "), fmt.Sprintf("expected error is `failed to make local source directory: ...`, actual: `%v`", msg))
 
-		_, err = os.Stat(filepath.Join(baseDir, "repo", "github.com", "screwdriver-cd", "sd-local"))
-		assert.NotNil(t, err)
+		assert.Nil(t, s)
+		assert.Equal(t, 0, strings.Index(msg, "failed to make local source directory: "), fmt.Sprintf("expected error is `failed to make local source directory: ...`, actual: `%v`", msg))
 	})
 
 	t.Run("failure with invalid url", func(t *testing.T) {
@@ -97,14 +85,10 @@ func TestNew(t *testing.T) {
 		baseDir := os.TempDir()
 		srcURL := "https://github.com/screwdriver-cd"
 
-		scm, err := New(baseDir, srcURL)
-		defer os.RemoveAll(filepath.Join(baseDir, "repo"))
+		s, err := New(baseDir, srcURL)
 
-		assert.Nil(t, scm)
+		assert.Nil(t, s)
 		assert.Equal(t, err.Error(), "failed to fetch source code with invalid URL: https://github.com/screwdriver-cd")
-
-		_, err = os.Stat(filepath.Join(baseDir, "repo", "github.com", "screwdriver-cd", "sd-local"))
-		assert.NotNil(t, err)
 	})
 }
 
@@ -144,9 +128,7 @@ func TestClean(t *testing.T) {
 
 		s.Clean()
 
-		_, err = os.Stat(localPath)
-
-		assert.True(t, os.IsNotExist(err))
+		assert.NoDirExists(t, s.LocalPath())
 	})
 }
 
