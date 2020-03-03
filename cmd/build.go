@@ -9,6 +9,7 @@ import (
 	"github.com/screwdriver-cd/sd-local/buildlog"
 	"github.com/screwdriver-cd/sd-local/config"
 	"github.com/screwdriver-cd/sd-local/launch"
+	"github.com/screwdriver-cd/sd-local/scm"
 	"github.com/screwdriver-cd/sd-local/screwdriver"
 	"github.com/sirupsen/logrus"
 	"github.com/spf13/cobra"
@@ -24,9 +25,12 @@ var (
 	buildLogNew  = buildlog.New
 	launchNew    = launch.New
 	artifactsDir = launch.ArtifactsDir
+	scmNew       = scm.New
 )
 
 func newBuildCmd() *cobra.Command {
+	var srcURL string
+
 	buildCmd := &cobra.Command{
 		Use:   "build [job name]",
 		Short: "Run screwdriver build.",
@@ -38,7 +42,35 @@ func newBuildCmd() *cobra.Command {
 				logrus.Fatal(err)
 			}
 
-			config, err := configNew(filepath.Join(homedir, ".sdlocal", "config"))
+			sdlocalDir := filepath.Join(homedir, ".sdlocal")
+			cwd, err := os.Getwd()
+			if err != nil {
+				logrus.Fatal(err)
+			}
+			srcPath := cwd
+
+			if srcURL != "" {
+				logrus.Infof("Pulling the source code from %s...", srcURL)
+
+				scm, err := scmNew(sdlocalDir, srcURL)
+				if err != nil {
+					logrus.Fatal(err)
+				}
+				defer func() {
+					err = scm.Clean()
+					if err != nil {
+						logrus.Fatal(err)
+					}
+				}()
+
+				err = scm.Pull()
+				if err != nil {
+					logrus.Fatal(err)
+				}
+				srcPath = scm.LocalPath()
+			}
+
+			config, err := configNew(filepath.Join(sdlocalDir, "config"))
 			if err != nil {
 				logrus.Fatal(err)
 			}
@@ -50,12 +82,7 @@ func newBuildCmd() *cobra.Command {
 
 			jobName := args[0]
 
-			cwd, err := os.Getwd()
-			if err != nil {
-				logrus.Fatal(err)
-			}
-
-			sdYAMLPath := filepath.Join(cwd, "screwdriver.yaml")
+			sdYAMLPath := filepath.Join(srcPath, "screwdriver.yaml")
 			job, err := api.Job(jobName, sdYAMLPath)
 			if err != nil {
 				logrus.Fatal(err)
@@ -76,8 +103,9 @@ func newBuildCmd() *cobra.Command {
 			}
 			go logger.Run()
 
-			launch := launchNew(job, config, jobName, api.JWT(), artifactsPath)
+			launch := launchNew(job, config, jobName, api.JWT(), artifactsPath, srcPath)
 
+			logrus.Info("Prepare to start build...")
 			err = launch.Run()
 			if err != nil {
 				logrus.Fatal(err)
@@ -95,5 +123,12 @@ func newBuildCmd() *cobra.Command {
 		launch.ArtifactsDir,
 		"Path to the host side directory which is mounted into $SD_ARTIFACTS_DIR.")
 
+	buildCmd.Flags().StringVar(
+		&srcURL,
+		"src-url",
+		"",
+		`Specify the source url to build.
+ex) git@github.com:<org>/<repo>.git[#<branch>]
+    https://github.com/<org>/<repo>.git[#<branch>]`)
 	return buildCmd
 }
