@@ -112,4 +112,5 @@ func newBuildCmd() *cobra.Command {
 		"",
 		"Memory limit for build container. Same as the option for docker.")
 
+	return buildCmd
 }
