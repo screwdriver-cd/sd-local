@@ -89,7 +89,7 @@ func (d *docker) runBuild(buildConfig buildConfig) error {
 
 	memoryLimit := buildConfig.MemoryLimit
 	if memoryLimit != "" {
-		memoryLimit = fmt.Sprintf("-m %s", memoryLimit)
+		memoryLimit = fmt.Sprintf("-m%s", memoryLimit)
 	}
 
 	err = execDockerCommand("container", "run", "--rm", "-v", srcVol, "-v", artVol, "-v", binVol, memoryLimit, buildImage, "/opt/sd/local_run.sh", string(configJSON), buildConfig.JobName, environment["SD_API_URL"], environment["SD_STORE_URL"], logfilePath)
