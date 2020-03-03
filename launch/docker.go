@@ -87,7 +87,12 @@ func (d *docker) runBuild(buildConfig buildConfig) error {
 		return fmt.Errorf("failed to pull user image %v", err)
 	}
 
-	err = execDockerCommand("container", "run", "--rm", "-v", srcVol, "-v", artVol, "-v", binVol, buildImage, "/opt/sd/local_run.sh", string(configJSON), buildConfig.JobName, environment["SD_API_URL"], environment["SD_STORE_URL"], logfilePath)
+	memoryLimit := buildConfig.MemoryLimit
+	if memoryLimit != "" {
+		memoryLimit = fmt.Sprintf("-m %s", memoryLimit)
+	}
+
+	err = execDockerCommand("container", "run", "--rm", "-v", srcVol, "-v", artVol, "-v", binVol, memoryLimit, buildImage, "/opt/sd/local_run.sh", string(configJSON), buildConfig.JobName, environment["SD_API_URL"], environment["SD_STORE_URL"], logfilePath)
 	if err != nil {
 		return fmt.Errorf("failed to run build container: %v", err)
 	}

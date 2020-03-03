@@ -24,6 +24,7 @@ var (
 	buildLogNew  = buildlog.New
 	launchNew    = launch.New
 	artifactsDir = launch.ArtifactsDir
+	memory       = ""
 )
 
 func newBuildCmd() *cobra.Command {
@@ -82,6 +83,7 @@ func newBuildCmd() *cobra.Command {
 				JobName:       jobName,
 				JWT:           api.JWT(),
 				ArtifactsPath: artifactsPath,
+				Memory:        memory,
 			}
 
 			launch := launchNew(option)
@@ -103,5 +105,11 @@ func newBuildCmd() *cobra.Command {
 		launch.ArtifactsDir,
 		"Path to the host side directory which is mounted into $SD_ARTIFACTS_DIR.")
 
-	return buildCmd
+	buildCmd.Flags().StringVarP(
+		&memory,
+		"memory",
+		"m",
+		"",
+		"Memory limit for build container. Same as the option for docker.")
+
 }

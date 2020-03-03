@@ -41,6 +41,7 @@ type buildConfig struct {
 	Image         string                 `json:"-"`
 	JobName       string                 `json:"-"`
 	ArtifactsPath string                 `json:"-"`
+	MemoryLimit   string                 `json:"-"`
 }
 
 // Option is option for launch New
@@ -50,6 +51,7 @@ type Option struct {
 	JobName       string
 	JWT           string
 	ArtifactsPath string
+	Memory        string
 }
 
 const (
@@ -85,6 +87,7 @@ func createBuildConfig(option Option) buildConfig {
 		Image:         option.Job.Image,
 		JobName:       option.JobName,
 		ArtifactsPath: option.ArtifactsPath,
+		MemoryLimit:   option.Memory,
 	}
 }
 
