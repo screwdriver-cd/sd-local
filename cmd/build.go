@@ -25,6 +25,7 @@ var (
 	buildLogNew  = buildlog.New
 	launchNew    = launch.New
 	artifactsDir = launch.ArtifactsDir
+	memory       = ""
 	scmNew       = scm.New
 )
 
@@ -103,7 +104,17 @@ func newBuildCmd() *cobra.Command {
 			}
 			go logger.Run()
 
-			launch := launchNew(job, config, jobName, api.JWT(), artifactsPath, srcPath)
+			option := launch.Option{
+				Job:           job,
+				Config:        config,
+				JobName:       jobName,
+				JWT:           api.JWT(),
+				ArtifactsPath: artifactsPath,
+				Memory:        memory,
+				SrcPath:       srcPath,
+			}
+
+			launch := launchNew(option)
 
 			logrus.Info("Prepare to start build...")
 			err = launch.Run()
@@ -122,6 +133,13 @@ func newBuildCmd() *cobra.Command {
 		"artifacts-dir",
 		launch.ArtifactsDir,
 		"Path to the host side directory which is mounted into $SD_ARTIFACTS_DIR.")
+
+	buildCmd.Flags().StringVarP(
+		&memory,
+		"memory",
+		"m",
+		"",
+		"Memory limit for build container, which take a positive integer, followed by a suffix of b, k, m, g.")
 
 	buildCmd.Flags().StringVar(
 		&srcURL,

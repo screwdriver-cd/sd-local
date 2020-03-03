@@ -35,7 +35,7 @@ func setup() {
 	configNew = func(confPath string) (config.Config, error) { return config.Config{}, nil }
 	apiNew = func(url, token string) (screwdriver.API, error) { return mockAPI{}, nil }
 	buildLogNew = func(filepath string, writer io.Writer) (logger buildlog.Logger, err error) { return mockLogger{}, nil }
-	launchNew = func(job screwdriver.Job, config config.Config, jobName, jwt, artifactsPath, srcPath string) launch.Launcher {
+	launchNew = func(option launch.Option) launch.Launcher {
 		return mockLaunch{}
 	}
 }
@@ -73,6 +73,7 @@ Usage:
 Flags:
       --artifacts-dir string   Path to the host side directory which is mounted into $SD_ARTIFACTS_DIR. (default "sd-artifacts")
   -h, --help                   help for build
+  -m, --memory string          Memory limit for build container, which take a positive integer, followed by a suffix of b, k, m, g.
       --src-url string         Specify the source url to build.
                                ex) git@github.com:<org>/<repo>.git[#<branch>]
                                    https://github.com/<org>/<repo>.git[#<branch>]

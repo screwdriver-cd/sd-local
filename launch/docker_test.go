@@ -82,7 +82,6 @@ func TestRunBuild(t *testing.T) {
 	defer func() {
 		execCommand = exec.Command
 	}()
-	buildConfig := newBuildConfig()
 
 	d := &docker{
 		volume:            "SD_LAUNCH_BIN",
@@ -95,20 +94,29 @@ func TestRunBuild(t *testing.T) {
 		id               string
 		expectError      error
 		expectedCommands []string
+		buildConfig      buildConfig
 	}{
 		{"success", "SUCCESS_RUN_BUILD", nil,
 			[]string{
-				fmt.Sprintf("docker pull %s", buildConfig.Image),
-				fmt.Sprintf("docker container run --rm -v %s/:/sd/workspace/src/screwdriver.cd/sd-local/local-build -v %s/:%s -v %s:/opt/sd %s /opt/sd/local_run.sh ", buildConfig.SrcPath, buildConfig.ArtifactsPath, buildConfig.Environment[0]["SD_ARTIFACTS_DIR"], d.volume, buildConfig.Image)}},
-		{"failure build run", "FAIL_BUILD_CONTAINER_RUN", fmt.Errorf("failed to run build container: exit status 1"), []string{}},
-		{"failure build image pull", "FAIL_BUILD_IMAGE_PULL", fmt.Errorf("failed to pull user image exit status 1"), []string{}},
+				"docker pull node:12",
+				fmt.Sprintf("docker container run --rm -v /:/sd/workspace/src/screwdriver.cd/sd-local/local-build -v sd-artifacts/:/test/artifacts -v %s:/opt/sd node:12 /opt/sd/local_run.sh ", d.volume)},
+			newBuildConfig()},
+		{"success with memory limit", "SUCCESS_RUN_BUILD", nil,
+			[]string{
+				"docker pull node:12",
+				fmt.Sprintf("docker container run -m2GB --rm -v /:/sd/workspace/src/screwdriver.cd/sd-local/local-build -v sd-artifacts/:/test/artifacts -v %s:/opt/sd node:12 /opt/sd/local_run.sh ", d.volume)},
+			newBuildConfig(func(b *buildConfig) {
+				b.MemoryLimit = "2GB"
+			})},
+		{"failure build run", "FAIL_BUILD_CONTAINER_RUN", fmt.Errorf("failed to run build container: exit status 1"), []string{}, newBuildConfig()},
+		{"failure build image pull", "FAIL_BUILD_IMAGE_PULL", fmt.Errorf("failed to pull user image exit status 1"), []string{}, newBuildConfig()},
 	}
 
 	for _, tt := range testCase {
 		t.Run(tt.name, func(t *testing.T) {
 			c := newFakeExecCommand(tt.id)
 			execCommand = c.execCmd
-			err := d.runBuild(buildConfig)
+			err := d.runBuild(tt.buildConfig)
 			for i, expectedCommand := range tt.expectedCommands {
 				assert.True(t, strings.Contains(c.commands[i], expectedCommand), "expect %q \nbut got \n%q", expectedCommand, c.commands[i])
 			}

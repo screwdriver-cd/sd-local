@@ -15,12 +15,12 @@ import (
 
 var testDir string = "./testdata"
 
-func newBuildConfig() buildConfig {
+func newBuildConfig(options ...func(b *buildConfig)) buildConfig {
 	buf, _ := ioutil.ReadFile(filepath.Join(testDir, "job.json"))
 	job := screwdriver.Job{}
 	_ = json.Unmarshal(buf, &job)
 
-	return buildConfig{
+	b := buildConfig{
 		ID: 0,
 		Environment: []envVar{{
 			"SD_ARTIFACTS_DIR": "/test/artifacts",
@@ -39,6 +39,12 @@ func newBuildConfig() buildConfig {
 		JobName:       "test",
 		ArtifactsPath: "sd-artifacts",
 	}
+
+	for _, option := range options {
+		option(&b)
+	}
+
+	return b
 }
 
 func TestNew(t *testing.T) {
@@ -58,7 +64,16 @@ func TestNew(t *testing.T) {
 		expectedBuildConfig := newBuildConfig()
 		expectedBuildConfig.SrcPath = "/test/sd-local/build/repo"
 
-		launcher := New(job, config, "test", "testjwt", "sd-artifacts", "/test/sd-local/build/repo")
+		option := Option{
+			Job:           job,
+			Config:        config,
+			JobName:       "test",
+			JWT:           "testjwt",
+			ArtifactsPath: "sd-artifacts",
+			SrcPath:       "/test/sd-local/build/repo",
+		}
+
+		launcher := New(option)
 		l, ok := launcher.(*launch)
 		assert.True(t, ok)
 		assert.Equal(t, expectedBuildConfig, l.buildConfig)
@@ -79,7 +94,15 @@ func TestNew(t *testing.T) {
 		expectedBuildConfig := newBuildConfig()
 		expectedBuildConfig.Environment[0]["SD_ARTIFACTS_DIR"] = "/sd/workspace/artifacts"
 
-		launcher := New(job, config, "test", "testjwt", "sd-artifacts", "")
+		option := Option{
+			Job:           job,
+			Config:        config,
+			JobName:       "test",
+			JWT:           "testjwt",
+			ArtifactsPath: "sd-artifacts",
+		}
+
+		launcher := New(option)
 		l, ok := launcher.(*launch)
 		assert.True(t, ok)
 		assert.Equal(t, expectedBuildConfig, l.buildConfig)
