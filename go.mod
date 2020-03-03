@@ -4,6 +4,7 @@ go 1.13
 
 require (
 	github.com/go-yaml/yaml v2.1.0+incompatible
+	github.com/joho/godotenv v1.3.0
 	github.com/kr/pretty v0.2.0 // indirect
 	github.com/mitchellh/go-homedir v1.1.0
 	github.com/sirupsen/logrus v1.4.2

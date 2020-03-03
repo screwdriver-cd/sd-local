@@ -38,6 +38,7 @@ func setup() {
 	launchNew = func(option launch.Option) launch.Launcher {
 		return mockLaunch{}
 	}
+	osMkdirAll = func(path string, filemode os.FileMode) error { return nil }
 }
 
 func TestMain(m *testing.M) {
