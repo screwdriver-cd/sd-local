@@ -31,6 +31,7 @@ var (
 
 func newBuildCmd() *cobra.Command {
 	var srcURL string
+	var optionEnv map[string]string
 
 	buildCmd := &cobra.Command{
 		Use:   "build [job name]",
@@ -112,6 +113,7 @@ func newBuildCmd() *cobra.Command {
 				ArtifactsPath: artifactsPath,
 				Memory:        memory,
 				SrcPath:       srcPath,
+				OptionEnv:     optionEnv,
 			}
 
 			launch := launchNew(option)
@@ -148,5 +150,14 @@ func newBuildCmd() *cobra.Command {
 		`Specify the source url to build.
 ex) git@github.com:<org>/<repo>.git[#<branch>]
     https://github.com/<org>/<repo>.git[#<branch>]`)
+
+	buildCmd.Flags().StringToStringVarP(
+		&optionEnv,
+		"env",
+		"e",
+		map[string]string{},
+		"Set key and value relationship which is set as environment variables of Build Container",
+	)
+
 	return buildCmd
 }

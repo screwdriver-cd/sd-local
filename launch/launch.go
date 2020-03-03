@@ -54,14 +54,18 @@ type Option struct {
 	ArtifactsPath string
 	Memory        string
 	SrcPath       string
+	OptionEnv     envVar
 }
 
 const (
 	defaultArtDir = "/sd/workspace/artifacts"
 )
 
-func mergeEnv(env, userEnv envVar) []envVar {
+func mergeEnv(env, userEnv, optionEnv envVar) []envVar {
 	for k, v := range userEnv {
+		env[k] = v
+	}
+	for k, v := range optionEnv {
 		env[k] = v
 	}
 
@@ -75,7 +79,7 @@ func createBuildConfig(option Option) buildConfig {
 		"SD_API_URL":       option.Config.APIURL,
 		"SD_STORE_URL":     option.Config.StoreURL,
 	}
-	env := mergeEnv(defaultEnv, option.Job.Environment)
+	env := mergeEnv(defaultEnv, option.Job.Environment, option.OptionEnv)
 
 	return buildConfig{
 		ID:            0,
