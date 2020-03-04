@@ -61,8 +61,8 @@ const (
 	defaultArtDir = "/sd/workspace/artifacts"
 )
 
-func mergeEnv(env, userEnv, optionEnv EnvVar) []EnvVar {
-	for k, v := range userEnv {
+func mergeEnv(env, jobEnv, optionEnv EnvVar) []EnvVar {
+	for k, v := range jobEnv {
 		env[k] = v
 	}
 	for k, v := range optionEnv {
