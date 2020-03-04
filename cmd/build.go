@@ -1,10 +1,12 @@
 package cmd
 
 import (
+	"fmt"
 	"os"
 	"path/filepath"
 	"time"
 
+	"github.com/joho/godotenv"
 	"github.com/mitchellh/go-homedir"
 	"github.com/screwdriver-cd/sd-local/buildlog"
 	"github.com/screwdriver-cd/sd-local/config"
@@ -27,10 +29,32 @@ var (
 	artifactsDir = launch.ArtifactsDir
 	memory       = ""
 	scmNew       = scm.New
+	osMkdirAll   = os.MkdirAll
 )
+
+func mergeEnvFromFile(optionEnv *map[string]string, envFilePath string) error {
+	absEnvFilePath, err := filepath.Abs(envFilePath)
+	if err != nil {
+		return err
+	}
+
+	env, err := godotenv.Read(absEnvFilePath)
+	if err != nil {
+		return fmt.Errorf("failed to read env file in `%s`: %v", absEnvFilePath, err)
+	}
+
+	for k, v := range env {
+		if _, ok := (*optionEnv)[k]; !ok {
+			(*optionEnv)[k] = v
+		}
+	}
+	return nil
+}
 
 func newBuildCmd() *cobra.Command {
 	var srcURL string
+	var optionEnv map[string]string
+	var envFilePath string
 
 	buildCmd := &cobra.Command{
 		Use:   "build [job name]",
@@ -38,6 +62,13 @@ func newBuildCmd() *cobra.Command {
 		Long:  `Run screwdriver build of the specified job name.`,
 		Args:  cobra.ExactArgs(1),
 		Run: func(cmd *cobra.Command, args []string) {
+			if envFilePath != "" {
+				err := mergeEnvFromFile(&optionEnv, envFilePath)
+				if err != nil {
+					logrus.Fatal(err)
+				}
+			}
+
 			homedir, err := homedir.Dir()
 			if err != nil {
 				logrus.Fatal(err)
@@ -94,7 +125,7 @@ func newBuildCmd() *cobra.Command {
 				logrus.Fatal(err)
 			}
 
-			err = os.MkdirAll(artifactsPath, 0777)
+			err = osMkdirAll(artifactsPath, 0777)
 			if err != nil {
 				logrus.Fatal(err)
 			}
@@ -112,6 +143,7 @@ func newBuildCmd() *cobra.Command {
 				ArtifactsPath: artifactsPath,
 				Memory:        memory,
 				SrcPath:       srcPath,
+				OptionEnv:     optionEnv,
 			}
 
 			launch := launchNew(option)
@@ -148,5 +180,20 @@ func newBuildCmd() *cobra.Command {
 		`Specify the source url to build.
 ex) git@github.com:<org>/<repo>.git[#<branch>]
     https://github.com/<org>/<repo>.git[#<branch>]`)
+
+	buildCmd.Flags().StringToStringVarP(
+		&optionEnv,
+		"env",
+		"e",
+		map[string]string{},
+		"Set key and value relationship which is set as environment variables of Build Container. (<key>=<value>)",
+	)
+
+	buildCmd.Flags().StringVar(
+		&envFilePath,
+		"env-file",
+		"",
+		"Path to config file of environment variables. '.env' format file can be used.")
+
 	return buildCmd
 }

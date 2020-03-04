@@ -27,11 +27,11 @@ type launch struct {
 	runner      runner
 }
 
-type envVar map[string]string
+type EnvVar map[string]string
 
 type buildConfig struct {
 	ID            int                    `json:"id"`
-	Environment   []envVar               `json:"environment"`
+	Environment   []EnvVar               `json:"environment"`
 	EventID       int                    `json:"eventId"`
 	JobID         int                    `json:"jobId"`
 	ParentBuildID []int                  `json:"parentBuildId"`
@@ -54,28 +54,32 @@ type Option struct {
 	ArtifactsPath string
 	Memory        string
 	SrcPath       string
+	OptionEnv     EnvVar
 }
 
 const (
 	defaultArtDir = "/sd/workspace/artifacts"
 )
 
-func mergeEnv(env, userEnv envVar) []envVar {
-	for k, v := range userEnv {
+func mergeEnv(env, jobEnv, optionEnv EnvVar) []EnvVar {
+	for k, v := range jobEnv {
+		env[k] = v
+	}
+	for k, v := range optionEnv {
 		env[k] = v
 	}
 
-	return []envVar{env}
+	return []EnvVar{env}
 }
 
 func createBuildConfig(option Option) buildConfig {
-	defaultEnv := envVar{
+	defaultEnv := EnvVar{
 		"SD_TOKEN":         option.JWT,
 		"SD_ARTIFACTS_DIR": defaultArtDir,
 		"SD_API_URL":       option.Config.APIURL,
 		"SD_STORE_URL":     option.Config.StoreURL,
 	}
-	env := mergeEnv(defaultEnv, option.Job.Environment)
+	env := mergeEnv(defaultEnv, option.Job.Environment, option.OptionEnv)
 
 	return buildConfig{
 		ID:            0,

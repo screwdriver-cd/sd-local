@@ -38,6 +38,7 @@ func setup() {
 	launchNew = func(option launch.Option) launch.Launcher {
 		return mockLaunch{}
 	}
+	osMkdirAll = func(path string, filemode os.FileMode) error { return nil }
 }
 
 func TestMain(m *testing.M) {
@@ -72,6 +73,8 @@ Usage:
 
 Flags:
       --artifacts-dir string   Path to the host side directory which is mounted into $SD_ARTIFACTS_DIR. (default "sd-artifacts")
+  -e, --env stringToString     Set key and value relationship which is set as environment variables of Build Container. (<key>=<value>) (default [])
+      --env-file string        Path to config file of environment variables. '.env' format file can be used.
   -h, --help                   help for build
   -m, --memory string          Memory limit for build container, which take a positive integer, followed by a suffix of b, k, m, g.
       --src-url string         Specify the source url to build.

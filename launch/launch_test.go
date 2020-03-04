@@ -22,7 +22,7 @@ func newBuildConfig(options ...func(b *buildConfig)) buildConfig {
 
 	b := buildConfig{
 		ID: 0,
-		Environment: []envVar{{
+		Environment: []EnvVar{{
 			"SD_ARTIFACTS_DIR": "/test/artifacts",
 			"SD_API_URL":       "http://api-test.screwdriver.cd",
 			"SD_STORE_URL":     "http://store-test.screwdriver.cd",

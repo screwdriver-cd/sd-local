@@ -7,6 +7,7 @@ import (
 	"path/filepath"
 	"testing"
 
+	"github.com/screwdriver-cd/sd-local/launch"
 	"github.com/stretchr/testify/assert"
 )
 
@@ -24,6 +25,12 @@ func TestBuildCmd(t *testing.T) {
 	})
 
 	t.Run("Success build cmd with --artifacts-dir", func(t *testing.T) {
+		defFunc := osMkdirAll
+		osMkdirAll = os.MkdirAll
+		defer func() {
+			osMkdirAll = defFunc
+		}()
+
 		root := newBuildCmd()
 
 		dir, err := ioutil.TempDir("", "example")
@@ -47,6 +54,79 @@ func TestBuildCmd(t *testing.T) {
 		assert.Nil(t, err)
 	})
 
+	t.Run("Success build cmd with --env", func(t *testing.T) {
+		root := newBuildCmd()
+
+		root.SetArgs([]string{"test", "--env", "hoge=fuga", "-e", "foo=bar"})
+		buf := bytes.NewBuffer(nil)
+		root.SetOut(buf)
+
+		expected := launch.EnvVar{
+			"hoge": "fuga",
+			"foo":  "bar",
+		}
+
+		launchNew = func(option launch.Option) launch.Launcher {
+			assert.Equal(t, expected, option.OptionEnv)
+			return mockLaunch{}
+		}
+
+		err := root.Execute()
+		want := ""
+		assert.Equal(t, want, buf.String())
+		assert.Nil(t, err)
+		assert.Equal(t, "sd-artifacts", artifactsDir)
+	})
+
+	t.Run("Success build cmd with --env-file", func(t *testing.T) {
+		root := newBuildCmd()
+
+		root.SetArgs([]string{"test", "--env-file", "./testdata/test_env"})
+		buf := bytes.NewBuffer(nil)
+		root.SetOut(buf)
+
+		expected := launch.EnvVar{
+			"hoge": "fuga",
+			"foo":  "bar",
+		}
+
+		launchNew = func(option launch.Option) launch.Launcher {
+			assert.Equal(t, expected, option.OptionEnv)
+			return mockLaunch{}
+		}
+
+		err := root.Execute()
+		want := ""
+		assert.Equal(t, want, buf.String())
+		assert.Nil(t, err)
+		assert.Equal(t, "sd-artifacts", artifactsDir)
+	})
+
+	t.Run("Success build cmd with --env and --env-file", func(t *testing.T) {
+		root := newBuildCmd()
+
+		root.SetArgs([]string{"test", "--env-file", "./testdata/test_env", "--env", "hoge=overwritten", "-e", "baz=qux"})
+		buf := bytes.NewBuffer(nil)
+		root.SetOut(buf)
+
+		expected := launch.EnvVar{
+			"hoge": "overwritten",
+			"foo":  "bar",
+			"baz":  "qux",
+		}
+
+		launchNew = func(option launch.Option) launch.Launcher {
+			assert.Equal(t, expected, option.OptionEnv)
+			return mockLaunch{}
+		}
+
+		err := root.Execute()
+		want := ""
+		assert.Equal(t, want, buf.String())
+		assert.Nil(t, err)
+		assert.Equal(t, "sd-artifacts", artifactsDir)
+	})
+
 	t.Run("Failed build cmd when too many args", func(t *testing.T) {
 		root := newBuildCmd()
 		root.SetArgs([]string{"test", "main"})
@@ -59,6 +139,8 @@ Usage:
 
 Flags:
       --artifacts-dir string   Path to the host side directory which is mounted into $SD_ARTIFACTS_DIR. (default "sd-artifacts")
+  -e, --env stringToString     Set key and value relationship which is set as environment variables of Build Container. (<key>=<value>) (default [])
+      --env-file string        Path to config file of environment variables. '.env' format file can be used.
   -h, --help                   help for build
   -m, --memory string          Memory limit for build container, which take a positive integer, followed by a suffix of b, k, m, g.
       --src-url string         Specify the source url to build.
@@ -83,6 +165,8 @@ Usage:
 
 Flags:
       --artifacts-dir string   Path to the host side directory which is mounted into $SD_ARTIFACTS_DIR. (default "sd-artifacts")
+  -e, --env stringToString     Set key and value relationship which is set as environment variables of Build Container. (<key>=<value>) (default [])
+      --env-file string        Path to config file of environment variables. '.env' format file can be used.
   -h, --help                   help for build
   -m, --memory string          Memory limit for build container, which take a positive integer, followed by a suffix of b, k, m, g.
       --src-url string         Specify the source url to build.
