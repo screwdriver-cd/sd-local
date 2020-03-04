@@ -186,14 +186,14 @@ ex) git@github.com:<org>/<repo>.git[#<branch>]
 		"env",
 		"e",
 		map[string]string{},
-		"Set key and value relationship which is set as environment variables of Build Container",
+		"Set key and value relationship which is set as environment variables of Build Container. (<key>=<value>)",
 	)
 
 	buildCmd.Flags().StringVar(
 		&envFilePath,
 		"env-file",
 		"",
-		"Path to config file of environment variables.")
+		"Path to config file of environment variables. '.env' format file can be used.")
 
 	return buildCmd
 }
