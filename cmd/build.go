@@ -70,7 +70,7 @@ func newBuildCmd() *cobra.Command {
 				return fmt.Errorf("accepts 1 arg(s), received %d", len(args))
 			}
 			if optionMeta != "" && metaFilePath != "" {
-				return errors.New("can't pass the both options `meta` and `meta-file`, please speify only one of them")
+				return errors.New("can't pass the both options `meta` and `meta-file`, please specify only one of them")
 			}
 			return nil
 		},
