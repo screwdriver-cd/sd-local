@@ -71,6 +71,7 @@ func TestNew(t *testing.T) {
 			JWT:           "testjwt",
 			ArtifactsPath: "sd-artifacts",
 			SrcPath:       "/test/sd-local/build/repo",
+			Meta:          map[string]interface{}{},
 		}
 
 		launcher := New(option)
@@ -100,6 +101,7 @@ func TestNew(t *testing.T) {
 			JobName:       "test",
 			JWT:           "testjwt",
 			ArtifactsPath: "sd-artifacts",
+			Meta:          map[string]interface{}{},
 		}
 
 		launcher := New(option)

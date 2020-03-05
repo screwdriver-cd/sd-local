@@ -27,6 +27,7 @@ type launch struct {
 	runner      runner
 }
 
+// EnvVar is a map for environment variables
 type EnvVar map[string]string
 
 type buildConfig struct {
