@@ -55,6 +55,7 @@ type Option struct {
 	Memory        string
 	SrcPath       string
 	OptionEnv     EnvVar
+	Meta          map[string]interface{}
 }
 
 const (
@@ -88,7 +89,7 @@ func createBuildConfig(option Option) buildConfig {
 		JobID:         0,
 		ParentBuildID: []int{0},
 		Sha:           "dummy",
-		Meta:          map[string]interface{}{},
+		Meta:          option.Meta,
 		Steps:         option.Job.Steps,
 		Image:         option.Job.Image,
 		JobName:       option.JobName,

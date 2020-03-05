@@ -1,7 +1,9 @@
 package cmd
 
 import (
+	"encoding/json"
 	"fmt"
+	"io/ioutil"
 	"os"
 	"path/filepath"
 	"time"
@@ -55,6 +57,8 @@ func newBuildCmd() *cobra.Command {
 	var srcURL string
 	var optionEnv map[string]string
 	var envFilePath string
+	var optionMeta string
+	var metaFilePath string
 
 	buildCmd := &cobra.Command{
 		Use:   "build [job name]",
@@ -62,11 +66,34 @@ func newBuildCmd() *cobra.Command {
 		Long:  `Run screwdriver build of the specified job name.`,
 		Args:  cobra.ExactArgs(1),
 		Run: func(cmd *cobra.Command, args []string) {
+			var err error
+
 			if envFilePath != "" {
-				err := mergeEnvFromFile(&optionEnv, envFilePath)
+				err = mergeEnvFromFile(&optionEnv, envFilePath)
 				if err != nil {
 					logrus.Fatal(err)
 				}
+			}
+
+			metaJson := []byte("{}")
+			if optionMeta != "" && metaFilePath != "" {
+				logrus.Fatal("can't pass the both options `meta` and `meta-file`, please speify only one of them")
+			} else if optionMeta != "" {
+				metaJson = []byte(optionMeta)
+			} else if metaFilePath != "" {
+				metaJson, err = ioutil.ReadFile(metaFilePath)
+
+				if err != nil {
+					logrus.Fatalf("failed to read meta-file %s: %s", metaFilePath, err.Error())
+				}
+			}
+
+			var meta map[string]interface{}
+
+			err = json.Unmarshal(metaJson, &meta)
+
+			if err != nil {
+				logrus.Fatalf("failed to parse meta %s, meta must be formated with JSON: %s", string(metaJson), err.Error())
 			}
 
 			homedir, err := homedir.Dir()
@@ -144,6 +171,7 @@ func newBuildCmd() *cobra.Command {
 				Memory:        memory,
 				SrcPath:       srcPath,
 				OptionEnv:     optionEnv,
+				Meta:          meta,
 			}
 
 			launch := launchNew(option)
@@ -194,6 +222,19 @@ ex) git@github.com:<org>/<repo>.git[#<branch>]
 		"env-file",
 		"",
 		"Path to config file of environment variables. '.env' format file can be used.")
+
+	buildCmd.Flags().StringVar(
+		&optionMeta,
+		"meta",
+		"",
+		"Metadata to pass into the build environment, which is represented with JSON format",
+	)
+
+	buildCmd.Flags().StringVar(
+		&metaFilePath,
+		"meta-file",
+		"",
+		"Path to the meta file. meta file is represented with JSON format.")
 
 	return buildCmd
 }
