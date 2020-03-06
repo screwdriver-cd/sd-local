@@ -30,20 +30,23 @@ type launch struct {
 // EnvVar is a map for environment variables
 type EnvVar map[string]string
 
+// Meta is a map for metadata
+type Meta map[string]interface{}
+
 type buildConfig struct {
-	ID            int                    `json:"id"`
-	Environment   []EnvVar               `json:"environment"`
-	EventID       int                    `json:"eventId"`
-	JobID         int                    `json:"jobId"`
-	ParentBuildID []int                  `json:"parentBuildId"`
-	Sha           string                 `json:"sha"`
-	Meta          map[string]interface{} `json:"meta"`
-	Steps         []screwdriver.Step     `json:"steps"`
-	Image         string                 `json:"-"`
-	JobName       string                 `json:"-"`
-	ArtifactsPath string                 `json:"-"`
-	MemoryLimit   string                 `json:"-"`
-	SrcPath       string                 `json:"-"`
+	ID            int                `json:"id"`
+	Environment   []EnvVar           `json:"environment"`
+	EventID       int                `json:"eventId"`
+	JobID         int                `json:"jobId"`
+	ParentBuildID []int              `json:"parentBuildId"`
+	Sha           string             `json:"sha"`
+	Meta          Meta               `json:"meta"`
+	Steps         []screwdriver.Step `json:"steps"`
+	Image         string             `json:"-"`
+	JobName       string             `json:"-"`
+	ArtifactsPath string             `json:"-"`
+	MemoryLimit   string             `json:"-"`
+	SrcPath       string             `json:"-"`
 }
 
 // Option is option for launch New
@@ -56,7 +59,7 @@ type Option struct {
 	Memory        string
 	SrcPath       string
 	OptionEnv     EnvVar
-	Meta          map[string]interface{}
+	Meta          Meta
 }
 
 const (

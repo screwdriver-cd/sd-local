@@ -66,12 +66,16 @@ func newBuildCmd() *cobra.Command {
 		Short: "Run screwdriver build.",
 		Long:  `Run screwdriver build of the specified job name.`,
 		Args: func(cmd *cobra.Command, args []string) error {
-			if len(args) != 1 {
-				return fmt.Errorf("accepts 1 arg(s), received %d", len(args))
+			err := cobra.ExactArgs(1)(cmd, args)
+
+			if err != nil {
+				return err
 			}
+
 			if optionMeta != "" && metaFilePath != "" {
 				return errors.New("can't pass the both options `meta` and `meta-file`, please specify only one of them")
 			}
+
 			return nil
 		},
 		Run: func(cmd *cobra.Command, args []string) {
@@ -88,19 +92,25 @@ func newBuildCmd() *cobra.Command {
 			if optionMeta != "" {
 				metaJSON = []byte(optionMeta)
 			} else if metaFilePath != "" {
-				metaJSON, err = ioutil.ReadFile(metaFilePath)
+				absMetaFilePath, err := filepath.Abs(metaFilePath)
+
+				if err != nil {
+					logrus.Fatal(err)
+				}
+
+				metaJSON, err = ioutil.ReadFile(absMetaFilePath)
 
 				if err != nil {
 					logrus.Fatalf("failed to read meta-file %s: %v", metaFilePath, err)
 				}
 			}
 
-			var meta map[string]interface{}
+			var meta launch.Meta
 
 			err = json.Unmarshal(metaJSON, &meta)
 
 			if err != nil {
-				logrus.Fatalf("failed to parse meta %s, meta must be formated with JSON: %s", string(metaJSON), err.Error())
+				logrus.Fatalf("failed to parse meta %s, meta must be formated with JSON: %v", string(metaJSON), err)
 			}
 
 			homedir, err := homedir.Dir()

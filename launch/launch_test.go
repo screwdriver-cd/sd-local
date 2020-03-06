@@ -33,7 +33,7 @@ func newBuildConfig(options ...func(b *buildConfig)) buildConfig {
 		JobID:         0,
 		ParentBuildID: []int{0},
 		Sha:           "dummy",
-		Meta:          map[string]interface{}{},
+		Meta:          Meta{},
 		Steps:         job.Steps,
 		Image:         job.Image,
 		JobName:       "test",
@@ -71,7 +71,7 @@ func TestNew(t *testing.T) {
 			JWT:           "testjwt",
 			ArtifactsPath: "sd-artifacts",
 			SrcPath:       "/test/sd-local/build/repo",
-			Meta:          map[string]interface{}{},
+			Meta:          Meta{},
 		}
 
 		launcher := New(option)
@@ -101,7 +101,7 @@ func TestNew(t *testing.T) {
 			JobName:       "test",
 			JWT:           "testjwt",
 			ArtifactsPath: "sd-artifacts",
-			Meta:          map[string]interface{}{},
+			Meta:          Meta{},
 		}
 
 		launcher := New(option)

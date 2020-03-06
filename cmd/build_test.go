@@ -152,7 +152,7 @@ func TestBuildCmd(t *testing.T) {
 		buf := bytes.NewBuffer(nil)
 		root.SetOut(buf)
 
-		expected := map[string]interface{}{
+		expected := launch.Meta{
 			"hoge": "fuga",
 		}
 
@@ -174,7 +174,7 @@ func TestBuildCmd(t *testing.T) {
 		buf := bytes.NewBuffer(nil)
 		root.SetOut(buf)
 
-		expected := map[string]interface{}{
+		expected := launch.Meta{
 			"hoge": "fuga",
 			"foo": map[string]interface{}{
 				"bar": "aaa",
@@ -192,7 +192,7 @@ func TestBuildCmd(t *testing.T) {
 		assert.Nil(t, err)
 	})
 
-	t.Run("Success build cmd with --meta and --meta-file", func(t *testing.T) {
+	t.Run("Failed build cmd with --meta and --meta-file", func(t *testing.T) {
 		root := newBuildCmd()
 
 		root.SetArgs([]string{"test", "--meta-file", "./testdata/test_meta.json", "--meta", "{\"hoge\":\"fuga\"}"})
