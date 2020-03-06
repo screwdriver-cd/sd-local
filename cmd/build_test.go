@@ -204,7 +204,7 @@ func TestBuildCmd(t *testing.T) {
 		}
 
 		err := root.Execute()
-		want := "Error: can't pass the both options `meta` and `meta-file`, please speify only one of them" + buildUsage
+		want := "Error: can't pass the both options `meta` and `meta-file`, please specify only one of them" + buildUsage
 		assert.Equal(t, want, buf.String())
 		assert.NotNil(t, err)
 	})
