@@ -91,7 +91,7 @@ func newBuildCmd() *cobra.Command {
 				metaJSON, err = ioutil.ReadFile(metaFilePath)
 
 				if err != nil {
-					logrus.Fatalf("failed to read meta-file %s: %s", metaFilePath, err.Error())
+					logrus.Fatalf("failed to read meta-file %s: %v", metaFilePath, err)
 				}
 			}
 
