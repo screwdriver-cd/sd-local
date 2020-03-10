@@ -13,3 +13,17 @@ jobs:
             - gofmt: (! gofmt -d -s . | grep '^')
             - test: go test -coverprofile=${SD_ARTIFACTS_DIR}/coverage.out -coverpkg=./... ./...
             - build: go build -a -o /dev/null
+            - test-release: "curl -sL https://git.io/goreleaser | bash -s -- --snapshot"
+
+    publish:
+        requires: [test]
+        steps:
+            - setup-ci: git clone https://github.com/screwdriver-cd/toolbox.git ci
+            - get: go mod download
+            - tag: ./ci/git-tag.sh
+            - release: "curl -sL https://git.io/goreleaser | bash"
+        secrets:
+            # Pushing tags to Git
+            - GIT_KEY
+            # Pushing releases to GitHub
+            - GITHUB_TOKEN
