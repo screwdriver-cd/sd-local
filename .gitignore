@@ -23,5 +23,11 @@ debug
 # mac
 .DS_Store
 
+# Generated while deploying
+/ci/
+
+# goreleaser
+/dist/
+
 sd-artifacts
 .sdlocal/
