@@ -29,5 +29,8 @@ debug
 # goreleaser
 /dist/
 
+# git-tag.sh
+/VERSION
+
 sd-artifacts
 .sdlocal/
