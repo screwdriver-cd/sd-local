@@ -13,6 +13,7 @@ jobs:
             - gofmt: (! gofmt -d -s . | grep '^')
             - test: go test -coverprofile=${SD_ARTIFACTS_DIR}/coverage.out -coverpkg=./... ./...
             - build: go build -a -o /dev/null
+            - test-release: "curl -sL https://git.io/goreleaser | bash -s -- --snapshot"
 
     publish:
         requires: [test]
