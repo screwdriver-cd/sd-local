@@ -23,5 +23,8 @@ debug
 # mac
 .DS_Store
 
+# goreleaser
+/dist/
+
 sd-artifacts
 .sdlocal/
