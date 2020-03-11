@@ -7,6 +7,8 @@ import (
 )
 
 var (
+	// version is embedded when building this command using ldflags.
+	// if nothing is embedded, version is "dev"
 	version = "dev"
 )
 
