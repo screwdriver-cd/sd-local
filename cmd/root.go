@@ -21,6 +21,7 @@ func Execute() error {
 	rootCmd.AddCommand(
 		newBuildCmd(),
 		config.NewConfigCmd(),
+		newVersionCmd(),
 	)
 	return rootCmd.Execute()
 }
