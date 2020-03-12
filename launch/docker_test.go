@@ -186,12 +186,12 @@ func TestRunBuildWithSudo(t *testing.T) {
 		{"success", "SUCCESS_RUN_BUILD_SUDO", nil,
 			[]string{
 				"docker pull node:12",
-				fmt.Sprintf("docker container run --rm -v /:/sd/workspace/src/screwdriver.cd/sd-local/local-build -v sd-artifacts/:/test/artifacts -v %s:/opt/sd node:12 /opt/sd/local_run.sh ", d.volume)},
+				fmt.Sprintf("sudo docker container run --rm -v /:/sd/workspace/src/screwdriver.cd/sd-local/local-build -v sd-artifacts/:/test/artifacts -v %s:/opt/sd node:12 /opt/sd/local_run.sh ", d.volume)},
 			newBuildConfig()},
 		{"success with memory limit", "SUCCESS_RUN_BUILD_SUDO", nil,
 			[]string{
 				"docker pull node:12",
-				fmt.Sprintf("docker container run -m2GB --rm -v /:/sd/workspace/src/screwdriver.cd/sd-local/local-build -v sd-artifacts/:/test/artifacts -v %s:/opt/sd node:12 /opt/sd/local_run.sh ", d.volume)},
+				fmt.Sprintf("sudo docker container run -m2GB --rm -v /:/sd/workspace/src/screwdriver.cd/sd-local/local-build -v sd-artifacts/:/test/artifacts -v %s:/opt/sd node:12 /opt/sd/local_run.sh ", d.volume)},
 			newBuildConfig(func(b *buildConfig) {
 				b.MemoryLimit = "2GB"
 			})},
