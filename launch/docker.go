@@ -100,12 +100,11 @@ func (d *docker) runBuild(buildConfig buildConfig) error {
 }
 
 func (d *docker) execDockerCommand(args ...string) error {
-	cmd := (*exec.Cmd)(nil)
+	commands := append([]string{"docker"}, args...)
 	if d.useSudo {
-		cmd = execCommand("sudo", append([]string{"docker"}, args...)...)
-	} else {
-		cmd = execCommand("docker", args...)
+		commands = append([]string{"sudo"}, commands...)
 	}
+	cmd := execCommand(commands[0], commands[1:]...)
 	buf := bytes.NewBuffer(nil)
 	cmd.Stderr = buf
 	err := cmd.Run()
