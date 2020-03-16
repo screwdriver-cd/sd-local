@@ -14,6 +14,7 @@ type docker struct {
 	volume            string
 	setupImage        string
 	setupImageVersion string
+	useSudo           bool
 }
 
 var _ runner = (*docker)(nil)
@@ -29,30 +30,31 @@ const (
 	orgRepo = "sd-local/local-build"
 )
 
-func newDocker(setupImage, setupImageVer string) runner {
+func newDocker(setupImage, setupImageVer string, useSudo bool) runner {
 	return &docker{
 		volume:            "SD_LAUNCH_BIN",
 		setupImage:        setupImage,
 		setupImageVersion: setupImageVer,
+		useSudo:           useSudo,
 	}
 }
 
 func (d *docker) setupBin() error {
-	_ = execDockerCommand("volume", "rm", "--force", d.volume)
+	_ = d.execDockerCommand("volume", "rm", "--force", d.volume)
 
-	err := execDockerCommand("volume", "create", "--name", d.volume)
+	err := d.execDockerCommand("volume", "create", "--name", d.volume)
 	if err != nil {
 		return fmt.Errorf("failed to create docker volume: %v", err)
 	}
 
 	mount := fmt.Sprintf("%s:/opt/sd/", d.volume)
 	image := fmt.Sprintf("%s:%s", d.setupImage, d.setupImageVersion)
-	err = execDockerCommand("pull", image)
+	err = d.execDockerCommand("pull", image)
 	if err != nil {
 		return fmt.Errorf("failed to pull launcher image: %v", err)
 	}
 
-	err = execDockerCommand("container", "run", "--rm", "-v", mount, image, "--entrypoint", "/bin/echo set up bin")
+	err = d.execDockerCommand("container", "run", "--rm", "-v", mount, image, "--entrypoint", "/bin/echo set up bin")
 	if err != nil {
 		return fmt.Errorf("failed to prepare build scripts: %v", err)
 	}
@@ -77,7 +79,7 @@ func (d *docker) runBuild(buildConfig buildConfig) error {
 		return err
 	}
 
-	err = execDockerCommand("pull", buildImage)
+	err = d.execDockerCommand("pull", buildImage)
 	if err != nil {
 		return fmt.Errorf("failed to pull user image %v", err)
 	}
@@ -89,7 +91,7 @@ func (d *docker) runBuild(buildConfig buildConfig) error {
 		dockerCommandOptions = append([]string{fmt.Sprintf("-m%s", buildConfig.MemoryLimit)}, dockerCommandOptions...)
 	}
 
-	err = execDockerCommand(append(dockerCommandArgs, dockerCommandOptions...)...)
+	err = d.execDockerCommand(append(dockerCommandArgs, dockerCommandOptions...)...)
 	if err != nil {
 		return fmt.Errorf("failed to run build container: %v", err)
 	}
@@ -97,8 +99,12 @@ func (d *docker) runBuild(buildConfig buildConfig) error {
 	return nil
 }
 
-func execDockerCommand(args ...string) error {
-	cmd := execCommand("docker", args...)
+func (d *docker) execDockerCommand(args ...string) error {
+	commands := append([]string{"docker"}, args...)
+	if d.useSudo {
+		commands = append([]string{"sudo"}, commands...)
+	}
+	cmd := execCommand(commands[0], commands[1:]...)
 	buf := bytes.NewBuffer(nil)
 	cmd.Stderr = buf
 	err := cmd.Run()

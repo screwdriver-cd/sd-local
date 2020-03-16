@@ -33,6 +33,7 @@ var (
 	memory       = ""
 	scmNew       = scm.New
 	osMkdirAll   = os.MkdirAll
+	useSudo      = false
 )
 
 func mergeEnvFromFile(optionEnv *map[string]string, envFilePath string) error {
@@ -189,6 +190,7 @@ func newBuildCmd() *cobra.Command {
 				SrcPath:       srcPath,
 				OptionEnv:     optionEnv,
 				Meta:          meta,
+				UseSudo:       useSudo,
 			}
 
 			launch := launchNew(option)
@@ -252,6 +254,12 @@ ex) git@github.com:<org>/<repo>.git[#<branch>]
 		"meta-file",
 		"",
 		"Path to the meta file. meta file is represented with JSON format.")
+
+	buildCmd.Flags().BoolVar(
+		&useSudo,
+		"sudo",
+		false,
+		"Use sudo command for container runtime.")
 
 	return buildCmd
 }

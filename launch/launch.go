@@ -47,6 +47,7 @@ type buildConfig struct {
 	ArtifactsPath string             `json:"-"`
 	MemoryLimit   string             `json:"-"`
 	SrcPath       string             `json:"-"`
+	UseSudo       bool               `json:"-"`
 }
 
 // Option is option for launch New
@@ -60,6 +61,7 @@ type Option struct {
 	SrcPath       string
 	OptionEnv     EnvVar
 	Meta          Meta
+	UseSudo       bool
 }
 
 const (
@@ -107,7 +109,7 @@ func createBuildConfig(option Option) buildConfig {
 func New(option Option) Launcher {
 	l := new(launch)
 
-	l.runner = newDocker(option.Config.Launcher.Image, option.Config.Launcher.Version)
+	l.runner = newDocker(option.Config.Launcher.Image, option.Config.Launcher.Version, option.UseSudo)
 	l.buildConfig = createBuildConfig(option)
 
 	return l
