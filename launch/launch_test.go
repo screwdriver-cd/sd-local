@@ -24,8 +24,8 @@ func newBuildConfig(options ...func(b *buildConfig)) buildConfig {
 		ID: 0,
 		Environment: []EnvVar{{
 			"SD_ARTIFACTS_DIR": "/test/artifacts",
-			"SD_API_URL":       "http://api-test.screwdriver.cd",
-			"SD_STORE_URL":     "http://store-test.screwdriver.cd",
+			"SD_API_URL":       "http://api-test.screwdriver.cd/v4",
+			"SD_STORE_URL":     "http://store-test.screwdriver.cd/v1",
 			"SD_TOKEN":         "testjwt",
 			"FOO":              "foo",
 		}},

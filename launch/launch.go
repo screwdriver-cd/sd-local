@@ -2,13 +2,20 @@ package launch
 
 import (
 	"fmt"
+	"net/url"
 	"os/exec"
+	"path"
 
 	"github.com/screwdriver-cd/sd-local/config"
 	"github.com/screwdriver-cd/sd-local/screwdriver"
+	"github.com/sirupsen/logrus"
 )
 
-var lookPath = exec.LookPath
+var (
+	lookPath     = exec.LookPath
+	apiVersion   = "v4"
+	storeVersion = "v1"
+)
 
 type runner interface {
 	runBuild(buildConfig buildConfig) error
@@ -80,12 +87,31 @@ func mergeEnv(env, jobEnv, optionEnv EnvVar) []EnvVar {
 }
 
 func createBuildConfig(option Option) buildConfig {
+	apiURL, storeURL := option.Config.APIURL, option.Config.StoreURL
+
+	a, err := url.Parse(option.Config.APIURL)
+	if err == nil {
+		a.Path = path.Join(a.Path, apiVersion)
+		apiURL = a.String()
+	} else {
+		logrus.Warn("SD_API_URL is invalid. It may cause errors")
+	}
+
+	s, err := url.Parse(option.Config.StoreURL)
+	if err == nil {
+		s.Path = path.Join(s.Path, storeVersion)
+		storeURL = s.String()
+	} else {
+		logrus.Warn("SD_STORE_URL is invalid. It may cause errors")
+	}
+
 	defaultEnv := EnvVar{
 		"SD_TOKEN":         option.JWT,
 		"SD_ARTIFACTS_DIR": defaultArtDir,
-		"SD_API_URL":       option.Config.APIURL,
-		"SD_STORE_URL":     option.Config.StoreURL,
+		"SD_API_URL":       apiURL,
+		"SD_STORE_URL":     storeURL,
 	}
+
 	env := mergeEnv(defaultEnv, option.Job.Environment, option.OptionEnv)
 
 	return buildConfig{
