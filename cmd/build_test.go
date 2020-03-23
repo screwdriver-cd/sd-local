@@ -234,10 +234,14 @@ func TestBuildCmd(t *testing.T) {
 			t.Fatal(err)
 		}
 
+		defFunc := configNew
 		configNew = func(path string) (config.Config, error) {
 			assert.Equal(t, cnfPath, path)
 			return config.Config{}, nil
 		}
+		defer func() {
+			configNew = defFunc
+		}()
 
 		err = root.Execute()
 		want := ""
