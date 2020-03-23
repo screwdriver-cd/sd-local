@@ -7,6 +7,7 @@ import (
 	"path/filepath"
 	"testing"
 
+	"github.com/screwdriver-cd/sd-local/config"
 	"github.com/screwdriver-cd/sd-local/launch"
 	"github.com/stretchr/testify/assert"
 )
@@ -209,6 +210,39 @@ func TestBuildCmd(t *testing.T) {
 		want := "Error: can't pass the both options `meta` and `meta-file`, please specify only one of them" + buildUsage
 		assert.Equal(t, want, buf.String())
 		assert.NotNil(t, err)
+	})
+
+	t.Run("Success build cmd with --local", func(t *testing.T) {
+		root := newBuildCmd()
+
+		root.SetArgs([]string{"test", "--local"})
+		buf := bytes.NewBuffer(nil)
+		root.SetOut(buf)
+
+		cwd, err := os.Getwd()
+		if err != nil {
+			t.Fatal(err)
+		}
+
+		cnfDir := filepath.Join(cwd, ".sdlocal")
+		os.MkdirAll(cnfDir, 0777)
+		defer os.Remove(cnfDir)
+
+		cnfPath := filepath.Join(cnfDir, "config")
+		err = os.Link("./testdata/config", cnfPath)
+		if err != nil {
+			t.Fatal(err)
+		}
+
+		configNew = func(path string) (config.Config, error) {
+			assert.Equal(t, cnfPath, path)
+			return config.Config{}, nil
+		}
+
+		err = root.Execute()
+		want := ""
+		assert.Equal(t, want, buf.String())
+		assert.Nil(t, err)
 	})
 
 	t.Run("Failed build cmd when too many args", func(t *testing.T) {
