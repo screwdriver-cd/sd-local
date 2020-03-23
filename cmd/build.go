@@ -120,11 +120,9 @@ func newBuildCmd() *cobra.Command {
 				logrus.Fatal(err)
 			}
 
-			var configBaseDir string
+			configBaseDir := cwd
 
-			if useLocalConfig {
-				configBaseDir = cwd
-			} else {
+			if !useLocalConfig {
 				configBaseDir, err = homedir.Dir()
 				if err != nil {
 					logrus.Fatal(err)
