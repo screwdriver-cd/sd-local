@@ -25,15 +25,16 @@ const (
 )
 
 var (
-	configNew    = config.New
-	apiNew       = screwdriver.New
-	buildLogNew  = buildlog.New
-	launchNew    = launch.New
-	artifactsDir = launch.ArtifactsDir
-	memory       = ""
-	scmNew       = scm.New
-	osMkdirAll   = os.MkdirAll
-	useSudo      = false
+	configNew      = config.New
+	apiNew         = screwdriver.New
+	buildLogNew    = buildlog.New
+	launchNew      = launch.New
+	artifactsDir   = launch.ArtifactsDir
+	memory         = ""
+	scmNew         = scm.New
+	osMkdirAll     = os.MkdirAll
+	useSudo        = false
+	useLocalConfig = false
 )
 
 func mergeEnvFromFile(optionEnv *map[string]string, envFilePath string) error {
@@ -114,16 +115,23 @@ func newBuildCmd() *cobra.Command {
 				logrus.Fatalf("failed to parse meta %s, meta must be formated with JSON: %v", string(metaJSON), err)
 			}
 
-			homedir, err := homedir.Dir()
-			if err != nil {
-				logrus.Fatal(err)
-			}
-
-			sdlocalDir := filepath.Join(homedir, ".sdlocal")
 			cwd, err := os.Getwd()
 			if err != nil {
 				logrus.Fatal(err)
 			}
+
+			var configBaseDir string
+
+			if useLocalConfig {
+				configBaseDir = cwd
+			} else {
+				configBaseDir, err = homedir.Dir()
+				if err != nil {
+					logrus.Fatal(err)
+				}
+			}
+
+			sdlocalDir := filepath.Join(configBaseDir, ".sdlocal")
 			srcPath := cwd
 
 			if srcURL != "" {
@@ -260,6 +268,12 @@ ex) git@github.com:<org>/<repo>.git[#<branch>]
 		"sudo",
 		false,
 		"Use sudo command for container runtime.")
+
+	buildCmd.Flags().BoolVar(
+		&useLocalConfig,
+		"local",
+		false,
+		"Run command with .sdlocal/config file in current directory.")
 
 	return buildCmd
 }
