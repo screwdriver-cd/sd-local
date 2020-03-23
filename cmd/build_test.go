@@ -7,6 +7,7 @@ import (
 	"path/filepath"
 	"testing"
 
+	"github.com/screwdriver-cd/sd-local/config"
 	"github.com/screwdriver-cd/sd-local/launch"
 	"github.com/stretchr/testify/assert"
 )
@@ -20,6 +21,7 @@ Flags:
   -e, --env stringToString     Set key and value relationship which is set as environment variables of Build Container. (<key>=<value>) (default [])
       --env-file string        Path to config file of environment variables. '.env' format file can be used.
   -h, --help                   help for build
+      --local                  Run command with .sdlocal/config file in current directory.
   -m, --memory string          Memory limit for build container, which take a positive integer, followed by a suffix of b, k, m, g.
       --meta string            Metadata to pass into the build environment, which is represented with JSON format
       --meta-file string       Path to the meta file. meta file is represented with JSON format.
@@ -208,6 +210,43 @@ func TestBuildCmd(t *testing.T) {
 		want := "Error: can't pass the both options `meta` and `meta-file`, please specify only one of them" + buildUsage
 		assert.Equal(t, want, buf.String())
 		assert.NotNil(t, err)
+	})
+
+	t.Run("Success build cmd with --local", func(t *testing.T) {
+		root := newBuildCmd()
+
+		root.SetArgs([]string{"test", "--local"})
+		buf := bytes.NewBuffer(nil)
+		root.SetOut(buf)
+
+		cwd, err := os.Getwd()
+		if err != nil {
+			t.Fatal(err)
+		}
+
+		cnfDir := filepath.Join(cwd, ".sdlocal")
+		os.MkdirAll(cnfDir, 0777)
+		defer os.RemoveAll(cnfDir)
+
+		cnfPath := filepath.Join(cnfDir, "config")
+		err = os.Link("./testdata/config", cnfPath)
+		if err != nil {
+			t.Fatal(err)
+		}
+
+		defFunc := configNew
+		configNew = func(path string) (config.Config, error) {
+			assert.Equal(t, cnfPath, path)
+			return config.Config{}, nil
+		}
+		defer func() {
+			configNew = defFunc
+		}()
+
+		err = root.Execute()
+		want := ""
+		assert.Equal(t, want, buf.String())
+		assert.Nil(t, err)
 	})
 
 	t.Run("Failed build cmd when too many args", func(t *testing.T) {
