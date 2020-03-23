@@ -120,13 +120,13 @@ func newBuildCmd() *cobra.Command {
 				logrus.Fatal(err)
 			}
 
-			configBaseDir := cwd
+			configBaseDir, err := homedir.Dir()
+			if err != nil {
+				logrus.Fatal(err)
+			}
 
-			if !useLocalConfig {
-				configBaseDir, err = homedir.Dir()
-				if err != nil {
-					logrus.Fatal(err)
-				}
+			if useLocalConfig {
+				configBaseDir = cwd
 			}
 
 			sdlocalDir := filepath.Join(configBaseDir, ".sdlocal")

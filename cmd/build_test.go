@@ -226,7 +226,7 @@ func TestBuildCmd(t *testing.T) {
 
 		cnfDir := filepath.Join(cwd, ".sdlocal")
 		os.MkdirAll(cnfDir, 0777)
-		defer os.Remove(cnfDir)
+		defer os.RemoveAll(cnfDir)
 
 		cnfPath := filepath.Join(cnfDir, "config")
 		err = os.Link("./testdata/config", cnfPath)
