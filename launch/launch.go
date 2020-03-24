@@ -20,11 +20,13 @@ var (
 type runner interface {
 	runBuild(buildConfig buildConfig) error
 	setupBin() error
+	clean()
 }
 
 // Launcher able to run local build
 type Launcher interface {
 	Run() error
+	Clean()
 }
 
 var _ (Launcher) = (*launch)(nil)
@@ -157,4 +159,8 @@ func (l *launch) Run() error {
 	}
 
 	return nil
+}
+
+func (l *launch) Clean() {
+	l.runner.clean()
 }

@@ -8,6 +8,8 @@ import (
 	"os"
 	"os/exec"
 	"path/filepath"
+
+	"github.com/sirupsen/logrus"
 )
 
 type docker struct {
@@ -40,8 +42,6 @@ func newDocker(setupImage, setupImageVer string, useSudo bool) runner {
 }
 
 func (d *docker) setupBin() error {
-	_ = d.execDockerCommand("volume", "rm", "--force", d.volume)
-
 	err := d.execDockerCommand("volume", "create", "--name", d.volume)
 	if err != nil {
 		return fmt.Errorf("failed to create docker volume: %v", err)
@@ -113,4 +113,11 @@ func (d *docker) execDockerCommand(args ...string) error {
 		return err
 	}
 	return nil
+}
+
+func (d *docker) clean() {
+	err := d.execDockerCommand("volume", "rm", "--force", d.volume)
+	if err != nil {
+		logrus.Warn(fmt.Errorf("failed to remove volume: %v", err))
+	}
 }

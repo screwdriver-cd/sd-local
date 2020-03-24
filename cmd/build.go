@@ -6,7 +6,9 @@ import (
 	"fmt"
 	"io/ioutil"
 	"os"
+	"os/signal"
 	"path/filepath"
+	"syscall"
 	"time"
 
 	"github.com/joho/godotenv"
@@ -139,10 +141,18 @@ func newBuildCmd() *cobra.Command {
 				if err != nil {
 					logrus.Fatal(err)
 				}
-				defer func() {
-					err = scm.Clean()
-					if err != nil {
-						logrus.Fatal(err)
+				go func() {
+					quit := make(chan os.Signal)
+					signal.Notify(quit, syscall.SIGINT, syscall.SIGTERM, syscall.SIGHUP)
+					for {
+						select {
+						case <-quit:
+							err = scm.Clean()
+							if err != nil {
+								logrus.Fatal(err)
+							}
+							fmt.Println("scm cleaned")
+						}
 					}
 				}()
 
@@ -200,6 +210,17 @@ func newBuildCmd() *cobra.Command {
 			}
 
 			launch := launchNew(option)
+			go func() {
+				quit := make(chan os.Signal)
+				signal.Notify(quit, syscall.SIGINT, syscall.SIGTERM, syscall.SIGHUP)
+				for {
+					select {
+					case <-quit:
+						launch.Clean()
+						fmt.Println("launch cleaned")
+					}
+				}
+			}()
 
 			logrus.Info("Prepare to start build...")
 			err = launch.Run()
