@@ -9,6 +9,8 @@ import (
 	"regexp"
 	"strconv"
 	"time"
+
+	"github.com/sirupsen/logrus"
 )
 
 func init() {
@@ -24,7 +26,7 @@ var (
 // SCM is able to fetch source code to build
 type SCM interface {
 	Pull() error
-	Clean() error
+	Clean(os.Signal)
 	LocalPath() string
 }
 
@@ -33,6 +35,7 @@ type scm struct {
 	remoteURL string
 	branch    string
 	localPath string
+	commands  []*exec.Cmd
 }
 
 // New create new SCM instance
@@ -50,6 +53,7 @@ func New(baseDir, srcURL string) (SCM, error) {
 		remoteURL: remoteURL,
 		branch:    branch,
 		localPath: filepath.Join(baseDir, "repo", strconv.Itoa(rand.Int())),
+		commands:  make([]*exec.Cmd, 0, 10),
 	}
 
 	err := osMkdirAll(s.LocalPath(), 0777)
@@ -68,6 +72,7 @@ func (s *scm) Pull() error {
 	args = append(args, s.remoteURL, s.LocalPath())
 
 	cmd := execCommand("git", args...)
+	s.commands = append(s.commands, cmd)
 	err := cmd.Run()
 	if err != nil {
 		return fmt.Errorf("failed to clone remote repository: %w", err)
@@ -76,12 +81,18 @@ func (s *scm) Pull() error {
 	return nil
 }
 
-func (s *scm) Clean() error {
+func (s *scm) Clean(sig os.Signal) {
+	for _, v := range s.commands {
+		err := v.Process.Signal(sig)
+		if err != nil {
+			logrus.Warn(fmt.Errorf("failed to stop process: %v", err))
+		}
+	}
+
 	err := os.RemoveAll(s.LocalPath())
 	if err != nil {
-		return fmt.Errorf("failed to remove local source directory: %w", err)
+		logrus.Warn(fmt.Errorf("failed to remove local source directory: %w", err))
 	}
-	return nil
 }
 
 func (s *scm) LocalPath() string {

@@ -3,6 +3,7 @@ package launch
 import (
 	"fmt"
 	"net/url"
+	"os"
 	"os/exec"
 	"path"
 
@@ -20,13 +21,13 @@ var (
 type runner interface {
 	runBuild(buildConfig buildConfig) error
 	setupBin() error
-	clean()
+	clean(os.Signal)
 }
 
 // Launcher able to run local build
 type Launcher interface {
 	Run() error
-	Clean()
+	Clean(os.Signal)
 }
 
 var _ (Launcher) = (*launch)(nil)
@@ -161,6 +162,6 @@ func (l *launch) Run() error {
 	return nil
 }
 
-func (l *launch) Clean() {
-	l.runner.clean()
+func (l *launch) Clean(sig os.Signal) {
+	l.runner.clean(sig)
 }

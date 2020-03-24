@@ -39,6 +39,10 @@ var (
 	useLocalConfig = false
 )
 
+type Cleaner interface {
+	Clean(os.Signal)
+}
+
 func mergeEnvFromFile(optionEnv *map[string]string, envFilePath string) error {
 	absEnvFilePath, err := filepath.Abs(envFilePath)
 	if err != nil {
@@ -84,6 +88,22 @@ func newBuildCmd() *cobra.Command {
 		},
 		Run: func(cmd *cobra.Command, args []string) {
 			var err error
+			cleaners := make([]Cleaner, 0, 2)
+
+			go func() {
+				quit := make(chan os.Signal)
+				signal.Notify(quit, syscall.SIGINT, syscall.SIGTERM, syscall.SIGHUP)
+				for {
+					select {
+					case sig := <-quit:
+						for _, v := range cleaners {
+							fmt.Println(v)
+							v.Clean(sig)
+						}
+						os.Exit(1)
+					}
+				}
+			}()
 
 			if envFilePath != "" {
 				err = mergeEnvFromFile(&optionEnv, envFilePath)
@@ -141,20 +161,10 @@ func newBuildCmd() *cobra.Command {
 				if err != nil {
 					logrus.Fatal(err)
 				}
-				go func() {
-					quit := make(chan os.Signal)
-					signal.Notify(quit, syscall.SIGINT, syscall.SIGTERM, syscall.SIGHUP)
-					for {
-						select {
-						case <-quit:
-							err = scm.Clean()
-							if err != nil {
-								logrus.Fatal(err)
-							}
-							fmt.Println("scm cleaned")
-						}
-					}
-				}()
+				s, ok := scm.(Cleaner)
+				if ok {
+					cleaners = append(cleaners, s)
+				}
 
 				err = scm.Pull()
 				if err != nil {
@@ -210,17 +220,10 @@ func newBuildCmd() *cobra.Command {
 			}
 
 			launch := launchNew(option)
-			go func() {
-				quit := make(chan os.Signal)
-				signal.Notify(quit, syscall.SIGINT, syscall.SIGTERM, syscall.SIGHUP)
-				for {
-					select {
-					case <-quit:
-						launch.Clean()
-						fmt.Println("launch cleaned")
-					}
-				}
-			}()
+			l, ok := launch.(Cleaner)
+			if ok {
+				cleaners = append(cleaners, l)
+			}
 
 			logrus.Info("Prepare to start build...")
 			err = launch.Run()

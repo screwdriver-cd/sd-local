@@ -17,6 +17,7 @@ type docker struct {
 	setupImage        string
 	setupImageVersion string
 	useSudo           bool
+	commands          []*exec.Cmd
 }
 
 var _ runner = (*docker)(nil)
@@ -38,6 +39,7 @@ func newDocker(setupImage, setupImageVer string, useSudo bool) runner {
 		setupImage:        setupImage,
 		setupImageVersion: setupImageVer,
 		useSudo:           useSudo,
+		commands:          make([]*exec.Cmd, 0, 10),
 	}
 }
 
@@ -105,6 +107,7 @@ func (d *docker) execDockerCommand(args ...string) error {
 		commands = append([]string{"sudo"}, commands...)
 	}
 	cmd := execCommand(commands[0], commands[1:]...)
+	d.commands = append(d.commands, cmd)
 	buf := bytes.NewBuffer(nil)
 	cmd.Stderr = buf
 	err := cmd.Run()
@@ -115,7 +118,14 @@ func (d *docker) execDockerCommand(args ...string) error {
 	return nil
 }
 
-func (d *docker) clean() {
+func (d *docker) clean(sig os.Signal) {
+	for _, v := range d.commands {
+		err := v.Process.Signal(sig)
+		if err != nil {
+			logrus.Warn(fmt.Errorf("failed to stop process: %v", err))
+		}
+	}
+
 	err := d.execDockerCommand("volume", "rm", "--force", d.volume)
 	if err != nil {
 		logrus.Warn(fmt.Errorf("failed to remove volume: %v", err))
