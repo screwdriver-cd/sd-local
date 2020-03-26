@@ -65,9 +65,5 @@ func Execute() error {
 		config.NewConfigCmd(),
 		newVersionCmd(),
 	)
-	err := rootCmd.Execute()
-	if err != nil {
-		return err
-	}
 	return rootCmd.Execute()
 }
