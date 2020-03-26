@@ -141,7 +141,7 @@ func (d *docker) kill(sig os.Signal, sudo bool) {
 		}
 	}
 
-	done := make(chan bool, 1)
+	done := make(chan struct{}, 1)
 	go d.waitProcess(done)
 	<-done
 }
@@ -154,7 +154,7 @@ func (d *docker) clean() {
 	}
 }
 
-func (d *docker) waitProcess(done chan bool) {
+func (d *docker) waitProcess(done chan struct{}) {
 	t := time.NewTicker(1 * time.Second)
 	for {
 		select {
@@ -168,7 +168,7 @@ func (d *docker) waitProcess(done chan bool) {
 				}
 			}
 			if finish {
-				done <- true
+				done <- struct{}{}
 				break
 			}
 		}
