@@ -84,7 +84,7 @@ func (s *scm) Pull() error {
 
 func (s *scm) Kill(sig os.Signal) {
 	for _, v := range s.commands {
-		if v.ProcessState == nil {
+		if v.ProcessState != nil {
 			continue
 		}
 		err := v.Process.Signal(sig)
