@@ -168,7 +168,7 @@ func (d *docker) waitProcess(done chan struct{}) {
 				}
 			}
 			if finish {
-				done <- struct{}{}
+				close(done)
 				break
 			}
 		}
