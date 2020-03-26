@@ -8,6 +8,9 @@ import (
 	"os"
 	"os/exec"
 	"path/filepath"
+	"strconv"
+	"syscall"
+	"time"
 
 	"github.com/sirupsen/logrus"
 )
@@ -95,6 +98,7 @@ func (d *docker) runBuild(buildConfig buildConfig) error {
 
 	err = d.execDockerCommand(append(dockerCommandArgs, dockerCommandOptions...)...)
 	if err != nil {
+
 		return fmt.Errorf("failed to run build container: %v", err)
 	}
 
@@ -110,7 +114,10 @@ func (d *docker) execDockerCommand(args ...string) error {
 	d.commands = append(d.commands, cmd)
 	buf := bytes.NewBuffer(nil)
 	cmd.Stderr = buf
+	cmd.Stdout = buf
+	// tmp
 	err := cmd.Run()
+	io.Copy(os.Stdout, buf)
 	if err != nil {
 		io.Copy(os.Stderr, buf)
 		return err
@@ -118,16 +125,69 @@ func (d *docker) execDockerCommand(args ...string) error {
 	return nil
 }
 
-func (d *docker) clean(sig os.Signal) {
+func (d *docker) clean(sig os.Signal, sudo bool) {
+	logrus.Info("SUDO?:", sudo)
 	for _, v := range d.commands {
-		err := v.Process.Signal(sig)
+		var err error
+
+		logrus.Info("CMD:", v)
+
+		if sudo {
+			cmd := execCommand("sudo", "kill", fmt.Sprintf("-%v", signum(sig)), strconv.Itoa(v.Process.Pid))
+			logrus.Info("KILL CMD:", cmd)
+			err = cmd.Run()
+		} else {
+			err = v.Process.Signal(sig)
+		}
+
 		if err != nil {
 			logrus.Warn(fmt.Errorf("failed to stop process: %v", err))
 		}
 	}
 
+	done := make(chan bool, 1)
+	go d.waitProcess(done)
+	<-done
+
 	err := d.execDockerCommand("volume", "rm", "--force", d.volume)
+
 	if err != nil {
 		logrus.Warn(fmt.Errorf("failed to remove volume: %v", err))
+	}
+}
+
+func (d *docker) waitProcess(done chan bool) {
+	t := time.NewTicker(1 * time.Second)
+	for {
+		select {
+		case <-t.C:
+
+			finish := true
+
+			for _, v := range d.commands {
+				if v.ProcessState == nil {
+					finish = false
+				}
+			}
+			if finish {
+				done <- true
+				break
+			}
+		}
+	}
+}
+
+func signum(sig os.Signal) int {
+	const numSig = 65
+
+	switch sig := sig.(type) {
+	case syscall.Signal:
+		i := int(sig)
+		if i < 0 || i >= numSig {
+			return -1
+		}
+		return i
+	default:
+		return -1
 	}
 }

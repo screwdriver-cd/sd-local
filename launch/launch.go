@@ -21,7 +21,7 @@ var (
 type runner interface {
 	runBuild(buildConfig buildConfig) error
 	setupBin() error
-	clean(os.Signal)
+	clean(os.Signal, bool)
 }
 
 // Launcher able to run local build
@@ -131,6 +131,7 @@ func createBuildConfig(option Option) buildConfig {
 		ArtifactsPath: option.ArtifactsPath,
 		MemoryLimit:   option.Memory,
 		SrcPath:       option.SrcPath,
+		UseSudo:       option.UseSudo,
 	}
 }
 
@@ -163,5 +164,5 @@ func (l *launch) Run() error {
 }
 
 func (l *launch) Clean(sig os.Signal) {
-	l.runner.clean(sig)
+	l.runner.clean(sig, l.buildConfig.UseSudo)
 }
