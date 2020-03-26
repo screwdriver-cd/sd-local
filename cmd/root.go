@@ -28,13 +28,13 @@ a mostly the same environment as Screwdriver.cd's`,
 	return rootCmd
 }
 
-func Kill(sig os.Signal) {
+func kill(sig os.Signal) {
 	for _, v := range cleaners {
 		v.Kill(sig)
 	}
 }
 
-func CleanExit(code int) {
+func cleanExit(code int) {
 	for _, v := range cleaners {
 		v.Clean()
 	}
@@ -44,7 +44,7 @@ func CleanExit(code int) {
 // Execute executes the root command.
 func Execute() error {
 	cleaners = make([]Cleaner, 0, 2)
-	defer CleanExit(1)
+	defer cleanExit(1)
 
 	go func() {
 		quit := make(chan os.Signal)
@@ -52,8 +52,8 @@ func Execute() error {
 		for {
 			select {
 			case sig := <-quit:
-				Kill(sig)
-				CleanExit(1)
+				kill(sig)
+				cleanExit(1)
 				return
 			}
 		}
