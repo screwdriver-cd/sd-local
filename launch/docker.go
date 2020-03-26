@@ -10,7 +10,6 @@ import (
 	"path/filepath"
 	"strconv"
 	"syscall"
-	"time"
 
 	"github.com/sirupsen/logrus"
 )
@@ -125,7 +124,7 @@ func (d *docker) execDockerCommand(args ...string) error {
 	return nil
 }
 
-func (d *docker) clean(sig os.Signal, sudo bool) {
+func (d *docker) kill(sig os.Signal, sudo bool) {
 	logrus.Info("SUDO?:", sudo)
 	for _, v := range d.commands {
 		var err error
@@ -144,36 +143,13 @@ func (d *docker) clean(sig os.Signal, sudo bool) {
 			logrus.Warn(fmt.Errorf("failed to stop process: %v", err))
 		}
 	}
+}
 
-	done := make(chan bool, 1)
-	go d.waitProcess(done)
-	<-done
-
+func (d *docker) clean() {
 	err := d.execDockerCommand("volume", "rm", "--force", d.volume)
 
 	if err != nil {
 		logrus.Warn(fmt.Errorf("failed to remove volume: %v", err))
-	}
-}
-
-func (d *docker) waitProcess(done chan bool) {
-	t := time.NewTicker(1 * time.Second)
-	for {
-		select {
-		case <-t.C:
-
-			finish := true
-
-			for _, v := range d.commands {
-				if v.ProcessState == nil {
-					finish = false
-				}
-			}
-			if finish {
-				done <- true
-				break
-			}
-		}
 	}
 }
 

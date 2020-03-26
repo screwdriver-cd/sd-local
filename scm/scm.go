@@ -26,7 +26,8 @@ var (
 // SCM is able to fetch source code to build
 type SCM interface {
 	Pull() error
-	Clean(os.Signal)
+	Kill(os.Signal)
+	Clean()
 	LocalPath() string
 }
 
@@ -81,14 +82,16 @@ func (s *scm) Pull() error {
 	return nil
 }
 
-func (s *scm) Clean(sig os.Signal) {
+func (s *scm) Kill(sig os.Signal) {
 	for _, v := range s.commands {
 		err := v.Process.Signal(sig)
 		if err != nil {
 			logrus.Warn(fmt.Errorf("failed to stop process: %v", err))
 		}
 	}
+}
 
+func (s *scm) Clean() {
 	err := os.RemoveAll(s.LocalPath())
 	if err != nil {
 		logrus.Warn(fmt.Errorf("failed to remove local source directory: %w", err))

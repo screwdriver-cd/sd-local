@@ -21,13 +21,15 @@ var (
 type runner interface {
 	runBuild(buildConfig buildConfig) error
 	setupBin() error
-	clean(os.Signal, bool)
+	kill(os.Signal, bool)
+	clean()
 }
 
 // Launcher able to run local build
 type Launcher interface {
 	Run() error
-	Clean(os.Signal)
+	Kill(os.Signal)
+	Clean()
 }
 
 var _ (Launcher) = (*launch)(nil)
@@ -163,6 +165,10 @@ func (l *launch) Run() error {
 	return nil
 }
 
-func (l *launch) Clean(sig os.Signal) {
-	l.runner.clean(sig, l.buildConfig.UseSudo)
+func (l *launch) Kill(sig os.Signal) {
+	l.runner.kill(sig, l.buildConfig.UseSudo)
+}
+
+func (l *launch) Clean() {
+	l.runner.clean()
 }
