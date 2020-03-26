@@ -82,6 +82,8 @@ func newBuildCmd() *cobra.Command {
 		},
 		RunE: func(cmd *cobra.Command, args []string) error {
 			var err error
+			cmd.SilenceUsage = true
+			cmd.SilenceErrors = true
 
 			if envFilePath != "" {
 				err = mergeEnvFromFile(&optionEnv, envFilePath)
