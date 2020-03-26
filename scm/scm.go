@@ -84,6 +84,9 @@ func (s *scm) Pull() error {
 
 func (s *scm) Kill(sig os.Signal) {
 	for _, v := range s.commands {
+		if v.ProcessState == nil {
+			continue
+		}
 		err := v.Process.Signal(sig)
 		if err != nil {
 			logrus.Warn(fmt.Errorf("failed to stop process: %v", err))

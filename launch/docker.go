@@ -125,6 +125,9 @@ func (d *docker) execDockerCommand(args ...string) error {
 func (d *docker) kill(sig os.Signal, sudo bool) {
 	for _, v := range d.commands {
 		var err error
+		if v.ProcessState == nil {
+			continue
+		}
 
 		if sudo {
 			cmd := execCommand("sudo", "kill", fmt.Sprintf("-%v", signum(sig)), strconv.Itoa(v.Process.Pid))
