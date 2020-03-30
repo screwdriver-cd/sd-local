@@ -142,7 +142,7 @@ func (d *docker) kill(sig os.Signal, sudo bool) {
 	}
 
 	done := make(chan struct{}, 1)
-	go d.waitProcess(done)
+	go d.waitForProcess(done)
 	<-done
 }
 
@@ -154,8 +154,9 @@ func (d *docker) clean() {
 	}
 }
 
-func (d *docker) waitProcess(done chan struct{}) {
+func (d *docker) waitForProcess(done chan struct{}) {
 	t := time.NewTicker(1 * time.Second)
+L:
 	for {
 		select {
 		case <-t.C:
@@ -169,7 +170,7 @@ func (d *docker) waitProcess(done chan struct{}) {
 			}
 			if finish {
 				close(done)
-				break
+				break L
 			}
 		}
 	}
