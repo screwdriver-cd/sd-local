@@ -137,7 +137,7 @@ func newBuildCmd() *cobra.Command {
 			if srcURL != "" {
 				logrus.Infof("Pulling the source code from %s...", srcURL)
 
-				scm, err := scmNew(sdlocalDir, srcURL)
+				scm, err := scmNew(sdlocalDir, srcURL, useSudo)
 				if err != nil {
 					return err
 				}

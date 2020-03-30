@@ -38,6 +38,7 @@ func TestNewDocker(t *testing.T) {
 			setupImage:        "launcher",
 			setupImageVersion: "latest",
 			useSudo:           false,
+			commands:          make([]*exec.Cmd, 0, 10),
 		}
 
 		d := newDocker("launcher", "latest", false)

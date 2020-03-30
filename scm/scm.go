@@ -37,10 +37,11 @@ type scm struct {
 	branch    string
 	localPath string
 	commands  []*exec.Cmd
+	sudo      bool
 }
 
 // New create new SCM instance
-func New(baseDir, srcURL string) (SCM, error) {
+func New(baseDir, srcURL string, sudo bool) (SCM, error) {
 	results := srcURLRegex.FindStringSubmatch(srcURL)
 
 	if len(results) == 0 {
@@ -55,6 +56,7 @@ func New(baseDir, srcURL string) (SCM, error) {
 		branch:    branch,
 		localPath: filepath.Join(baseDir, "repo", strconv.Itoa(rand.Int())),
 		commands:  make([]*exec.Cmd, 0, 10),
+		sudo:      sudo,
 	}
 
 	err := osMkdirAll(s.LocalPath(), 0777)
@@ -95,7 +97,11 @@ func (s *scm) Kill(sig os.Signal) {
 }
 
 func (s *scm) Clean() {
-	err := os.RemoveAll(s.LocalPath())
+	commands := []string{"rm", "-rf", s.LocalPath()}
+	if s.sudo {
+		commands = append([]string{"sudo"}, commands...)
+	}
+	err := execCommand(commands[0], commands[1:]...).Run()
 	if err != nil {
 		logrus.Warn(fmt.Errorf("failed to remove local source directory: %w", err))
 	}

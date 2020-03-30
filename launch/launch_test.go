@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"io/ioutil"
+	"os"
 	"os/exec"
 	"path/filepath"
 	"testing"
@@ -122,6 +123,12 @@ func (m *mockRunner) runBuild(buildConfig buildConfig) error {
 
 func (m *mockRunner) setupBin() error {
 	return m.errorSetupBin
+}
+
+func (m *mockRunner) clean() {
+}
+
+func (m *mockRunner) kill(os.Signal, bool) {
 }
 
 func TestRun(t *testing.T) {

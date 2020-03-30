@@ -36,7 +36,7 @@ func TestNew(t *testing.T) {
 		baseDir := os.TempDir()
 		srcURL := "https://github.com/screwdriver-cd/sd-local.git#test"
 
-		s, err := New(baseDir, srcURL)
+		s, err := New(baseDir, srcURL, false)
 		defer os.RemoveAll(s.LocalPath())
 
 		scm := s.(*scm)
@@ -53,7 +53,7 @@ func TestNew(t *testing.T) {
 		baseDir := os.TempDir()
 		srcURL := "git@github.com:screwdriver-cd/sd-local.git#branch#test"
 
-		s, err := New(baseDir, srcURL)
+		s, err := New(baseDir, srcURL, false)
 		defer os.RemoveAll(s.LocalPath())
 
 		scm := s.(*scm)
@@ -72,7 +72,7 @@ func TestNew(t *testing.T) {
 		baseDir := os.TempDir()
 		srcURL := "https://github.com/screwdriver-cd/sd-local.git#test"
 
-		s, err := New(baseDir, srcURL)
+		s, err := New(baseDir, srcURL, false)
 		msg := err.Error()
 
 		assert.Nil(t, s)
@@ -85,7 +85,7 @@ func TestNew(t *testing.T) {
 		baseDir := os.TempDir()
 		srcURL := "https://github.com/screwdriver-cd"
 
-		s, err := New(baseDir, srcURL)
+		s, err := New(baseDir, srcURL, false)
 
 		assert.Nil(t, s)
 		assert.Equal(t, err.Error(), "failed to fetch source code with invalid URL: https://github.com/screwdriver-cd")
