@@ -7,6 +7,7 @@ import (
 	"os"
 	"os/exec"
 	"path/filepath"
+	"syscall"
 	"testing"
 
 	"github.com/screwdriver-cd/sd-local/config"
@@ -113,8 +114,10 @@ func TestNew(t *testing.T) {
 }
 
 type mockRunner struct {
-	errorRunBuild error
-	errorSetupBin error
+	errorRunBuild    error
+	errorSetupBin    error
+	killCalledCount  int
+	cleanCalledCount int
 }
 
 func (m *mockRunner) runBuild(buildConfig buildConfig) error {
@@ -126,9 +129,11 @@ func (m *mockRunner) setupBin() error {
 }
 
 func (m *mockRunner) clean() {
+	m.cleanCalledCount++
 }
 
 func (m *mockRunner) kill(os.Signal, bool) {
+	m.killCalledCount++
 }
 
 func TestRun(t *testing.T) {
@@ -234,5 +239,43 @@ func TestRun(t *testing.T) {
 		err := launch.Run()
 
 		assert.Equal(t, fmt.Errorf("failed to run build: docker: Error response from daemon"), err)
+	})
+}
+
+func TestKill(t *testing.T) {
+	t.Run("success to call kill", func(t *testing.T) {
+		buf, _ := ioutil.ReadFile(filepath.Join(testDir, "job.json"))
+		job := screwdriver.Job{}
+		_ = json.Unmarshal(buf, &job)
+
+		launch := launch{
+			buildConfig: newBuildConfig(),
+			runner: &mockRunner{
+				errorRunBuild: nil,
+				errorSetupBin: nil,
+			},
+		}
+		launch.Kill(syscall.SIGINT)
+		mRunner := launch.runner.(*mockRunner)
+		assert.Equal(t, 1, mRunner.killCalledCount)
+	})
+}
+
+func TestClean(t *testing.T) {
+	t.Run("success to call clean", func(t *testing.T) {
+		buf, _ := ioutil.ReadFile(filepath.Join(testDir, "job.json"))
+		job := screwdriver.Job{}
+		_ = json.Unmarshal(buf, &job)
+
+		launch := launch{
+			buildConfig: newBuildConfig(),
+			runner: &mockRunner{
+				errorRunBuild: nil,
+				errorSetupBin: nil,
+			},
+		}
+		launch.Clean()
+		mRunner := launch.runner.(*mockRunner)
+		assert.Equal(t, 1, mRunner.cleanCalledCount)
 	})
 }

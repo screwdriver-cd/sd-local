@@ -1,13 +1,22 @@
 package launch
 
 import (
+	"bytes"
 	"fmt"
 	"os"
 	"os/exec"
 	"strings"
+	"syscall"
 	"testing"
+	"time"
 
+	"github.com/sirupsen/logrus"
 	"github.com/stretchr/testify/assert"
+)
+
+const (
+	fakeProcessLifeTime = 100 * time.Second
+	waitForKillTime     = 100 * time.Millisecond
 )
 
 type fakeExecCommand struct {
@@ -217,6 +226,107 @@ func TestRunBuildWithSudo(t *testing.T) {
 	}
 }
 
+func TestDockerKill(t *testing.T) {
+	t.Run("success to kill process with no commands", func(t *testing.T) {
+		defer func() {
+			execCommand = exec.Command
+			logrus.SetOutput(os.Stderr)
+		}()
+		d := &docker{
+			volume:            "SD_LAUNCH_BIN",
+			setupImage:        "launcher",
+			setupImageVersion: "latest",
+		}
+		c := newFakeExecCommand("SUCCESS_TO_KILL")
+		execCommand = c.execCmd
+		buf := bytes.NewBuffer(nil)
+		logrus.SetOutput(buf)
+		d.kill(syscall.SIGINT, false)
+		assert.Equal(t, "", buf.String())
+	})
+
+	t.Run("success to kill process", func(t *testing.T) {
+		defer func() {
+			execCommand = exec.Command
+			logrus.SetOutput(os.Stderr)
+		}()
+		c := newFakeExecCommand("SUCCESS_TO_KILL_DOCKER_CMD")
+		execCommand = c.execCmd
+		d := &docker{
+			volume:            "SD_LAUNCH_BIN",
+			setupImage:        "launcher",
+			setupImageVersion: "latest",
+			commands:          []*exec.Cmd{execCommand("sleep")},
+		}
+
+		d.commands[0].Start()
+
+		buf := bytes.NewBuffer(nil)
+		logrus.SetOutput(buf)
+
+		go d.kill(syscall.SIGINT, false)
+
+		time.Sleep(waitForKillTime)
+		assert.Equal(t, "", buf.String())
+	})
+
+	t.Run("failed to kill process", func(t *testing.T) {
+		defer func() {
+			execCommand = exec.Command
+			logrus.SetOutput(os.Stderr)
+		}()
+		c := newFakeExecCommand("FAILED_TO_KILL")
+		execCommand = c.execCmd
+		d := &docker{
+			volume:            "SD_LAUNCH_BIN",
+			setupImage:        "launcher",
+			setupImageVersion: "latest",
+			commands:          []*exec.Cmd{execCommand("death")},
+		}
+
+		d.commands[0].Run()
+		// to call process signal with error
+		d.commands[0].ProcessState = nil
+		defer func() {
+			d.commands[0].ProcessState = &os.ProcessState{}
+		}()
+
+		buf := bytes.NewBuffer(nil)
+		logrus.SetOutput(buf)
+
+		go d.kill(syscall.SIGINT, false)
+
+		// wait until kill output error message
+		time.Sleep(waitForKillTime)
+		assert.True(t, strings.Contains(buf.String(), "failed to stop process:"))
+	})
+
+	t.Run("able to use sudo", func(t *testing.T) {
+		defer func() {
+			execCommand = exec.Command
+		}()
+		c := newFakeExecCommand("SUCCESS_TO_KILL")
+		execCommand = c.execCmd
+		d := &docker{
+			volume:            "SD_LAUNCH_BIN",
+			setupImage:        "launcher",
+			setupImageVersion: "latest",
+			commands:          []*exec.Cmd{execCommand("command")},
+		}
+
+		d.commands[0].Run()
+		d.commands[0].ProcessState = nil
+		defer func() {
+			d.commands[0].ProcessState = &os.ProcessState{}
+		}()
+
+		go d.kill(syscall.SIGINT, true)
+
+		time.Sleep(waitForKillTime)
+		assert.Equal(t, fmt.Sprintf("sudo kill -2 %v", d.commands[0].Process.Pid), c.commands[1])
+	})
+}
+
 func TestHelperProcess(t *testing.T) {
 	if os.Getenv("GO_WANT_HELPER_PROCESS") != "1" {
 		return
@@ -304,5 +414,20 @@ func TestHelperProcess(t *testing.T) {
 			os.Exit(1)
 		}
 		os.Exit(0)
+	case "SUCCESS_TO_KILL":
+		if subcmd == "command" {
+			os.Exit(0)
+		}
+		os.Exit(0)
+	case "SUCCESS_TO_KILL_DOCKER_CMD":
+		if subcmd == "sleep" {
+			time.Sleep(fakeProcessLifeTime)
+		}
+	case "FAILED_TO_KILL":
+		fmt.Println("came here")
+		if subcmd == "death" {
+			os.Exit(0)
+		}
+		os.Exit(1)
 	}
 }
