@@ -21,7 +21,7 @@ var (
 type runner interface {
 	runBuild(buildConfig buildConfig) error
 	setupBin() error
-	kill(os.Signal, bool)
+	kill(os.Signal)
 	clean()
 }
 
@@ -166,7 +166,7 @@ func (l *launch) Run() error {
 }
 
 func (l *launch) Kill(sig os.Signal) {
-	l.runner.kill(sig, l.buildConfig.UseSudo)
+	l.runner.kill(sig)
 }
 
 func (l *launch) Clean() {

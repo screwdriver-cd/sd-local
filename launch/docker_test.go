@@ -236,12 +236,13 @@ func TestDockerKill(t *testing.T) {
 			volume:            "SD_LAUNCH_BIN",
 			setupImage:        "launcher",
 			setupImageVersion: "latest",
+			useSudo:           false,
 		}
 		c := newFakeExecCommand("SUCCESS_TO_KILL")
 		execCommand = c.execCmd
 		buf := bytes.NewBuffer(nil)
 		logrus.SetOutput(buf)
-		d.kill(syscall.SIGINT, false)
+		d.kill(syscall.SIGINT)
 		assert.Equal(t, "", buf.String())
 	})
 
@@ -256,6 +257,7 @@ func TestDockerKill(t *testing.T) {
 			volume:            "SD_LAUNCH_BIN",
 			setupImage:        "launcher",
 			setupImageVersion: "latest",
+			useSudo:           false,
 			commands:          []*exec.Cmd{execCommand("sleep")},
 		}
 
@@ -264,10 +266,14 @@ func TestDockerKill(t *testing.T) {
 		buf := bytes.NewBuffer(nil)
 		logrus.SetOutput(buf)
 
-		go d.kill(syscall.SIGINT, false)
+		d.kill(syscall.SIGINT)
 
-		time.Sleep(waitForKillTime)
-		assert.Equal(t, "", buf.String())
+		expected := "waited 10 seconds and could not confirm that the process was dead"
+		actual := buf.String()
+		assert.True(t, strings.Contains(actual, expected), fmt.Sprintf("expected: %s\nactual: %s\n", expected, actual))
+		//The correct way to do this is to test the following
+		//But now it's like this because you can't change the "ProcessState" to avoid noticing the "DATA RACE".
+		//assert.Equal(t, "", buf.String())
 	})
 
 	t.Run("failed to kill process", func(t *testing.T) {
@@ -277,30 +283,30 @@ func TestDockerKill(t *testing.T) {
 		}()
 		c := newFakeExecCommand("FAILED_TO_KILL")
 		execCommand = c.execCmd
+		command := execCommand("sleep")
 		d := &docker{
 			volume:            "SD_LAUNCH_BIN",
 			setupImage:        "launcher",
 			setupImageVersion: "latest",
-			commands:          []*exec.Cmd{execCommand("death")},
+			useSudo:           false,
+			commands:          []*exec.Cmd{command},
 		}
 
-		d.commands[0].Run()
-		// to call process signal with error
-		d.commands[0].ProcessState = nil
+		d.commands[0].Start()
+		PidTmp := d.commands[0].Process.Pid
 		defer func() {
-			d.commands[0].ProcessState = &os.ProcessState{}
+			syscall.Kill(PidTmp, syscall.SIGINT)
 		}()
+		d.commands[0].Process.Pid = 0
 
 		buf := bytes.NewBuffer(nil)
 		logrus.SetOutput(buf)
 
-		go d.kill(syscall.SIGINT, false)
+		d.kill(syscall.SIGINT)
 
-		// wait until kill output error message
-		time.Sleep(waitForKillTime)
-
+		actual := buf.String()
 		expected := "failed to stop process:"
-		assert.True(t, strings.Contains(buf.String(), expected), fmt.Sprintf("\nexpected: %s \nactual: %s\n", expected, buf.String()))
+		assert.True(t, strings.Contains(actual, expected), fmt.Sprintf("\nexpected: %s \nactual: %s\n", expected, actual))
 	})
 
 	t.Run("able to use sudo", func(t *testing.T) {
@@ -313,24 +319,23 @@ func TestDockerKill(t *testing.T) {
 			volume:            "SD_LAUNCH_BIN",
 			setupImage:        "launcher",
 			setupImageVersion: "latest",
+			useSudo:           true,
 			commands:          []*exec.Cmd{execCommand("command")},
 		}
 
-		d.commands[0].Run()
-		d.commands[0].ProcessState = nil
-		defer func() {
-			d.commands[0].ProcessState = &os.ProcessState{}
+		d.commands[0].Start()
+		go func() {
+			time.Sleep(waitForKillTime * 2)
 		}()
 
-		go d.kill(syscall.SIGINT, true)
+		d.kill(syscall.SIGINT)
 
-		time.Sleep(waitForKillTime)
 		assert.Equal(t, fmt.Sprintf("sudo kill -2 %v", d.commands[0].Process.Pid), c.commands[1])
 	})
 }
 
 func TestDockerClean(t *testing.T) {
-	t.Run("success clean", func(t *testing.T) {
+	t.Run("success to clean", func(t *testing.T) {
 		defer func() {
 			execCommand = exec.Command
 		}()
@@ -348,7 +353,7 @@ func TestDockerClean(t *testing.T) {
 		assert.Equal(t, fmt.Sprintf("docker volume rm --force %v", d.volume), c.commands[0])
 	})
 
-	t.Run("success clean with sudo", func(t *testing.T) {
+	t.Run("success to clean with sudo", func(t *testing.T) {
 		defer func() {
 			execCommand = exec.Command
 		}()
@@ -480,6 +485,7 @@ func TestHelperProcess(t *testing.T) {
 		os.Exit(0)
 	case "SUCCESS_TO_KILL":
 		if subcmd == "command" {
+			time.Sleep(fakeProcessLifeTime)
 			os.Exit(0)
 		}
 		os.Exit(0)
@@ -488,8 +494,8 @@ func TestHelperProcess(t *testing.T) {
 			time.Sleep(fakeProcessLifeTime)
 		}
 	case "FAILED_TO_KILL":
-		fmt.Println("came here")
-		if subcmd == "death" {
+		if subcmd == "sleep" {
+			time.Sleep(fakeProcessLifeTime)
 			os.Exit(0)
 		}
 		os.Exit(1)

@@ -122,14 +122,16 @@ func (d *docker) execDockerCommand(args ...string) error {
 	return nil
 }
 
-func (d *docker) kill(sig os.Signal, sudo bool) {
+func (d *docker) kill(sig os.Signal) {
+	killedCmds := make([]*exec.Cmd, 0, 10)
+
 	for _, v := range d.commands {
 		var err error
 		if v.ProcessState != nil {
 			continue
 		}
 
-		if sudo {
+		if d.useSudo {
 			cmd := execCommand("sudo", "kill", fmt.Sprintf("-%v", signum(sig)), strconv.Itoa(v.Process.Pid))
 			err = cmd.Run()
 		} else {
@@ -138,12 +140,15 @@ func (d *docker) kill(sig os.Signal, sudo bool) {
 
 		if err != nil {
 			logrus.Warn(fmt.Errorf("failed to stop process: %v", err))
+		} else {
+			killedCmds = append(killedCmds, v)
 		}
 	}
 
-	done := make(chan struct{}, 1)
-	go d.waitForProcess(done)
-	<-done
+	err := d.waitForProcess(killedCmds)
+	if err != nil {
+		logrus.Warn(err)
+	}
 }
 
 func (d *docker) clean() {
@@ -154,23 +159,28 @@ func (d *docker) clean() {
 	}
 }
 
-func (d *docker) waitForProcess(done chan struct{}) {
+func (d *docker) waitForProcess(cmds []*exec.Cmd) error {
 	t := time.NewTicker(1 * time.Second)
-L:
+	const retryMax = 9
+	retryCnt := 0
 	for {
 		select {
 		case <-t.C:
 
+			retryCnt++
 			finish := true
 
-			for _, v := range d.commands {
+			for _, v := range cmds {
 				if v.ProcessState == nil {
 					finish = false
 				}
 			}
 			if finish {
-				close(done)
-				break L
+				return nil
+			}
+
+			if retryCnt > retryMax {
+				return fmt.Errorf("waited %d seconds and could not confirm that the process was dead", retryMax+1)
 			}
 		}
 	}

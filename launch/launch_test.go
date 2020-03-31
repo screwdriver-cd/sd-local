@@ -132,7 +132,7 @@ func (m *mockRunner) clean() {
 	m.cleanCalledCount++
 }
 
-func (m *mockRunner) kill(os.Signal, bool) {
+func (m *mockRunner) kill(os.Signal) {
 	m.killCalledCount++
 }
 
