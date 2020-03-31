@@ -31,7 +31,8 @@ var (
 	launchNew      = launch.New
 	artifactsDir   = launch.ArtifactsDir
 	memory         = ""
-	scmNew         = scm.New
+	scmNewGit      = scm.NewGit
+	scmNewFile     = scm.NewFile
 	osMkdirAll     = os.MkdirAll
 	useSudo        = false
 	useLocalConfig = false
@@ -131,27 +132,32 @@ func newBuildCmd() *cobra.Command {
 
 			sdlocalDir := filepath.Join(configBaseDir, ".sdlocal")
 			srcPath := cwd
+                        var scm scm.SCM
 
 			if srcURL != "" {
 				logrus.Infof("Pulling the source code from %s...", srcURL)
-
-				scm, err := scmNew(sdlocalDir, srcURL)
-				if err != nil {
-					logrus.Fatal(err)
-				}
-				defer func() {
-					err = scm.Clean()
-					if err != nil {
-						logrus.Fatal(err)
-					}
-				}()
-
-				err = scm.Pull()
-				if err != nil {
-					logrus.Fatal(err)
-				}
-				srcPath = scm.LocalPath()
+				scm, err = scmNewGit(sdlocalDir, srcURL)
+			} else {
+				logrus.Infof("Copying the source code to the build directory...")
+				scm, err = scmNewFile(sdlocalDir, srcPath)
 			}
+
+                        if err != nil {
+                                logrus.Fatal(err)
+                        }
+
+			defer func() {
+				err = scm.Clean()
+				if err != nil {
+					logrus.Fatal(err)
+				}
+			}()
+
+			err = scm.Pull()
+			if err != nil {
+				logrus.Fatal(err)
+			}
+			srcPath = scm.LocalPath()
 
 			config, err := configNew(filepath.Join(sdlocalDir, "config"))
 			if err != nil {
