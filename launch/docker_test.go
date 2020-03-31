@@ -298,7 +298,9 @@ func TestDockerKill(t *testing.T) {
 
 		// wait until kill output error message
 		time.Sleep(waitForKillTime)
-		assert.True(t, strings.Contains(buf.String(), "failed to stop process:"))
+
+		expected := "failed to stop process:"
+		assert.True(t, strings.Contains(buf.String(), expected), fmt.Sprintf("\nexpected: %s \nactual: %s\n", expected, buf.String()))
 	})
 
 	t.Run("able to use sudo", func(t *testing.T) {
@@ -324,6 +326,68 @@ func TestDockerKill(t *testing.T) {
 
 		time.Sleep(waitForKillTime)
 		assert.Equal(t, fmt.Sprintf("sudo kill -2 %v", d.commands[0].Process.Pid), c.commands[1])
+	})
+}
+
+func TestDockerClean(t *testing.T) {
+	t.Run("success clean", func(t *testing.T) {
+		defer func() {
+			execCommand = exec.Command
+		}()
+		c := newFakeExecCommand("SUCCESS_TO_CLEAN")
+		execCommand = c.execCmd
+		d := &docker{
+			volume:            "SD_LAUNCH_BIN",
+			setupImage:        "launcher",
+			setupImageVersion: "latest",
+			commands:          []*exec.Cmd{},
+			useSudo:           false,
+		}
+
+		d.clean()
+		assert.Equal(t, fmt.Sprintf("docker volume rm --force %v", d.volume), c.commands[0])
+	})
+
+	t.Run("success clean with sudo", func(t *testing.T) {
+		defer func() {
+			execCommand = exec.Command
+		}()
+		c := newFakeExecCommand("SUCCESS_TO_CLEAN")
+		execCommand = c.execCmd
+		d := &docker{
+			volume:            "SD_LAUNCH_BIN",
+			setupImage:        "launcher",
+			setupImageVersion: "latest",
+			commands:          []*exec.Cmd{},
+			useSudo:           true,
+		}
+
+		d.clean()
+		assert.Equal(t, fmt.Sprintf("sudo docker volume rm --force %v", d.volume), c.commands[0])
+	})
+
+	t.Run("failed to clean", func(t *testing.T) {
+		defer func() {
+			execCommand = exec.Command
+			logrus.SetOutput(os.Stderr)
+		}()
+		c := newFakeExecCommand("FAIL_TO_CLEAN")
+		execCommand = c.execCmd
+		d := &docker{
+			volume:            "SD_LAUNCH_BIN",
+			setupImage:        "launcher",
+			setupImageVersion: "latest",
+			commands:          []*exec.Cmd{},
+			useSudo:           false,
+		}
+
+		buf := bytes.NewBuffer(nil)
+		logrus.SetOutput(buf)
+
+		d.clean()
+
+		expected := "failed to remove volume:"
+		assert.True(t, strings.Contains(buf.String(), expected), fmt.Sprintf("\nexpected: %s \nactual: %s\n", expected, buf.String()))
 	})
 }
 
@@ -428,6 +492,10 @@ func TestHelperProcess(t *testing.T) {
 		if subcmd == "death" {
 			os.Exit(0)
 		}
+		os.Exit(1)
+	case "SUCCESS_TO_CLEAN":
+		os.Exit(0)
+	case "FAIL_TO_CLEAN":
 		os.Exit(1)
 	}
 }
