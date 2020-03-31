@@ -13,6 +13,7 @@ var (
 	cleaners []Cleaner
 )
 
+// Cleaner will post-process sd-local.
 type Cleaner interface {
 	Kill(os.Signal)
 	Clean()
