@@ -267,7 +267,7 @@ func TestDockerKill(t *testing.T) {
 
 		d.commands[0].Start()
 		go func() {
-			time.Sleep(waitForKillTime * 2)
+			time.Sleep(waitForKillTime)
 			d.mutex.Lock()
 			// For some reason, "ProcessState" is not changed in "Process.Signal" or "syscall.kill", so change "ProcessState" directly.
 			d.commands[0].ProcessState = &os.ProcessState{}
@@ -334,7 +334,10 @@ func TestDockerKill(t *testing.T) {
 
 		d.commands[0].Start()
 		go func() {
-			time.Sleep(waitForKillTime * 2)
+			time.Sleep(waitForKillTime)
+			d.mutex.Lock()
+			d.commands[0].ProcessState = &os.ProcessState{}
+			d.mutex.Unlock()
 		}()
 
 		d.kill(syscall.SIGINT)

@@ -165,6 +165,8 @@ func (d *docker) clean() {
 }
 
 func (d *docker) waitForProcess(cmds []*exec.Cmd) error {
+	// Reducing this value will make the test faster.
+	// However, be sure to specify a time when you can sufficiently confirm that the process is dead.
 	t := time.NewTicker(1 * time.Second)
 	const retryMax = 9
 	retryCnt := 0
