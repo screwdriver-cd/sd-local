@@ -9,6 +9,7 @@ import (
 	"os/exec"
 	"path/filepath"
 	"strconv"
+	"sync"
 	"syscall"
 	"time"
 
@@ -21,6 +22,7 @@ type docker struct {
 	setupImageVersion string
 	useSudo           bool
 	commands          []*exec.Cmd
+	mutex             *sync.Mutex
 }
 
 var _ runner = (*docker)(nil)
@@ -43,6 +45,7 @@ func newDocker(setupImage, setupImageVer string, useSudo bool) runner {
 		setupImageVersion: setupImageVer,
 		useSudo:           useSudo,
 		commands:          make([]*exec.Cmd, 0, 10),
+		mutex:             &sync.Mutex{},
 	}
 }
 
@@ -127,9 +130,11 @@ func (d *docker) kill(sig os.Signal) {
 
 	for _, v := range d.commands {
 		var err error
+		d.mutex.Lock()
 		if v.ProcessState != nil {
 			continue
 		}
+		d.mutex.Unlock()
 
 		if d.useSudo {
 			cmd := execCommand("sudo", "kill", fmt.Sprintf("-%v", signum(sig)), strconv.Itoa(v.Process.Pid))
@@ -171,9 +176,11 @@ func (d *docker) waitForProcess(cmds []*exec.Cmd) error {
 			finish := true
 
 			for _, v := range cmds {
+				d.mutex.Lock()
 				if v.ProcessState == nil {
 					finish = false
 				}
+				d.mutex.Unlock()
 			}
 			if finish {
 				return nil

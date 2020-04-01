@@ -6,6 +6,7 @@ import (
 	"os"
 	"os/exec"
 	"strings"
+	"sync"
 	"syscall"
 	"testing"
 	"time"
@@ -48,6 +49,7 @@ func TestNewDocker(t *testing.T) {
 			setupImageVersion: "latest",
 			useSudo:           false,
 			commands:          make([]*exec.Cmd, 0, 10),
+			mutex:             &sync.Mutex{},
 		}
 
 		d := newDocker("launcher", "latest", false)
@@ -237,6 +239,7 @@ func TestDockerKill(t *testing.T) {
 			setupImage:        "launcher",
 			setupImageVersion: "latest",
 			useSudo:           false,
+			mutex:             &sync.Mutex{},
 		}
 		c := newFakeExecCommand("SUCCESS_TO_KILL")
 		execCommand = c.execCmd
@@ -259,21 +262,25 @@ func TestDockerKill(t *testing.T) {
 			setupImageVersion: "latest",
 			useSudo:           false,
 			commands:          []*exec.Cmd{execCommand("sleep")},
+			mutex:             &sync.Mutex{},
 		}
 
 		d.commands[0].Start()
+		go func() {
+			time.Sleep(waitForKillTime * 2)
+			d.mutex.Lock()
+			// For some reason, "ProcessState" is not changed in "Process.Signal" or "syscall.kill", so change "ProcessState" directly.
+			d.commands[0].ProcessState = &os.ProcessState{}
+			d.mutex.Unlock()
+		}()
 
 		buf := bytes.NewBuffer(nil)
 		logrus.SetOutput(buf)
 
 		d.kill(syscall.SIGINT)
 
-		expected := "waited 10 seconds and could not confirm that the process was dead"
 		actual := buf.String()
-		assert.True(t, strings.Contains(actual, expected), fmt.Sprintf("expected: %s\nactual: %s\n", expected, actual))
-		//The correct way to do this is to test the following
-		//But now it's like this because you can't change the "ProcessState" to avoid noticing the "DATA RACE".
-		//assert.Equal(t, "", buf.String())
+		assert.Equal(t, "", actual)
 	})
 
 	t.Run("failed to kill process", func(t *testing.T) {
@@ -290,6 +297,7 @@ func TestDockerKill(t *testing.T) {
 			setupImageVersion: "latest",
 			useSudo:           false,
 			commands:          []*exec.Cmd{command},
+			mutex:             &sync.Mutex{},
 		}
 
 		d.commands[0].Start()
@@ -321,6 +329,7 @@ func TestDockerKill(t *testing.T) {
 			setupImageVersion: "latest",
 			useSudo:           true,
 			commands:          []*exec.Cmd{execCommand("command")},
+			mutex:             &sync.Mutex{},
 		}
 
 		d.commands[0].Start()
