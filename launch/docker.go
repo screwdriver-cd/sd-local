@@ -101,7 +101,6 @@ func (d *docker) runBuild(buildConfig buildConfig) error {
 
 	err = d.execDockerCommand(append(dockerCommandArgs, dockerCommandOptions...)...)
 	if err != nil {
-
 		return fmt.Errorf("failed to run build container: %v", err)
 	}
 
