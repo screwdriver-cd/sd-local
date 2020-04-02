@@ -288,7 +288,7 @@ func TestDockerKill(t *testing.T) {
 			execCommand = exec.Command
 			logrus.SetOutput(os.Stderr)
 		}()
-		c := newFakeExecCommand("FAILED_TO_KILL")
+		c := newFakeExecCommand("FAIL_TO_KILL")
 		execCommand = c.execCmd
 		command := execCommand("sleep")
 		d := &docker{
@@ -328,7 +328,7 @@ func TestDockerKill(t *testing.T) {
 			setupImage:        "launcher",
 			setupImageVersion: "latest",
 			useSudo:           true,
-			commands:          []*exec.Cmd{execCommand("command")},
+			commands:          []*exec.Cmd{execCommand("sleep")},
 			mutex:             &sync.Mutex{},
 		}
 
@@ -496,11 +496,11 @@ func TestHelperProcess(t *testing.T) {
 		}
 		os.Exit(0)
 	case "SUCCESS_TO_KILL":
-		if subcmd == "command" || subcmd == "sleep" {
+		if subcmd == "sleep" {
 			time.Sleep(fakeProcessLifeTime)
 			os.Exit(0)
 		}
-		os.Exit(1)
+		os.Exit(0)
 	case "FAIL_TO_KILL":
 		if subcmd == "sleep" {
 			time.Sleep(fakeProcessLifeTime)
