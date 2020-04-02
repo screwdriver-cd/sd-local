@@ -283,7 +283,7 @@ func TestDockerKill(t *testing.T) {
 		assert.Equal(t, "", actual)
 	})
 
-	t.Run("failed to kill process", func(t *testing.T) {
+	t.Run("failure", func(t *testing.T) {
 		defer func() {
 			execCommand = exec.Command
 			logrus.SetOutput(os.Stderr)
