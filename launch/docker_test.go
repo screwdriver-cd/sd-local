@@ -229,7 +229,7 @@ func TestRunBuildWithSudo(t *testing.T) {
 }
 
 func TestDockerKill(t *testing.T) {
-	t.Run("success to kill process with no commands", func(t *testing.T) {
+	t.Run("success with no commands", func(t *testing.T) {
 		defer func() {
 			execCommand = exec.Command
 			logrus.SetOutput(os.Stderr)
