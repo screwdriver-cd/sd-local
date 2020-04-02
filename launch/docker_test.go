@@ -365,7 +365,7 @@ func TestDockerClean(t *testing.T) {
 		assert.Equal(t, fmt.Sprintf("docker volume rm --force %v", d.volume), c.commands[0])
 	})
 
-	t.Run("success to clean with sudo", func(t *testing.T) {
+	t.Run("success with sudo", func(t *testing.T) {
 		defer func() {
 			execCommand = exec.Command
 		}()
