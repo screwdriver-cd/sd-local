@@ -505,7 +505,7 @@ func TestHelperProcess(t *testing.T) {
 		if subcmd == "sleep" {
 			time.Sleep(fakeProcessLifeTime)
 		}
-	case "FAILED_TO_KILL":
+	case "FAIL_TO_KILL":
 		if subcmd == "sleep" {
 			time.Sleep(fakeProcessLifeTime)
 			os.Exit(0)
