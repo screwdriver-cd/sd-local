@@ -317,7 +317,7 @@ func TestDockerKill(t *testing.T) {
 		assert.True(t, strings.Contains(actual, expected), fmt.Sprintf("\nexpected: %s \nactual: %s\n", expected, actual))
 	})
 
-	t.Run("able to use sudo", func(t *testing.T) {
+	t.Run("success with sudo", func(t *testing.T) {
 		defer func() {
 			execCommand = exec.Command
 		}()
