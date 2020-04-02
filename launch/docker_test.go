@@ -383,7 +383,7 @@ func TestDockerClean(t *testing.T) {
 		assert.Equal(t, fmt.Sprintf("sudo docker volume rm --force %v", d.volume), c.commands[0])
 	})
 
-	t.Run("failed to clean", func(t *testing.T) {
+	t.Run("failure", func(t *testing.T) {
 		defer func() {
 			execCommand = exec.Command
 			logrus.SetOutput(os.Stderr)
