@@ -124,7 +124,7 @@ func TestKill(t *testing.T) {
 		}()
 		c := newFakeExecCommand("SUCCESS_TO_KILL")
 		execCommand = c.execCmd
-		command := execCommand("command")
+		command := execCommand("sleep")
 		s := &scm{
 			commands: []*exec.Cmd{command},
 		}
@@ -147,7 +147,7 @@ func TestKill(t *testing.T) {
 		}()
 		c := newFakeExecCommand("FAILED_TO_KILL")
 		execCommand = c.execCmd
-		command := execCommand("command")
+		command := execCommand("sleep")
 		s := &scm{
 			commands: []*exec.Cmd{command},
 		}
@@ -327,12 +327,12 @@ func TestHelperProcess(t *testing.T) {
 	case "FAILED_PULL":
 		os.Exit(1)
 	case "SUCCESS_TO_KILL":
-		if subcmd == "command" {
+		if subcmd == "sleep" {
 			time.Sleep(fakeProcessLifeTime)
 			os.Exit(0)
 		}
 	case "FAIL_TO_KILL":
-		if subcmd == "command" {
+		if subcmd == "sleep" {
 			time.Sleep(fakeProcessLifeTime)
 			os.Exit(0)
 		}
