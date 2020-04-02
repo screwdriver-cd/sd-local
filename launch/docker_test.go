@@ -347,7 +347,7 @@ func TestDockerKill(t *testing.T) {
 }
 
 func TestDockerClean(t *testing.T) {
-	t.Run("success to clean", func(t *testing.T) {
+	t.Run("success", func(t *testing.T) {
 		defer func() {
 			execCommand = exec.Command
 		}()
