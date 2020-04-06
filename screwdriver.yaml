@@ -9,7 +9,6 @@ jobs:
         steps:
             - gover: go version
             - install: go mod download
-            - vet: go vet ./...
             - gofmt: (! gofmt -d -s . | grep '^')
             - install-golint: go get golang.org/x/lint/golint
             - test: make test COVERPROFILE=${SD_ARTIFACTS_DIR}/coverage.out
