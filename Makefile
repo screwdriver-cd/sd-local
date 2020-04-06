@@ -9,10 +9,11 @@ GOLIST_PKG=$(GOLIST) ./... | grep -v /vendor/
 GOLINT=golint
 GORELEASER=goreleaser
 BINARY_NAME=sd-local
+COVERPROFILE?=cover.out
 
 all: test build
 test: format vet lint
-	$(GOTEST) -race -cover -coverprofile=cover.out -covermode=atomic ./...
+	$(GOTEST) -race -cover -coverprofile=$(COVERPROFILE) -covermode=atomic ./...
 vet:
 	$(GOCMD) vet -v ./...
 lint:
