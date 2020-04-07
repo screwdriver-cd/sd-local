@@ -8,6 +8,12 @@ import (
 	"os"
 	"os/exec"
 	"path/filepath"
+	"strconv"
+	"sync"
+	"syscall"
+	"time"
+
+	"github.com/sirupsen/logrus"
 )
 
 type docker struct {
@@ -15,6 +21,8 @@ type docker struct {
 	setupImage        string
 	setupImageVersion string
 	useSudo           bool
+	commands          []*exec.Cmd
+	mutex             *sync.Mutex
 }
 
 var _ runner = (*docker)(nil)
@@ -36,12 +44,12 @@ func newDocker(setupImage, setupImageVer string, useSudo bool) runner {
 		setupImage:        setupImage,
 		setupImageVersion: setupImageVer,
 		useSudo:           useSudo,
+		commands:          make([]*exec.Cmd, 0, 10),
+		mutex:             &sync.Mutex{},
 	}
 }
 
 func (d *docker) setupBin() error {
-	_ = d.execDockerCommand("volume", "rm", "--force", d.volume)
-
 	err := d.execDockerCommand("volume", "create", "--name", d.volume)
 	if err != nil {
 		return fmt.Errorf("failed to create docker volume: %v", err)
@@ -105,6 +113,7 @@ func (d *docker) execDockerCommand(args ...string) error {
 		commands = append([]string{"sudo"}, commands...)
 	}
 	cmd := execCommand(commands[0], commands[1:]...)
+	d.commands = append(d.commands, cmd)
 	buf := bytes.NewBuffer(nil)
 	cmd.Stderr = buf
 	err := cmd.Run()
@@ -113,4 +122,89 @@ func (d *docker) execDockerCommand(args ...string) error {
 		return err
 	}
 	return nil
+}
+
+func (d *docker) kill(sig os.Signal) {
+	killedCmds := make([]*exec.Cmd, 0, 10)
+
+	for _, v := range d.commands {
+		var err error
+		d.mutex.Lock()
+		if v.ProcessState != nil {
+			continue
+		}
+		d.mutex.Unlock()
+
+		if d.useSudo {
+			cmd := execCommand("sudo", "kill", fmt.Sprintf("-%v", signum(sig)), strconv.Itoa(v.Process.Pid))
+			err = cmd.Run()
+		} else {
+			err = v.Process.Signal(sig)
+		}
+
+		if err != nil {
+			logrus.Warn(fmt.Errorf("failed to stop process: %v", err))
+		} else {
+			killedCmds = append(killedCmds, v)
+		}
+	}
+
+	err := d.waitForProcess(killedCmds)
+	if err != nil {
+		logrus.Warn(err)
+	}
+}
+
+func (d *docker) clean() {
+	err := d.execDockerCommand("volume", "rm", "--force", d.volume)
+
+	if err != nil {
+		logrus.Warn(fmt.Errorf("failed to remove volume: %v", err))
+	}
+}
+
+func (d *docker) waitForProcess(cmds []*exec.Cmd) error {
+	// Reducing this value will make the test faster.
+	// However, be sure to specify a time when you can sufficiently confirm that the process is dead.
+	t := time.NewTicker(1 * time.Second)
+	const retryMax = 9
+	retryCnt := 0
+	for {
+		select {
+		case <-t.C:
+
+			retryCnt++
+			finish := true
+
+			for _, v := range cmds {
+				d.mutex.Lock()
+				if v.ProcessState == nil {
+					finish = false
+				}
+				d.mutex.Unlock()
+			}
+			if finish {
+				return nil
+			}
+
+			if retryCnt > retryMax {
+				return fmt.Errorf("waited %d seconds and could not confirm that the process was dead", retryMax+1)
+			}
+		}
+	}
+}
+
+func signum(sig os.Signal) int {
+	const numSig = 65
+
+	switch sig := sig.(type) {
+	case syscall.Signal:
+		i := int(sig)
+		if i < 0 || i >= numSig {
+			return -1
+		}
+		return i
+	default:
+		return -1
+	}
 }

@@ -1,13 +1,23 @@
 package launch
 
 import (
+	"bytes"
 	"fmt"
 	"os"
 	"os/exec"
 	"strings"
+	"sync"
+	"syscall"
 	"testing"
+	"time"
 
+	"github.com/sirupsen/logrus"
 	"github.com/stretchr/testify/assert"
+)
+
+const (
+	fakeProcessLifeTime = 100 * time.Second
+	waitForKillTime     = 100 * time.Millisecond
 )
 
 type fakeExecCommand struct {
@@ -38,6 +48,8 @@ func TestNewDocker(t *testing.T) {
 			setupImage:        "launcher",
 			setupImageVersion: "latest",
 			useSudo:           false,
+			commands:          make([]*exec.Cmd, 0, 10),
+			mutex:             &sync.Mutex{},
 		}
 
 		d := newDocker("launcher", "latest", false)
@@ -216,6 +228,186 @@ func TestRunBuildWithSudo(t *testing.T) {
 	}
 }
 
+func TestDockerKill(t *testing.T) {
+	t.Run("success with no commands", func(t *testing.T) {
+		defer func() {
+			execCommand = exec.Command
+			logrus.SetOutput(os.Stderr)
+		}()
+		d := &docker{
+			volume:            "SD_LAUNCH_BIN",
+			setupImage:        "launcher",
+			setupImageVersion: "latest",
+			useSudo:           false,
+			mutex:             &sync.Mutex{},
+		}
+		c := newFakeExecCommand("SUCCESS_TO_KILL")
+		execCommand = c.execCmd
+		buf := bytes.NewBuffer(nil)
+		logrus.SetOutput(buf)
+		d.kill(syscall.SIGINT)
+		assert.Equal(t, "", buf.String())
+	})
+
+	t.Run("success", func(t *testing.T) {
+		defer func() {
+			execCommand = exec.Command
+			logrus.SetOutput(os.Stderr)
+		}()
+		c := newFakeExecCommand("SUCCESS_TO_KILL")
+		execCommand = c.execCmd
+		d := &docker{
+			volume:            "SD_LAUNCH_BIN",
+			setupImage:        "launcher",
+			setupImageVersion: "latest",
+			useSudo:           false,
+			commands:          []*exec.Cmd{execCommand("sleep")},
+			mutex:             &sync.Mutex{},
+		}
+
+		d.commands[0].Start()
+		go func() {
+			time.Sleep(waitForKillTime)
+			d.mutex.Lock()
+			// For some reason, "ProcessState" is not changed in "Process.Signal" or "syscall.kill", so change "ProcessState" directly.
+			d.commands[0].ProcessState = &os.ProcessState{}
+			d.mutex.Unlock()
+		}()
+
+		buf := bytes.NewBuffer(nil)
+		logrus.SetOutput(buf)
+
+		d.kill(syscall.SIGINT)
+
+		actual := buf.String()
+		assert.Equal(t, "", actual)
+	})
+
+	t.Run("failure", func(t *testing.T) {
+		defer func() {
+			execCommand = exec.Command
+			logrus.SetOutput(os.Stderr)
+		}()
+		c := newFakeExecCommand("FAIL_TO_KILL")
+		execCommand = c.execCmd
+		command := execCommand("sleep")
+		d := &docker{
+			volume:            "SD_LAUNCH_BIN",
+			setupImage:        "launcher",
+			setupImageVersion: "latest",
+			useSudo:           false,
+			commands:          []*exec.Cmd{command},
+			mutex:             &sync.Mutex{},
+		}
+
+		d.commands[0].Start()
+		PidTmp := d.commands[0].Process.Pid
+		defer func() {
+			syscall.Kill(PidTmp, syscall.SIGINT)
+		}()
+		d.commands[0].Process.Pid = 0
+
+		buf := bytes.NewBuffer(nil)
+		logrus.SetOutput(buf)
+
+		d.kill(syscall.SIGINT)
+
+		actual := buf.String()
+		expected := "failed to stop process:"
+		assert.True(t, strings.Contains(actual, expected), fmt.Sprintf("\nexpected: %s \nactual: %s\n", expected, actual))
+	})
+
+	t.Run("success with sudo", func(t *testing.T) {
+		defer func() {
+			execCommand = exec.Command
+		}()
+		c := newFakeExecCommand("SUCCESS_TO_KILL")
+		execCommand = c.execCmd
+		d := &docker{
+			volume:            "SD_LAUNCH_BIN",
+			setupImage:        "launcher",
+			setupImageVersion: "latest",
+			useSudo:           true,
+			commands:          []*exec.Cmd{execCommand("sleep")},
+			mutex:             &sync.Mutex{},
+		}
+
+		d.commands[0].Start()
+		go func() {
+			time.Sleep(waitForKillTime)
+			d.mutex.Lock()
+			d.commands[0].ProcessState = &os.ProcessState{}
+			d.mutex.Unlock()
+		}()
+
+		d.kill(syscall.SIGINT)
+
+		assert.Equal(t, fmt.Sprintf("sudo kill -2 %v", d.commands[0].Process.Pid), c.commands[1])
+	})
+}
+
+func TestDockerClean(t *testing.T) {
+	t.Run("success", func(t *testing.T) {
+		defer func() {
+			execCommand = exec.Command
+		}()
+		c := newFakeExecCommand("SUCCESS_TO_CLEAN")
+		execCommand = c.execCmd
+		d := &docker{
+			volume:            "SD_LAUNCH_BIN",
+			setupImage:        "launcher",
+			setupImageVersion: "latest",
+			commands:          []*exec.Cmd{},
+			useSudo:           false,
+		}
+
+		d.clean()
+		assert.Equal(t, fmt.Sprintf("docker volume rm --force %v", d.volume), c.commands[0])
+	})
+
+	t.Run("success with sudo", func(t *testing.T) {
+		defer func() {
+			execCommand = exec.Command
+		}()
+		c := newFakeExecCommand("SUCCESS_TO_CLEAN")
+		execCommand = c.execCmd
+		d := &docker{
+			volume:            "SD_LAUNCH_BIN",
+			setupImage:        "launcher",
+			setupImageVersion: "latest",
+			commands:          []*exec.Cmd{},
+			useSudo:           true,
+		}
+
+		d.clean()
+		assert.Equal(t, fmt.Sprintf("sudo docker volume rm --force %v", d.volume), c.commands[0])
+	})
+
+	t.Run("failure", func(t *testing.T) {
+		defer func() {
+			execCommand = exec.Command
+			logrus.SetOutput(os.Stderr)
+		}()
+		c := newFakeExecCommand("FAIL_TO_CLEAN")
+		execCommand = c.execCmd
+		d := &docker{
+			volume:            "SD_LAUNCH_BIN",
+			setupImage:        "launcher",
+			setupImageVersion: "latest",
+			commands:          []*exec.Cmd{},
+			useSudo:           false,
+		}
+
+		buf := bytes.NewBuffer(nil)
+		logrus.SetOutput(buf)
+
+		d.clean()
+
+		expected := "failed to remove volume:"
+		assert.True(t, strings.Contains(buf.String(), expected), fmt.Sprintf("\nexpected: %s \nactual: %s\n", expected, buf.String()))
+	})
+}
+
 func TestHelperProcess(t *testing.T) {
 	if os.Getenv("GO_WANT_HELPER_PROCESS") != "1" {
 		return
@@ -303,5 +495,21 @@ func TestHelperProcess(t *testing.T) {
 			os.Exit(1)
 		}
 		os.Exit(0)
+	case "SUCCESS_TO_KILL":
+		if subcmd == "sleep" {
+			time.Sleep(fakeProcessLifeTime)
+			os.Exit(0)
+		}
+		os.Exit(0)
+	case "FAIL_TO_KILL":
+		if subcmd == "sleep" {
+			time.Sleep(fakeProcessLifeTime)
+			os.Exit(0)
+		}
+		os.Exit(1)
+	case "SUCCESS_TO_CLEAN":
+		os.Exit(0)
+	case "FAIL_TO_CLEAN":
+		os.Exit(1)
 	}
 }

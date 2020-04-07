@@ -3,6 +3,7 @@ package launch
 import (
 	"fmt"
 	"net/url"
+	"os"
 	"os/exec"
 	"path"
 
@@ -20,11 +21,15 @@ var (
 type runner interface {
 	runBuild(buildConfig buildConfig) error
 	setupBin() error
+	kill(os.Signal)
+	clean()
 }
 
 // Launcher able to run local build
 type Launcher interface {
 	Run() error
+	Kill(os.Signal)
+	Clean()
 }
 
 var _ (Launcher) = (*launch)(nil)
@@ -128,6 +133,7 @@ func createBuildConfig(option Option) buildConfig {
 		ArtifactsPath: option.ArtifactsPath,
 		MemoryLimit:   option.Memory,
 		SrcPath:       option.SrcPath,
+		UseSudo:       option.UseSudo,
 	}
 }
 
@@ -157,4 +163,12 @@ func (l *launch) Run() error {
 	}
 
 	return nil
+}
+
+func (l *launch) Kill(sig os.Signal) {
+	l.runner.kill(sig)
+}
+
+func (l *launch) Clean() {
+	l.runner.clean()
 }

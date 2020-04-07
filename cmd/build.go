@@ -80,13 +80,15 @@ func newBuildCmd() *cobra.Command {
 
 			return nil
 		},
-		Run: func(cmd *cobra.Command, args []string) {
+		RunE: func(cmd *cobra.Command, args []string) error {
 			var err error
+			cmd.SilenceUsage = true
+			cmd.SilenceErrors = true
 
 			if envFilePath != "" {
 				err = mergeEnvFromFile(&optionEnv, envFilePath)
 				if err != nil {
-					logrus.Fatal(err)
+					return err
 				}
 			}
 
@@ -97,13 +99,13 @@ func newBuildCmd() *cobra.Command {
 				absMetaFilePath, err := filepath.Abs(metaFilePath)
 
 				if err != nil {
-					logrus.Fatal(err)
+					return err
 				}
 
 				metaJSON, err = ioutil.ReadFile(absMetaFilePath)
 
 				if err != nil {
-					logrus.Fatalf("failed to read meta-file %s: %v", metaFilePath, err)
+					return fmt.Errorf("failed to read meta-file %s: %v", metaFilePath, err)
 				}
 			}
 
@@ -112,17 +114,17 @@ func newBuildCmd() *cobra.Command {
 			err = json.Unmarshal(metaJSON, &meta)
 
 			if err != nil {
-				logrus.Fatalf("failed to parse meta %s, meta must be formated with JSON: %v", string(metaJSON), err)
+				return fmt.Errorf("failed to parse meta %s, meta must be formated with JSON: %v", string(metaJSON), err)
 			}
 
 			cwd, err := os.Getwd()
 			if err != nil {
-				logrus.Fatal(err)
+				return err
 			}
 
 			configBaseDir, err := homedir.Dir()
 			if err != nil {
-				logrus.Fatal(err)
+				return err
 			}
 
 			if useLocalConfig {
@@ -135,32 +137,30 @@ func newBuildCmd() *cobra.Command {
 			if srcURL != "" {
 				logrus.Infof("Pulling the source code from %s...", srcURL)
 
-				scm, err := scmNew(sdlocalDir, srcURL)
+				scm, err := scmNew(sdlocalDir, srcURL, useSudo)
 				if err != nil {
-					logrus.Fatal(err)
+					return err
 				}
-				defer func() {
-					err = scm.Clean()
-					if err != nil {
-						logrus.Fatal(err)
-					}
-				}()
+				s, ok := scm.(Cleaner)
+				if ok {
+					cleaners = append(cleaners, s)
+				}
 
 				err = scm.Pull()
 				if err != nil {
-					logrus.Fatal(err)
+					return err
 				}
 				srcPath = scm.LocalPath()
 			}
 
 			config, err := configNew(filepath.Join(sdlocalDir, "config"))
 			if err != nil {
-				logrus.Fatal(err)
+				return err
 			}
 
 			api, err := apiNew(config.APIURL, config.Token)
 			if err != nil {
-				logrus.Fatal(err)
+				return err
 			}
 
 			jobName := args[0]
@@ -168,21 +168,21 @@ func newBuildCmd() *cobra.Command {
 			sdYAMLPath := filepath.Join(srcPath, "screwdriver.yaml")
 			job, err := api.Job(jobName, sdYAMLPath)
 			if err != nil {
-				logrus.Fatal(err)
+				return err
 			}
 
 			artifactsPath, err := filepath.Abs(artifactsDir)
 			if err != nil {
-				logrus.Fatal(err)
+				return err
 			}
 
 			err = osMkdirAll(artifactsPath, 0777)
 			if err != nil {
-				logrus.Fatal(err)
+				return err
 			}
 			logger, err := buildLogNew(filepath.Join(artifactsPath, launch.LogFile), os.Stdout)
 			if err != nil {
-				logrus.Fatal(err)
+				return err
 			}
 			go logger.Run()
 
@@ -200,16 +200,22 @@ func newBuildCmd() *cobra.Command {
 			}
 
 			launch := launchNew(option)
+			l, ok := launch.(Cleaner)
+			if ok {
+				cleaners = append(cleaners, l)
+			}
 
 			logrus.Info("Prepare to start build...")
 			err = launch.Run()
 			if err != nil {
-				logrus.Fatal(err)
+				return err
 			}
 
 			// Wait for I/O processing.
 			time.Sleep(time.Second * waitIO)
 			logger.Stop()
+
+			return nil
 		},
 	}
 

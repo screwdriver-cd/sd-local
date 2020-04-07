@@ -31,6 +31,10 @@ func (mock mockLogger) Stop() {}
 
 func (mock mockLaunch) Run() error { return nil }
 
+func (mock mockLaunch) Kill(os.Signal) {}
+
+func (mock mockLaunch) Clean() {}
+
 func setup() {
 	configNew = func(confPath string) (config.Config, error) { return config.Config{}, nil }
 	apiNew = func(url, token string) (screwdriver.API, error) { return mockAPI{}, nil }
