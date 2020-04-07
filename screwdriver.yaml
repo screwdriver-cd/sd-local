@@ -9,9 +9,9 @@ jobs:
         steps:
             - gover: go version
             - install: go mod download
-            - vet: go vet ./...
             - gofmt: (! gofmt -d -s . | grep '^')
-            - test: go test -coverprofile=${SD_ARTIFACTS_DIR}/coverage.out -coverpkg=./... ./...
+            - install-golint: go get golang.org/x/lint/golint
+            - test: make test COVERPROFILE=${SD_ARTIFACTS_DIR}/coverage.out
             - build: go build -a -o /dev/null
             - test-release: "curl -sL https://git.io/goreleaser | bash -s -- --snapshot"
 
