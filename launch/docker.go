@@ -23,6 +23,7 @@ type docker struct {
 	useSudo           bool
 	commands          []*exec.Cmd
 	mutex             *sync.Mutex
+        containerName     string
 }
 
 var _ runner = (*docker)(nil)
@@ -40,7 +41,9 @@ const (
 
 func newDocker(setupImage, setupImageVer string, useSudo bool) runner {
 	return &docker{
+                name:              "SD_BUILD",
 		volume:            "SD_LAUNCH_BIN",
+                volumeSrc:         "SD_SOURCE",
 		setupImage:        setupImage,
 		setupImageVersion: setupImageVer,
 		useSudo:           useSudo,
@@ -70,7 +73,7 @@ func (d *docker) setupBin() error {
 	return nil
 }
 
-func (d *docker) runBuild(buildConfig buildConfig) error {
+func (d *docker) createContainer(buildConfig buildConfig) error {
 	environment := buildConfig.Environment[0]
 
 	srcDir := buildConfig.SrcPath
@@ -87,13 +90,13 @@ func (d *docker) runBuild(buildConfig buildConfig) error {
 		return err
 	}
 
-	err = d.execDockerCommand("pull", buildImage)
+	err := d.execDockerCommand("volume", "create", "--name", d.volumeSrc)
 	if err != nil {
-		return fmt.Errorf("failed to pull user image %v", err)
+		return fmt.Errorf("failed to create docker volume: %v", err)
 	}
 
-	dockerCommandArgs := []string{"container", "run"}
-	dockerCommandOptions := []string{"--rm", "-v", srcVol, "-v", artVol, "-v", binVol, buildImage, "/opt/sd/local_run.sh", string(configJSON), buildConfig.JobName, environment["SD_API_URL"], environment["SD_STORE_URL"], logfilePath}
+	dockerCommandArgs = []string{"container", "create"}
+	dockerCommandOptions = []string{"--name", d.containerName, "--rm", "-v", srcVol, "-v", artVol, "-v", binVol, buildImage, "/opt/sd/local_run.sh", string(configJSON), buildConfig.JobName, environment["SD_API_URL"], environment["SD_STORE_URL"], logfilePath}
 
 	if buildConfig.MemoryLimit != "" {
 		dockerCommandOptions = append([]string{fmt.Sprintf("-m%s", buildConfig.MemoryLimit)}, dockerCommandOptions...)
@@ -101,10 +104,23 @@ func (d *docker) runBuild(buildConfig buildConfig) error {
 
 	err = d.execDockerCommand(append(dockerCommandArgs, dockerCommandOptions...)...)
 	if err != nil {
-		return fmt.Errorf("failed to run build container: %v", err)
+		return fmt.Errorf("failed to create build container: %v", err)
 	}
 
+        // TODO: docker cpでcurrent directoryをdocker volumeにcopy
+
 	return nil
+}
+
+func (d *docker) startBuild() error {
+        // TODO: 実装する
+
+        /*
+	err = d.execDockerCommand("pull", buildImage)
+	if err != nil {
+		return fmt.Errorf("failed to pull user image %v", err)
+	}
+        */
 }
 
 func (d *docker) execDockerCommand(args ...string) error {

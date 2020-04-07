@@ -157,7 +157,11 @@ func (l *launch) Run() error {
 		return fmt.Errorf("failed to setup build: %v", err)
 	}
 
-	err := l.runner.runBuild(l.buildConfig)
+	if err := l.runner.createContainer(); err != nil {
+		return fmt.Errorf("failed to create build container: %v", err)
+	}
+
+	err := l.runner.startBuild()
 	if err != nil {
 		return fmt.Errorf("failed to run build: %v", err)
 	}
