@@ -1,13 +1,12 @@
 package main
 
 import (
-	"log"
-
 	"github.com/screwdriver-cd/sd-local/cmd"
+	"github.com/sirupsen/logrus"
 )
 
 func main() {
 	if err := cmd.Execute(); err != nil {
-		log.Fatal(err)
+		logrus.Fatal(err)
 	}
 }
