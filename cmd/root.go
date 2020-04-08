@@ -35,17 +35,16 @@ func kill(sig os.Signal) {
 	}
 }
 
-func cleanExit(code int) {
+func clean() {
 	for _, v := range cleaners {
 		v.Clean()
 	}
-	os.Exit(code)
 }
 
 // Execute executes the root command.
 func Execute() error {
 	cleaners = make([]Cleaner, 0, 2)
-	defer cleanExit(1)
+	defer clean()
 
 	go func() {
 		quit := make(chan os.Signal)
@@ -54,8 +53,8 @@ func Execute() error {
 			select {
 			case sig := <-quit:
 				kill(sig)
-				cleanExit(1)
-				return
+				clean()
+				os.Exit(1)
 			}
 		}
 	}()
