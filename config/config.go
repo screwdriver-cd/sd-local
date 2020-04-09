@@ -77,17 +77,17 @@ func New(configPath string) (Config, error) {
 		return Config{}, fmt.Errorf("failed to read config file: %v", err)
 	}
 
-	var context = configList{}
+	var configList = configList{}
 
-	err = yaml.NewDecoder(file).Decode(&context)
+	err = yaml.NewDecoder(file).Decode(&configList)
 
 	if err != nil {
 		return Config{}, fmt.Errorf("failed to parse config file: %v", err)
 	}
 
-	currentConfig, exists := context.Configs[context.Current]
+	currentConfig, exists := configList.Configs[configList.Current]
 	if !exists {
-		return Config{}, fmt.Errorf("config `%s` does not exist", context.Current)
+		return Config{}, fmt.Errorf("config `%s` does not exist", configList.Current)
 	}
 
 	currentConfig.filePath = configPath
@@ -118,12 +118,30 @@ func (c *Config) Set(key, value string) error {
 		return fmt.Errorf("invalid key %s", key)
 	}
 
+	// If read configList after open with O_TRUNC, config file has been truncated to be empty.
+	// Therefore we have to open another file descriptor to read configList.
+	configFile, err := os.Open(c.filePath)
+	if err != nil {
+		return err
+	}
+	defer configFile.Close()
+
+	var configList = configList{}
+
+	err = yaml.NewDecoder(configFile).Decode(&configList)
+	if err != nil {
+		return fmt.Errorf("failed to parse config file: %v", err)
+	}
+
+	configList.Configs[configList.Current] = *c
+
 	file, err := os.OpenFile(c.filePath, os.O_RDWR|os.O_TRUNC, 0666)
 	if err != nil {
 		return err
 	}
+	defer file.Close()
 
-	err = yaml.NewEncoder(file).Encode(c)
+	err = yaml.NewEncoder(file).Encode(configList)
 	if err != nil {
 		return err
 	}
