@@ -23,6 +23,12 @@ type Config struct {
 	filePath string   `yaml:"-"`
 }
 
+// configList is a set of sd-local config entities
+type configList struct {
+	Configs map[string]Config `yaml:"configs"`
+	Current string            `yaml:"current"`
+}
+
 func create(configPath string) error {
 	_, err := os.Stat(configPath)
 	// if file exists return nil
@@ -41,11 +47,16 @@ func create(configPath string) error {
 	}
 	defer file.Close()
 
-	err = yaml.NewEncoder(file).Encode(Config{
-		Launcher: Launcher{
-			Version: "stable",
-			Image:   "screwdrivercd/launcher",
+	err = yaml.NewEncoder(file).Encode(configList{
+		Configs: map[string]Config{
+			"default": {
+				Launcher: Launcher{
+					Version: "stable",
+					Image:   "screwdrivercd/launcher",
+				},
+			},
 		},
+		Current: "default",
 	})
 	if err != nil {
 		return err
@@ -66,16 +77,22 @@ func New(configPath string) (Config, error) {
 		return Config{}, fmt.Errorf("failed to read config file: %v", err)
 	}
 
-	var config = Config{
-		filePath: configPath,
-	}
+	var context = configList{}
 
-	err = yaml.NewDecoder(file).Decode(&config)
+	err = yaml.NewDecoder(file).Decode(&context)
+
 	if err != nil {
 		return Config{}, fmt.Errorf("failed to parse config file: %v", err)
 	}
 
-	return config, nil
+	currentConfig, exists := context.Configs[context.Current]
+	if !exists {
+		return Config{}, fmt.Errorf("config `%s` does not exist", context.Current)
+	}
+
+	currentConfig.filePath = configPath
+
+	return currentConfig, nil
 }
 
 // Set preserve sd-local config with new value.

@@ -6,4 +6,4 @@ configs:
     launcher:
       version: latest
       image: screwdrivercd/launcher
-current: default
+current: doesnotexist
