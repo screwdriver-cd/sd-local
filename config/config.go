@@ -72,17 +72,9 @@ func New(configPath string) (Config, error) {
 		return Config{}, err
 	}
 
-	file, err := os.Open(configPath)
+	configList, err := newConfigList(configPath)
 	if err != nil {
-		return Config{}, fmt.Errorf("failed to read config file: %v", err)
-	}
-
-	var configList = configList{}
-
-	err = yaml.NewDecoder(file).Decode(&configList)
-
-	if err != nil {
-		return Config{}, fmt.Errorf("failed to parse config file: %v", err)
+		return Config{}, err
 	}
 
 	currentConfig, exists := configList.Configs[configList.Current]
@@ -93,6 +85,23 @@ func New(configPath string) (Config, error) {
 	currentConfig.filePath = configPath
 
 	return currentConfig, nil
+}
+
+func newConfigList(configPath string) (configList, error) {
+	file, err := os.Open(configPath)
+	if err != nil {
+		return configList{}, fmt.Errorf("failed to read config file: %v", err)
+	}
+
+	var c = configList{}
+
+	err = yaml.NewDecoder(file).Decode(&c)
+
+	if err != nil {
+		return configList{}, fmt.Errorf("failed to parse config file: %v", err)
+	}
+
+	return c, nil
 }
 
 // Set preserve sd-local config with new value.
@@ -120,17 +129,9 @@ func (c *Config) Set(key, value string) error {
 
 	// If read configList after open with O_TRUNC, config file has been truncated to be empty.
 	// Therefore we have to open another file descriptor to read configList.
-	configFile, err := os.Open(c.filePath)
+	configList, err := newConfigList(c.filePath)
 	if err != nil {
 		return err
-	}
-	defer configFile.Close()
-
-	var configList = configList{}
-
-	err = yaml.NewDecoder(configFile).Decode(&configList)
-	if err != nil {
-		return fmt.Errorf("failed to parse config file: %v", err)
 	}
 
 	configList.Configs[configList.Current] = *c
