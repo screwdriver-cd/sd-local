@@ -92,6 +92,7 @@ func newConfigList(configPath string) (configList, error) {
 	if err != nil {
 		return configList{}, fmt.Errorf("failed to read config file: %v", err)
 	}
+	defer file.Close()
 
 	var c = configList{}
 
