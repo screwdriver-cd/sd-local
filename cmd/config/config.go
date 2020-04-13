@@ -2,7 +2,6 @@ package config
 
 import (
 	"log"
-	"os"
 	"path/filepath"
 
 	"github.com/mitchellh/go-homedir"
@@ -14,14 +13,7 @@ const (
 	configDirName  = ".sdlocal"
 )
 
-var filePath = func(isLocalOpt bool) (string, error) {
-	if isLocalOpt {
-		pwd, err := os.Getwd()
-		if err != nil {
-			return "", err
-		}
-		return filepath.Join(pwd, configDirName, configFileName), nil
-	}
+var filePath = func() (string, error) {
 	home, err := homedir.Dir()
 	if err != nil {
 		return "", err
@@ -48,6 +40,7 @@ func NewConfigCmd() *cobra.Command {
 	configCmd.AddCommand(
 		newConfigSetCmd(),
 		newConfigViewCmd(),
+		newConfigCreateCmd(),
 	)
 
 	return configCmd

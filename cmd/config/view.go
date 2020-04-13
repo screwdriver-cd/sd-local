@@ -20,15 +20,17 @@ Can see the below settings:
 * Screwdriver.cd launcher version
 * Screwdriver.cd launcher image`,
 		Run: func(cmd *cobra.Command, args []string) {
-			isLocalOpt, err := cmd.Flags().GetBool("local")
+			path, err := filePath()
 			if err != nil {
 				logrus.Fatal(err)
 			}
-			path, err := filePath(isLocalOpt)
+
+			configList, err := newConfigList(path)
 			if err != nil {
 				logrus.Fatal(err)
 			}
-			c, err := configNew(path)
+
+			c, err := configList.Get(configList.Current)
 			if err != nil {
 				logrus.Fatal(err)
 			}

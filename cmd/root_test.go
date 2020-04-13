@@ -36,7 +36,19 @@ func (mock mockLaunch) Kill(os.Signal) {}
 func (mock mockLaunch) Clean() {}
 
 func setup() {
-	configNew = func(confPath string) (config.Config, error) { return config.Config{}, nil }
+	newConfigList = func(confPath string) (config.ConfigList, error) {
+		return config.ConfigList{
+			Configs: map[string]*config.Config{
+				"default": {
+					Launcher: config.Launcher{
+						Version: "stable",
+						Image:   "screwdrivercd/launcher",
+					},
+				},
+			},
+			Current: "default",
+		}, nil
+	}
 	apiNew = func(url, token string) (screwdriver.API, error) { return mockAPI{}, nil }
 	buildLogNew = func(filepath string, writer io.Writer) (logger buildlog.Logger, err error) { return mockLogger{}, nil }
 	launchNew = func(option launch.Option) launch.Launcher {

@@ -25,7 +25,7 @@ const (
 )
 
 var (
-	configNew      = config.New
+	newConfigList  = config.NewConfigList
 	apiNew         = screwdriver.New
 	buildLogNew    = buildlog.New
 	launchNew      = launch.New
@@ -153,7 +153,12 @@ func newBuildCmd() *cobra.Command {
 				srcPath = scm.LocalPath()
 			}
 
-			config, err := configNew(filepath.Join(sdlocalDir, "config"))
+			configList, err := newConfigList(filepath.Join(sdlocalDir, "config"))
+			if err != nil {
+				return err
+			}
+
+			config, err := configList.Get(configList.Current)
 			if err != nil {
 				return err
 			}
@@ -188,7 +193,7 @@ func newBuildCmd() *cobra.Command {
 
 			option := launch.Option{
 				Job:           job,
-				Config:        config,
+				Config:        *config,
 				JobName:       jobName,
 				JWT:           api.JWT(),
 				ArtifactsPath: artifactsPath,

@@ -8,20 +8,22 @@ import (
 	"testing"
 	"time"
 
+	"github.com/screwdriver-cd/sd-local/config"
+
 	"github.com/stretchr/testify/assert"
 )
 
-func TestConfigSetCmd(t *testing.T) {
+func TestConfigCreateCmd(t *testing.T) {
 	rand.Seed(time.Now().UnixNano())
 	cnfPath := fmt.Sprintf("%vconfig", rand.Int())
 	defer os.Remove(cnfPath)
 
-	defFilePath := filePath
+	cnew := newConfigList
 	defer func() {
-		filePath = defFilePath
+		newConfigList = cnew
 	}()
-	filePath = func() (string, error) {
-		return cnfPath, nil
+	newConfigList = func(configPath string) (c config.ConfigList, err error) {
+		return config.NewConfigList(cnfPath)
 	}
 
 	testCase := []struct {
@@ -32,19 +34,19 @@ func TestConfigSetCmd(t *testing.T) {
 	}{
 		{
 			name:     "success",
-			args:     []string{"set", "api-url", "example.com"},
+			args:     []string{"create", "test"},
 			wantOut:  "",
 			checkErr: false,
 		},
 		{
 			name:     "failure by too many args",
-			args:     []string{"set", "api-url", "example.com", "many"},
+			args:     []string{"create", "test", "many"},
 			wantOut:  "",
 			checkErr: true,
 		},
 		{
 			name:     "failure by too little args",
-			args:     []string{"set", "api-url"},
+			args:     []string{"create"},
 			wantOut:  "",
 			checkErr: true,
 		},

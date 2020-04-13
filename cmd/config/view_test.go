@@ -13,10 +13,7 @@ func TestViewCmd(t *testing.T) {
 		filePath = fp
 	}()
 
-	filePath = func(isLocal bool) (string, error) {
-		if isLocal {
-			return "./testdata/local_config", nil
-		}
+	filePath = func() (string, error) {
 		return "./testdata/config", nil
 	}
 
@@ -26,24 +23,13 @@ func TestViewCmd(t *testing.T) {
 		expect string
 	}{
 		{
-			name: "success by not use local config",
+			name: "success",
 			args: []string{"view"},
 			expect: `KEY               VALUE
 api-url           api.screwdriver.com
 store-url         store.screwdriver.com
 token             sd-token
 launcher-version  1.0.0
-launcher-image    screwdrivercd/launcher
-`,
-		},
-		{
-			name: "success by use local config",
-			args: []string{"view", "--local"},
-			expect: `KEY               VALUE
-api-url           local.api.screwdriver.com
-store-url         local.store.screwdriver.com
-token             local.sd-token
-launcher-version  stable
 launcher-image    screwdrivercd/launcher
 `,
 		},

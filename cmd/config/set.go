@@ -3,13 +3,8 @@ package config
 import (
 	"strings"
 
-	"github.com/screwdriver-cd/sd-local/config"
 	"github.com/sirupsen/logrus"
 	"github.com/spf13/cobra"
-)
-
-var (
-	configNew = config.New
 )
 
 func isInvalidKeyError(err error) bool {
@@ -29,19 +24,19 @@ Can set the below settings:
 * Screwdriver.cd launcher image as "launcher-image"`,
 		Args: cobra.ExactArgs(2),
 		Run: func(cmd *cobra.Command, args []string) {
-			isLocalOpt, err := cmd.Flags().GetBool("local")
-			if err != nil {
-				logrus.Fatal(err)
-			}
-
 			key, value := args[0], args[1]
 
-			path, err := filePath(isLocalOpt)
+			path, err := filePath()
 			if err != nil {
 				logrus.Fatal(err)
 			}
 
-			conf, err := configNew(path)
+			configList, err := newConfigList(path)
+			if err != nil {
+				logrus.Fatal(err)
+			}
+
+			conf, err := configList.Get(configList.Current)
 			if err != nil {
 				logrus.Fatal(err)
 			}
@@ -56,6 +51,11 @@ Can set the below settings:
 				} else {
 					logrus.Fatal(err)
 				}
+			}
+
+			err = configList.Save()
+			if err != nil {
+				logrus.Fatal(err)
 			}
 		},
 	}

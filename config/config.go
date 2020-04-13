@@ -20,13 +20,13 @@ type Config struct {
 	StoreURL string   `yaml:"store-url"`
 	Token    string   `yaml:"token"`
 	Launcher Launcher `yaml:"launcher"`
-	filePath string   `yaml:"-"`
 }
 
-// configList is a set of sd-local config entities
-type configList struct {
-	Configs map[string]Config `yaml:"configs"`
-	Current string            `yaml:"current"`
+// ConfigList is a set of sd-local config entities
+type ConfigList struct {
+	Configs  map[string]*Config `yaml:"configs"`
+	Current  string             `yaml:"current"`
+	filePath string             `yaml:"-"`
 }
 
 func create(configPath string) error {
@@ -47,14 +47,9 @@ func create(configPath string) error {
 	}
 	defer file.Close()
 
-	err = yaml.NewEncoder(file).Encode(configList{
-		Configs: map[string]Config{
-			"default": {
-				Launcher: Launcher{
-					Version: "stable",
-					Image:   "screwdrivercd/launcher",
-				},
-			},
+	err = yaml.NewEncoder(file).Encode(ConfigList{
+		Configs: map[string]*Config{
+			"default": newConfig(),
 		},
 		Current: "default",
 	})
@@ -65,44 +60,70 @@ func create(configPath string) error {
 	return nil
 }
 
-// New returns parsed config
-func New(configPath string) (Config, error) {
+func newConfig() *Config {
+	return &Config{
+		Launcher: Launcher{
+			Version: "stable",
+			Image:   "screwdrivercd/launcher",
+		},
+	}
+}
+
+func NewConfigList(configPath string) (ConfigList, error) {
 	err := create(configPath)
 	if err != nil {
-		return Config{}, err
+		return ConfigList{}, err
 	}
 
-	configList, err := newConfigList(configPath)
+	file, err := os.Open(configPath)
 	if err != nil {
-		return Config{}, err
+		return ConfigList{}, fmt.Errorf("failed to read config file: %v", err)
 	}
 
-	currentConfig, exists := configList.Configs[configList.Current]
+	var c = ConfigList{
+		filePath: configPath,
+	}
+
+	err = yaml.NewDecoder(file).Decode(&c)
+	if err != nil {
+		return ConfigList{}, fmt.Errorf("failed to parse config file: %v", err)
+	}
+
+	return c, nil
+}
+
+func (c *ConfigList) Add(name string) error {
+	_, exist := c.Configs[name]
+	if exist {
+		return fmt.Errorf("config `%s` already exists", name)
+	}
+
+	c.Configs[name] = newConfig()
+	return nil
+}
+
+func (c *ConfigList) Get(name string) (*Config, error) {
+	currentConfig, exists := c.Configs[name]
 	if !exists {
-		return Config{}, fmt.Errorf("config `%s` does not exist", configList.Current)
+		return &Config{}, fmt.Errorf("config `%s` does not exist", name)
 	}
-
-	currentConfig.filePath = configPath
 
 	return currentConfig, nil
 }
 
-func newConfigList(configPath string) (configList, error) {
-	file, err := os.Open(configPath)
+func (c *ConfigList) Save() error {
+	file, err := os.OpenFile(c.filePath, os.O_RDWR|os.O_TRUNC, 0666)
 	if err != nil {
-		return configList{}, fmt.Errorf("failed to read config file: %v", err)
+		return err
 	}
 	defer file.Close()
 
-	var c = configList{}
-
-	err = yaml.NewDecoder(file).Decode(&c)
-
+	err = yaml.NewEncoder(file).Encode(c)
 	if err != nil {
-		return configList{}, fmt.Errorf("failed to parse config file: %v", err)
+		return err
 	}
 
-	return c, nil
+	return nil
 }
 
 // Set preserve sd-local config with new value.
@@ -126,26 +147,6 @@ func (c *Config) Set(key, value string) error {
 		c.Launcher.Image = value
 	default:
 		return fmt.Errorf("invalid key %s", key)
-	}
-
-	// If read configList after open with O_TRUNC, config file has been truncated to be empty.
-	// Therefore we have to open another file descriptor to read configList.
-	configList, err := newConfigList(c.filePath)
-	if err != nil {
-		return err
-	}
-
-	configList.Configs[configList.Current] = *c
-
-	file, err := os.OpenFile(c.filePath, os.O_RDWR|os.O_TRUNC, 0666)
-	if err != nil {
-		return err
-	}
-	defer file.Close()
-
-	err = yaml.NewEncoder(file).Encode(configList)
-	if err != nil {
-		return err
 	}
 
 	return nil
