@@ -22,20 +22,25 @@ func TestCreateConfig(t *testing.T) {
 		cnfPath := filepath.Join(testDir, fmt.Sprintf("%vconfig", rand.Int()))
 		defer os.Remove(cnfPath)
 
-		expect := Config{
-			APIURL:   "",
-			StoreURL: "",
-			Token:    "",
-			Launcher: Launcher{
-				Version: "stable",
-				Image:   "screwdrivercd/launcher",
+		expect := configList{
+			Configs: map[string]Config{
+				"default": {
+					APIURL:   "",
+					StoreURL: "",
+					Token:    "",
+					Launcher: Launcher{
+						Version: "stable",
+						Image:   "screwdrivercd/launcher",
+					},
+				},
 			},
+			Current: "default",
 		}
 
 		err := create(cnfPath)
 		assert.Nil(t, err)
 		file, _ := os.Open(cnfPath)
-		actual := Config{}
+		actual := configList{}
 		_ = yaml.NewDecoder(file).Decode(&actual)
 		assert.Equal(t, expect, actual)
 	})
@@ -45,14 +50,19 @@ func TestCreateConfig(t *testing.T) {
 		cnfPath := filepath.Join(testDir, fmt.Sprintf("%vconfig", rand.Int()))
 		defer os.Remove(cnfPath)
 
-		expect := Config{
-			APIURL:   "",
-			StoreURL: "",
-			Token:    "",
-			Launcher: Launcher{
-				Version: "stable",
-				Image:   "screwdrivercd/launcher",
+		expect := configList{
+			Configs: map[string]Config{
+				"default": {
+					APIURL:   "",
+					StoreURL: "",
+					Token:    "",
+					Launcher: Launcher{
+						Version: "stable",
+						Image:   "screwdrivercd/launcher",
+					},
+				},
 			},
+			Current: "default",
 		}
 
 		err := create(cnfPath)
@@ -61,7 +71,7 @@ func TestCreateConfig(t *testing.T) {
 		assert.Nil(t, err)
 
 		file, _ := os.Open(cnfPath)
-		actual := Config{}
+		actual := configList{}
 		_ = yaml.NewDecoder(file).Decode(&actual)
 		assert.Equal(t, expect, actual)
 	})
@@ -87,6 +97,13 @@ func TestNew(t *testing.T) {
 		assert.Nil(t, err)
 		assert.Equal(t, cnfPath, actual.filePath)
 		assert.Equal(t, testConfig, actual)
+	})
+
+	t.Run("failure by invalid current", func(t *testing.T) {
+		cnfPath := filepath.Join(testDir, "failureCurrentConfig")
+		_, err := New(cnfPath)
+
+		assert.Equal(t, "config `doesnotexist` does not exist", err.Error())
 	})
 
 	t.Run("failure by invalid yaml", func(t *testing.T) {
