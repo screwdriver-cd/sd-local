@@ -36,9 +36,9 @@ func (mock mockLaunch) Kill(os.Signal) {}
 func (mock mockLaunch) Clean() {}
 
 func setup() {
-	newConfigList = func(confPath string) (config.ConfigList, error) {
-		return config.ConfigList{
-			Configs: map[string]*config.Config{
+	configNew = func(confPath string) (config.Config, error) {
+		return config.Config{
+			Entries: map[string]*config.Entry{
 				"default": {
 					Launcher: config.Launcher{
 						Version: "stable",

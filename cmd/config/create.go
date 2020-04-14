@@ -7,7 +7,7 @@ import (
 )
 
 var (
-	newConfigList = config.NewConfigList
+	configNew = config.New
 )
 
 func newConfigCreateCmd() *cobra.Command {
@@ -25,7 +25,7 @@ The new config has only launcher-version and launcher-image.`,
 				logrus.Fatal(err)
 			}
 
-			configList, err := newConfigList(path)
+			configList, err := configNew(path)
 			if err != nil {
 				logrus.Fatal(err)
 			}

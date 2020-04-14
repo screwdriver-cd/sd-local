@@ -18,12 +18,12 @@ func TestConfigCreateCmd(t *testing.T) {
 	cnfPath := fmt.Sprintf("%vconfig", rand.Int())
 	defer os.Remove(cnfPath)
 
-	cnew := newConfigList
+	cnew := configNew
 	defer func() {
-		newConfigList = cnew
+		configNew = cnew
 	}()
-	newConfigList = func(configPath string) (c config.ConfigList, err error) {
-		return config.NewConfigList(cnfPath)
+	configNew = func(configPath string) (c config.Config, err error) {
+		return config.New(cnfPath)
 	}
 
 	testCase := []struct {

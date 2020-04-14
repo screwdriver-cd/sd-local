@@ -17,12 +17,12 @@ import (
 
 var testDir string = "./testdata"
 
-func newBuildConfig(options ...func(b *buildConfig)) buildConfig {
+func newBuildEntry(options ...func(b *buildEntry)) buildEntry {
 	buf, _ := ioutil.ReadFile(filepath.Join(testDir, "job.json"))
 	job := screwdriver.Job{}
 	_ = json.Unmarshal(buf, &job)
 
-	b := buildConfig{
+	b := buildEntry{
 		ID: 0,
 		Environment: []EnvVar{{
 			"SD_ARTIFACTS_DIR": "/test/artifacts",
@@ -56,19 +56,19 @@ func TestNew(t *testing.T) {
 		_ = json.Unmarshal(buf, &job)
 		job.Environment["SD_ARTIFACTS_DIR"] = "/test/artifacts"
 
-		config := config.Config{
+		config := config.Entry{
 			APIURL:   "http://api-test.screwdriver.cd",
 			StoreURL: "http://store-test.screwdriver.cd",
 			Token:    "testtoken",
 			Launcher: config.Launcher{Version: "latest", Image: "screwdrivercd/launcher"},
 		}
 
-		expectedBuildConfig := newBuildConfig()
-		expectedBuildConfig.SrcPath = "/test/sd-local/build/repo"
+		expectedBuildEntry := newBuildEntry()
+		expectedBuildEntry.SrcPath = "/test/sd-local/build/repo"
 
 		option := Option{
 			Job:           job,
-			Config:        config,
+			Entry:         config,
 			JobName:       "test",
 			JWT:           "testjwt",
 			ArtifactsPath: "sd-artifacts",
@@ -79,7 +79,7 @@ func TestNew(t *testing.T) {
 		launcher := New(option)
 		l, ok := launcher.(*launch)
 		assert.True(t, ok)
-		assert.Equal(t, expectedBuildConfig, l.buildConfig)
+		assert.Equal(t, expectedBuildEntry, l.buildEntry)
 	})
 
 	t.Run("success with default artifacts dir", func(t *testing.T) {
@@ -87,19 +87,19 @@ func TestNew(t *testing.T) {
 		job := screwdriver.Job{}
 		_ = json.Unmarshal(buf, &job)
 
-		config := config.Config{
+		config := config.Entry{
 			APIURL:   "http://api-test.screwdriver.cd",
 			StoreURL: "http://store-test.screwdriver.cd",
 			Token:    "testtoken",
 			Launcher: config.Launcher{Version: "latest", Image: "screwdrivercd/launcher"},
 		}
 
-		expectedBuildConfig := newBuildConfig()
-		expectedBuildConfig.Environment[0]["SD_ARTIFACTS_DIR"] = "/sd/workspace/artifacts"
+		expectedBuildEntry := newBuildEntry()
+		expectedBuildEntry.Environment[0]["SD_ARTIFACTS_DIR"] = "/sd/workspace/artifacts"
 
 		option := Option{
 			Job:           job,
-			Config:        config,
+			Entry:         config,
 			JobName:       "test",
 			JWT:           "testjwt",
 			ArtifactsPath: "sd-artifacts",
@@ -109,7 +109,7 @@ func TestNew(t *testing.T) {
 		launcher := New(option)
 		l, ok := launcher.(*launch)
 		assert.True(t, ok)
-		assert.Equal(t, expectedBuildConfig, l.buildConfig)
+		assert.Equal(t, expectedBuildEntry, l.buildEntry)
 	})
 }
 
@@ -120,7 +120,7 @@ type mockRunner struct {
 	cleanCalledCount int
 }
 
-func (m *mockRunner) runBuild(buildConfig buildConfig) error {
+func (m *mockRunner) runBuild(buildEntry buildEntry) error {
 	return m.errorRunBuild
 }
 
@@ -143,7 +143,7 @@ func TestRun(t *testing.T) {
 		_ = json.Unmarshal(buf, &job)
 
 		launch := launch{
-			buildConfig: newBuildConfig(),
+			buildEntry: newBuildEntry(),
 			runner: &mockRunner{
 				errorRunBuild: nil,
 				errorSetupBin: nil,
@@ -169,7 +169,7 @@ func TestRun(t *testing.T) {
 		_ = json.Unmarshal(buf, &job)
 
 		launch := launch{
-			buildConfig: newBuildConfig(),
+			buildEntry: newBuildEntry(),
 			runner: &mockRunner{
 				errorRunBuild: nil,
 				errorSetupBin: nil,
@@ -195,7 +195,7 @@ func TestRun(t *testing.T) {
 		_ = json.Unmarshal(buf, &job)
 
 		launch := launch{
-			buildConfig: newBuildConfig(),
+			buildEntry: newBuildEntry(),
 			runner: &mockRunner{
 				errorRunBuild: nil,
 				errorSetupBin: fmt.Errorf("docker: Error response from daemon"),
@@ -221,7 +221,7 @@ func TestRun(t *testing.T) {
 		_ = json.Unmarshal(buf, &job)
 
 		launch := launch{
-			buildConfig: newBuildConfig(),
+			buildEntry: newBuildEntry(),
 			runner: &mockRunner{
 				errorRunBuild: fmt.Errorf("docker: Error response from daemon"),
 				errorSetupBin: nil,
@@ -249,7 +249,7 @@ func TestKill(t *testing.T) {
 		_ = json.Unmarshal(buf, &job)
 
 		launch := launch{
-			buildConfig: newBuildConfig(),
+			buildEntry: newBuildEntry(),
 			runner: &mockRunner{
 				errorRunBuild: nil,
 				errorSetupBin: nil,
@@ -268,7 +268,7 @@ func TestClean(t *testing.T) {
 		_ = json.Unmarshal(buf, &job)
 
 		launch := launch{
-			buildConfig: newBuildConfig(),
+			buildEntry: newBuildEntry(),
 			runner: &mockRunner{
 				errorRunBuild: nil,
 				errorSetupBin: nil,

@@ -25,7 +25,7 @@ Can see the below settings:
 				logrus.Fatal(err)
 			}
 
-			configList, err := newConfigList(path)
+			configList, err := configNew(path)
 			if err != nil {
 				logrus.Fatal(err)
 			}

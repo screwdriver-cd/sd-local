@@ -70,19 +70,19 @@ func (d *docker) setupBin() error {
 	return nil
 }
 
-func (d *docker) runBuild(buildConfig buildConfig) error {
-	environment := buildConfig.Environment[0]
+func (d *docker) runBuild(buildEntry buildEntry) error {
+	environment := buildEntry.Environment[0]
 
-	srcDir := buildConfig.SrcPath
-	hostArtDir := buildConfig.ArtifactsPath
+	srcDir := buildEntry.SrcPath
+	hostArtDir := buildEntry.ArtifactsPath
 	containerArtDir := environment["SD_ARTIFACTS_DIR"]
-	buildImage := buildConfig.Image
+	buildImage := buildEntry.Image
 	logfilePath := filepath.Join(containerArtDir, LogFile)
 
 	srcVol := fmt.Sprintf("%s/:/sd/workspace/src/%s/%s", srcDir, scmHost, orgRepo)
 	artVol := fmt.Sprintf("%s/:%s", hostArtDir, containerArtDir)
 	binVol := fmt.Sprintf("%s:%s", d.volume, "/opt/sd")
-	configJSON, err := json.Marshal(buildConfig)
+	configJSON, err := json.Marshal(buildEntry)
 	if err != nil {
 		return err
 	}
@@ -93,10 +93,10 @@ func (d *docker) runBuild(buildConfig buildConfig) error {
 	}
 
 	dockerCommandArgs := []string{"container", "run"}
-	dockerCommandOptions := []string{"--rm", "-v", srcVol, "-v", artVol, "-v", binVol, buildImage, "/opt/sd/local_run.sh", string(configJSON), buildConfig.JobName, environment["SD_API_URL"], environment["SD_STORE_URL"], logfilePath}
+	dockerCommandOptions := []string{"--rm", "-v", srcVol, "-v", artVol, "-v", binVol, buildImage, "/opt/sd/local_run.sh", string(configJSON), buildEntry.JobName, environment["SD_API_URL"], environment["SD_STORE_URL"], logfilePath}
 
-	if buildConfig.MemoryLimit != "" {
-		dockerCommandOptions = append([]string{fmt.Sprintf("-m%s", buildConfig.MemoryLimit)}, dockerCommandOptions...)
+	if buildEntry.MemoryLimit != "" {
+		dockerCommandOptions = append([]string{fmt.Sprintf("-m%s", buildEntry.MemoryLimit)}, dockerCommandOptions...)
 	}
 
 	err = d.execDockerCommand(append(dockerCommandArgs, dockerCommandOptions...)...)

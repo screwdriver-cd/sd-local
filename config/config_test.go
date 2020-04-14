@@ -23,8 +23,8 @@ func TestCreateConfig(t *testing.T) {
 		cnfPath := filepath.Join(testDir, fmt.Sprintf("%vconfig", rand.Int()))
 		defer os.Remove(cnfPath)
 
-		expect := ConfigList{
-			Configs: map[string]*Config{
+		expect := Config{
+			Entries: map[string]*Entry{
 				"default": {
 					APIURL:   "",
 					StoreURL: "",
@@ -41,7 +41,7 @@ func TestCreateConfig(t *testing.T) {
 		err := create(cnfPath)
 		assert.Nil(t, err)
 		file, _ := os.Open(cnfPath)
-		actual := ConfigList{}
+		actual := Config{}
 		_ = yaml.NewDecoder(file).Decode(&actual)
 		assert.Equal(t, expect, actual)
 	})
@@ -51,8 +51,8 @@ func TestCreateConfig(t *testing.T) {
 		cnfPath := filepath.Join(testDir, fmt.Sprintf("%vconfig", rand.Int()))
 		defer os.Remove(cnfPath)
 
-		expect := ConfigList{
-			Configs: map[string]*Config{
+		expect := Config{
+			Entries: map[string]*Entry{
 				"default": {
 					APIURL:   "",
 					StoreURL: "",
@@ -72,23 +72,23 @@ func TestCreateConfig(t *testing.T) {
 		assert.Nil(t, err)
 
 		file, _ := os.Open(cnfPath)
-		actual := ConfigList{}
+		actual := Config{}
 		_ = yaml.NewDecoder(file).Decode(&actual)
 		assert.Equal(t, expect, actual)
 	})
 }
 
-func TestNewConfigList(t *testing.T) {
+func TestNewConfig(t *testing.T) {
 	t.Run("success", func(t *testing.T) {
 		cnfPath := filepath.Join(testDir, "successConfig")
 
-		actual, err := NewConfigList(cnfPath)
+		actual, err := New(cnfPath)
 		if err != nil {
 			t.Fatal(err)
 		}
 
-		testConfigList := ConfigList{
-			Configs: map[string]*Config{
+		testConfig := Config{
+			Entries: map[string]*Entry{
 				"default": {
 					APIURL:   "api-url",
 					StoreURL: "store-api-url",
@@ -104,22 +104,22 @@ func TestNewConfigList(t *testing.T) {
 		}
 
 		assert.Nil(t, err)
-		assert.Equal(t, testConfigList, actual)
+		assert.Equal(t, testConfig, actual)
 	})
 
 	t.Run("failure by invalid yaml", func(t *testing.T) {
 		cnfPath := filepath.Join(testDir, "failureConfig")
 
-		_, err := NewConfigList(cnfPath)
+		_, err := New(cnfPath)
 
 		assert.Equal(t, 0, strings.Index(err.Error(), "failed to parse config file: "), fmt.Sprintf("expected error is `failed to parse config file: ...`, actual: `%v`", err))
 	})
 }
 
-func TestConfigListGet(t *testing.T) {
+func TestConfigGet(t *testing.T) {
 	t.Run("success", func(t *testing.T) {
-		configList := ConfigList{
-			Configs: map[string]*Config{
+		config := Config{
+			Entries: map[string]*Entry{
 				"default": {
 					APIURL:   "api-url",
 					StoreURL: "store-api-url",
@@ -133,7 +133,7 @@ func TestConfigListGet(t *testing.T) {
 			Current: "default",
 		}
 
-		testConfig := &Config{
+		testEntry := &Entry{
 			APIURL:   "api-url",
 			StoreURL: "store-api-url",
 			Token:    "dummy_token",
@@ -143,18 +143,18 @@ func TestConfigListGet(t *testing.T) {
 			},
 		}
 
-		actual, err := configList.Get("default")
+		actual, err := config.Get("default")
 		if err != nil {
 			t.Fatal(err)
 		}
 
 		assert.Nil(t, err)
-		assert.Equal(t, testConfig, actual)
+		assert.Equal(t, testEntry, actual)
 	})
 
 	t.Run("failure by invalid current", func(t *testing.T) {
-		configList := ConfigList{
-			Configs: map[string]*Config{
+		config := Config{
+			Entries: map[string]*Entry{
 				"default": {
 					APIURL:   "api-url",
 					StoreURL: "store-api-url",
@@ -168,17 +168,17 @@ func TestConfigListGet(t *testing.T) {
 			Current: "doesnotexist",
 		}
 
-		_, err := configList.Get(configList.Current)
+		_, err := config.Get(config.Current)
 
 		assert.Equal(t, "config `doesnotexist` does not exist", err.Error())
 	})
 }
 
-func TestConfigListAdd(t *testing.T) {
+func TestConfigAdd(t *testing.T) {
 	t.Run("success", func(t *testing.T) {
-		configList := ConfigList{
+		config := Config{
 			Current: "default",
-			Configs: map[string]*Config{
+			Entries: map[string]*Entry{
 				"default": {
 					APIURL:   "api-url",
 					StoreURL: "store-api-url",
@@ -191,13 +191,13 @@ func TestConfigListAdd(t *testing.T) {
 			},
 		}
 
-		err := configList.Add("test")
+		err := config.Add("test")
 		if err != nil {
 			t.Fatal(err)
 		}
 
-		expected := ConfigList{
-			Configs: map[string]*Config{
+		expected := Config{
+			Entries: map[string]*Entry{
 				"default": {
 					APIURL:   "api-url",
 					StoreURL: "store-api-url",
@@ -220,13 +220,13 @@ func TestConfigListAdd(t *testing.T) {
 			Current: "default",
 		}
 
-		assert.Equal(t, expected, configList)
+		assert.Equal(t, expected, config)
 	})
 
 	t.Run("failure by the name that exists", func(t *testing.T) {
-		configList := ConfigList{
+		config := Config{
 			Current: "default",
-			Configs: map[string]*Config{
+			Entries: map[string]*Entry{
 				"default": {
 					APIURL:   "api-url",
 					StoreURL: "store-api-url",
@@ -239,12 +239,12 @@ func TestConfigListAdd(t *testing.T) {
 			},
 		}
 
-		err := configList.Add("default")
+		err := config.Add("default")
 		assert.Equal(t, "config `default` already exists", err.Error())
 	})
 }
 
-func TestConfigListSave(t *testing.T) {
+func TestConfigSave(t *testing.T) {
 	t.Run("success", func(t *testing.T) {
 		rand.Seed(time.Now().UnixNano())
 		cnfPath := filepath.Join(testDir, ".sdlocal", fmt.Sprintf("%vconfig", rand.Int()))
@@ -260,9 +260,9 @@ func TestConfigListSave(t *testing.T) {
 		}
 		file.Close()
 
-		configList := ConfigList{
+		config := Config{
 			Current: "default",
-			Configs: map[string]*Config{
+			Entries: map[string]*Entry{
 				"default": {
 					APIURL:   "api-url",
 					StoreURL: "store-api-url",
@@ -276,7 +276,7 @@ func TestConfigListSave(t *testing.T) {
 			filePath: cnfPath,
 		}
 
-		err = configList.Save()
+		err = config.Save()
 		if err != nil {
 			t.Fatal(err)
 		}
@@ -285,7 +285,7 @@ func TestConfigListSave(t *testing.T) {
 		if err != nil {
 			t.Fatal(err)
 		}
-		expected, err := yaml.Marshal(configList)
+		expected, err := yaml.Marshal(config)
 		if err != nil {
 			t.Fatal(err)
 		}
@@ -294,11 +294,11 @@ func TestConfigListSave(t *testing.T) {
 	})
 }
 
-func TestSetConfig(t *testing.T) {
+func TestSetEntry(t *testing.T) {
 	testCases := []struct {
-		name       string
-		setting    map[string]string
-		expectConf Config
+		name        string
+		setting     map[string]string
+		expectEntry Entry
 	}{
 		{
 
@@ -311,7 +311,7 @@ func TestSetConfig(t *testing.T) {
 				"launcher-image":   "alpine",
 				"invalidKey":       "invalidValue",
 			},
-			expectConf: Config{
+			expectEntry: Entry{
 				APIURL:   "example-api.com",
 				StoreURL: "example-store.com",
 				Token:    "dummy-token",
@@ -331,7 +331,7 @@ func TestSetConfig(t *testing.T) {
 				"launcher-image":   "override-alpine",
 				"invalidKey":       "override-invalidValue",
 			},
-			expectConf: Config{
+			expectEntry: Entry{
 				APIURL:   "override-example-api.com",
 				StoreURL: "override-example-store.com",
 				Token:    "override-dummy-token",
@@ -351,7 +351,7 @@ func TestSetConfig(t *testing.T) {
 				"launcher-image":   "",
 				"invalidKey":       "override-invalidValue",
 			},
-			expectConf: Config{
+			expectEntry: Entry{
 				APIURL:   "override-example-api.com",
 				StoreURL: "override-example-store.com",
 				Token:    "override-dummy-token",
@@ -371,7 +371,7 @@ func TestSetConfig(t *testing.T) {
 				"launcher-image":   "",
 				"invalidKey":       "invalidValue",
 			},
-			expectConf: Config{
+			expectEntry: Entry{
 				APIURL:   "override-example-api.com",
 				StoreURL: "override-example-store.com",
 				Token:    "override-dummy-token",
@@ -386,7 +386,7 @@ func TestSetConfig(t *testing.T) {
 	for _, tt := range testCases {
 		t.Run(tt.name, func(t *testing.T) {
 
-			c := &Config{}
+			c := &Entry{}
 
 			for key, val := range tt.setting {
 				err := c.Set(key, val)
@@ -396,7 +396,7 @@ func TestSetConfig(t *testing.T) {
 					assert.Nil(t, err)
 				}
 			}
-			assert.Equal(t, tt.expectConf, *c)
+			assert.Equal(t, tt.expectEntry, *c)
 		})
 	}
 }
