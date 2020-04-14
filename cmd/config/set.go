@@ -31,12 +31,12 @@ Can set the below settings:
 				logrus.Fatal(err)
 			}
 
-			configList, err := configNew(path)
+			config, err := configNew(path)
 			if err != nil {
 				logrus.Fatal(err)
 			}
 
-			conf, err := configList.Get(configList.Current)
+			conf, err := config.Get(config.Current)
 			if err != nil {
 				logrus.Fatal(err)
 			}
@@ -53,7 +53,7 @@ Can set the below settings:
 				}
 			}
 
-			err = configList.Save()
+			err = config.Save()
 			if err != nil {
 				logrus.Fatal(err)
 			}

@@ -25,17 +25,17 @@ The new config has only launcher-version and launcher-image.`,
 				logrus.Fatal(err)
 			}
 
-			configList, err := configNew(path)
+			config, err := configNew(path)
 			if err != nil {
 				logrus.Fatal(err)
 			}
 
-			err = configList.Add(name)
+			err = config.Add(name)
 			if err != nil {
 				logrus.Fatal(err)
 			}
 
-			err = configList.Save()
+			err = config.Save()
 			if err != nil {
 				logrus.Fatal(err)
 			}

@@ -127,24 +127,24 @@ func (c *Config) Save() error {
 }
 
 // Set preserve sd-local config with new value.
-func (c *Entry) Set(key, value string) error {
+func (e *Entry) Set(key, value string) error {
 	switch key {
 	case "api-url":
-		c.APIURL = value
+		e.APIURL = value
 	case "store-url":
-		c.StoreURL = value
+		e.StoreURL = value
 	case "token":
-		c.Token = value
+		e.Token = value
 	case "launcher-version":
 		if value == "" {
 			value = "stable"
 		}
-		c.Launcher.Version = value
+		e.Launcher.Version = value
 	case "launcher-image":
 		if value == "" {
 			value = "screwdrivercd/launcher"
 		}
-		c.Launcher.Image = value
+		e.Launcher.Image = value
 	default:
 		return fmt.Errorf("invalid key %s", key)
 	}
