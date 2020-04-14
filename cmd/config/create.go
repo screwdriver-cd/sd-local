@@ -2,7 +2,6 @@ package config
 
 import (
 	"github.com/screwdriver-cd/sd-local/config"
-	"github.com/sirupsen/logrus"
 	"github.com/spf13/cobra"
 )
 
@@ -17,28 +16,29 @@ func newConfigCreateCmd() *cobra.Command {
 		Long: `Create the config of sd-local.
 The new config has only launcher-version and launcher-image.`,
 		Args: cobra.ExactArgs(1),
-		Run: func(cmd *cobra.Command, args []string) {
+		RunE: func(cmd *cobra.Command, args []string) error {
 			name := args[0]
 
 			path, err := filePath()
 			if err != nil {
-				logrus.Fatal(err)
+				return err
 			}
 
 			config, err := configNew(path)
 			if err != nil {
-				logrus.Fatal(err)
+				return err
 			}
 
 			err = config.AddEntry(name)
 			if err != nil {
-				logrus.Fatal(err)
+				return err
 			}
 
 			err = config.Save()
 			if err != nil {
-				logrus.Fatal(err)
+				return err
 			}
+			return nil
 		},
 	}
 

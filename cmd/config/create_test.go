@@ -39,6 +39,12 @@ func TestConfigCreateCmd(t *testing.T) {
 			checkErr: false,
 		},
 		{
+			name:     "failure by Entry that already exists",
+			args:     []string{"create", "default"},
+			wantOut:  "",
+			checkErr: true,
+		},
+		{
 			name:     "failure by too many args",
 			args:     []string{"create", "test", "many"},
 			wantOut:  "",
@@ -63,7 +69,7 @@ func TestConfigCreateCmd(t *testing.T) {
 				assert.NotNil(t, err)
 			} else {
 				assert.Nil(t, err)
-				assert.Contains(t, buf.String(), tt.wantOut)
+				assert.Equal(t, tt.wantOut, buf.String())
 			}
 
 		})

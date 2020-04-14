@@ -4,7 +4,6 @@ import (
 	"fmt"
 	"text/tabwriter"
 
-	"github.com/sirupsen/logrus"
 	"github.com/spf13/cobra"
 )
 
@@ -19,20 +18,20 @@ Can see the below settings:
 * Screwdriver.cd Token
 * Screwdriver.cd launcher version
 * Screwdriver.cd launcher image`,
-		Run: func(cmd *cobra.Command, args []string) {
+		RunE: func(cmd *cobra.Command, args []string) error {
 			path, err := filePath()
 			if err != nil {
-				logrus.Fatal(err)
+				return err
 			}
 
 			config, err := configNew(path)
 			if err != nil {
-				logrus.Fatal(err)
+				return err
 			}
 
 			c, err := config.Entry(config.Current)
 			if err != nil {
-				logrus.Fatal(err)
+				return err
 			}
 			w := tabwriter.NewWriter(cmd.OutOrStdout(), 5, 2, 2, ' ', 0)
 
@@ -44,6 +43,7 @@ Can see the below settings:
 			fmt.Fprintf(w, "launcher-image\t%s\n", c.Launcher.Image)
 
 			w.Flush()
+			return nil
 		},
 	}
 

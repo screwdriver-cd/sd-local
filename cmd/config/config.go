@@ -1,7 +1,6 @@
 package config
 
 import (
-	"log"
 	"path/filepath"
 
 	"github.com/mitchellh/go-homedir"
@@ -27,11 +26,12 @@ func NewConfigCmd() *cobra.Command {
 		Use:   "config",
 		Short: "Manage settings related to sd-local.",
 		Long:  `Manage settings related to sd-local.`,
-		Run: func(cmd *cobra.Command, args []string) {
+		RunE: func(cmd *cobra.Command, args []string) error {
 			err := cmd.Help()
 			if err != nil {
-				log.Fatal(err)
+				return err
 			}
+			return nil
 		},
 	}
 

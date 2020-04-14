@@ -3,7 +3,6 @@ package config
 import (
 	"strings"
 
-	"github.com/sirupsen/logrus"
 	"github.com/spf13/cobra"
 )
 
@@ -23,22 +22,22 @@ Can set the below settings:
 * Screwdriver.cd launcher version as "launcher-version"
 * Screwdriver.cd launcher image as "launcher-image"`,
 		Args: cobra.ExactArgs(2),
-		Run: func(cmd *cobra.Command, args []string) {
+		RunE: func(cmd *cobra.Command, args []string) error {
 			key, value := args[0], args[1]
 
 			path, err := filePath()
 			if err != nil {
-				logrus.Fatal(err)
+				return err
 			}
 
 			config, err := configNew(path)
 			if err != nil {
-				logrus.Fatal(err)
+				return err
 			}
 
 			conf, err := config.Entry(config.Current)
 			if err != nil {
-				logrus.Fatal(err)
+				return err
 			}
 
 			err = conf.Set(key, value)
@@ -46,17 +45,18 @@ Can set the below settings:
 				if isInvalidKeyError(err) {
 					err := cmd.Help()
 					if err != nil {
-						logrus.Fatal(err)
+						return err
 					}
 				} else {
-					logrus.Fatal(err)
+					return err
 				}
 			}
 
 			err = config.Save()
 			if err != nil {
-				logrus.Fatal(err)
+				return err
 			}
+			return nil
 		},
 	}
 
