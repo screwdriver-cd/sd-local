@@ -386,17 +386,17 @@ func TestSetEntry(t *testing.T) {
 	for _, tt := range testCases {
 		t.Run(tt.name, func(t *testing.T) {
 
-			c := &Entry{}
+			e := &Entry{}
 
 			for key, val := range tt.setting {
-				err := c.Set(key, val)
+				err := e.Set(key, val)
 				if key == "invalidKey" {
 					assert.NotNil(t, err)
 				} else {
 					assert.Nil(t, err)
 				}
 			}
-			assert.Equal(t, tt.expectEntry, *c)
+			assert.Equal(t, tt.expectEntry, *e)
 		})
 	}
 }
