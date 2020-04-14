@@ -69,6 +69,7 @@ func newEntry() *Entry {
 	}
 }
 
+// New returns parsed config
 func New(configPath string) (Config, error) {
 	err := create(configPath)
 	if err != nil {
@@ -93,6 +94,7 @@ func New(configPath string) (Config, error) {
 	return c, nil
 }
 
+// Add create new Entry and addd it to Config
 func (c *Config) AddEntry(name string) error {
 	_, exist := c.Entries[name]
 	if exist {
@@ -103,6 +105,7 @@ func (c *Config) AddEntry(name string) error {
 	return nil
 }
 
+// Entry returns an Entry object named `name`
 func (c *Config) Entry(name string) (*Entry, error) {
 	entry, exists := c.Entries[name]
 	if !exists {
@@ -112,6 +115,7 @@ func (c *Config) Entry(name string) (*Entry, error) {
 	return entry, nil
 }
 
+// Save write Config to config file
 func (c *Config) Save() error {
 	file, err := os.OpenFile(c.filePath, os.O_RDWR|os.O_TRUNC, 0666)
 	if err != nil {
