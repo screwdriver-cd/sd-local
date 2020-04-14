@@ -63,9 +63,10 @@ func TestConfigCreateCmd(t *testing.T) {
 				assert.NotNil(t, err)
 			} else {
 				assert.Nil(t, err)
-				assert.Equal(t, tt.wantOut, buf.String())
+				assert.Contains(t, buf.String(), tt.wantOut)
 			}
 
 		})
 	}
+
 }

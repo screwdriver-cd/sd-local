@@ -30,7 +30,7 @@ Can see the below settings:
 				logrus.Fatal(err)
 			}
 
-			c, err := config.Get(config.Current)
+			c, err := config.Entry(config.Current)
 			if err != nil {
 				logrus.Fatal(err)
 			}

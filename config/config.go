@@ -79,6 +79,7 @@ func New(configPath string) (Config, error) {
 	if err != nil {
 		return Config{}, fmt.Errorf("failed to read config file: %v", err)
 	}
+	defer file.Close()
 
 	var c = Config{
 		filePath: configPath,
@@ -92,7 +93,7 @@ func New(configPath string) (Config, error) {
 	return c, nil
 }
 
-func (c *Config) Add(name string) error {
+func (c *Config) AddEntry(name string) error {
 	_, exist := c.Entries[name]
 	if exist {
 		return fmt.Errorf("config `%s` already exists", name)
@@ -102,13 +103,13 @@ func (c *Config) Add(name string) error {
 	return nil
 }
 
-func (c *Config) Get(name string) (*Entry, error) {
-	currentEntry, exists := c.Entries[name]
+func (c *Config) Entry(name string) (*Entry, error) {
+	entry, exists := c.Entries[name]
 	if !exists {
 		return &Entry{}, fmt.Errorf("config `%s` does not exist", name)
 	}
 
-	return currentEntry, nil
+	return entry, nil
 }
 
 func (c *Config) Save() error {

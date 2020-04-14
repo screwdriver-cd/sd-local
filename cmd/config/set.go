@@ -36,7 +36,7 @@ Can set the below settings:
 				logrus.Fatal(err)
 			}
 
-			conf, err := config.Get(config.Current)
+			conf, err := config.Entry(config.Current)
 			if err != nil {
 				logrus.Fatal(err)
 			}

@@ -158,7 +158,7 @@ func newBuildCmd() *cobra.Command {
 				return err
 			}
 
-			entry, err := config.Get(config.Current)
+			entry, err := config.Entry(config.Current)
 			if err != nil {
 				return err
 			}

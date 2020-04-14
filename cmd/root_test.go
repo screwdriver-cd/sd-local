@@ -37,14 +37,16 @@ func (mock mockLaunch) Clean() {}
 
 func setup() {
 	configNew = func(confPath string) (config.Config, error) {
+		defaultEntry := &config.Entry{
+			Launcher: config.Launcher{
+				Version: "stable",
+				Image:   "screwdrivercd/launcher",
+			},
+		}
+
 		return config.Config{
 			Entries: map[string]*config.Entry{
-				"default": {
-					Launcher: config.Launcher{
-						Version: "stable",
-						Image:   "screwdrivercd/launcher",
-					},
-				},
+				"default": defaultEntry,
 			},
 			Current: "default",
 		}, nil

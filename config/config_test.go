@@ -116,7 +116,7 @@ func TestNewConfig(t *testing.T) {
 	})
 }
 
-func TestConfigGet(t *testing.T) {
+func TestConfigEntry(t *testing.T) {
 	t.Run("success", func(t *testing.T) {
 		config := Config{
 			Entries: map[string]*Entry{
@@ -143,7 +143,7 @@ func TestConfigGet(t *testing.T) {
 			},
 		}
 
-		actual, err := config.Get("default")
+		actual, err := config.Entry("default")
 		if err != nil {
 			t.Fatal(err)
 		}
@@ -168,13 +168,13 @@ func TestConfigGet(t *testing.T) {
 			Current: "doesnotexist",
 		}
 
-		_, err := config.Get(config.Current)
+		_, err := config.Entry(config.Current)
 
 		assert.Equal(t, "config `doesnotexist` does not exist", err.Error())
 	})
 }
 
-func TestConfigAdd(t *testing.T) {
+func TestConfigAddEntry(t *testing.T) {
 	t.Run("success", func(t *testing.T) {
 		config := Config{
 			Current: "default",
@@ -191,7 +191,7 @@ func TestConfigAdd(t *testing.T) {
 			},
 		}
 
-		err := config.Add("test")
+		err := config.AddEntry("test")
 		if err != nil {
 			t.Fatal(err)
 		}
@@ -239,7 +239,7 @@ func TestConfigAdd(t *testing.T) {
 			},
 		}
 
-		err := config.Add("default")
+		err := config.AddEntry("default")
 		assert.Equal(t, "config `default` already exists", err.Error())
 	})
 }

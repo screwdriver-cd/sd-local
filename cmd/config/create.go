@@ -30,7 +30,7 @@ The new config has only launcher-version and launcher-image.`,
 				logrus.Fatal(err)
 			}
 
-			err = config.Add(name)
+			err = config.AddEntry(name)
 			if err != nil {
 				logrus.Fatal(err)
 			}
