@@ -35,12 +35,12 @@ Can set the below settings:
 				return err
 			}
 
-			conf, err := config.Entry(config.Current)
+			entry, err := config.Entry(config.Current)
 			if err != nil {
 				return err
 			}
 
-			err = conf.Set(key, value)
+			err = entry.Set(key, value)
 			if err != nil {
 				if isInvalidKeyError(err) {
 					err := cmd.Help()

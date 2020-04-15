@@ -29,18 +29,18 @@ Can see the below settings:
 				return err
 			}
 
-			c, err := config.Entry(config.Current)
+			entry, err := config.Entry(config.Current)
 			if err != nil {
 				return err
 			}
 			w := tabwriter.NewWriter(cmd.OutOrStdout(), 5, 2, 2, ' ', 0)
 
 			fmt.Fprintln(w, "KEY\tVALUE")
-			fmt.Fprintf(w, "api-url\t%s\n", c.APIURL)
-			fmt.Fprintf(w, "store-url\t%s\n", c.StoreURL)
-			fmt.Fprintf(w, "token\t%s\n", c.Token)
-			fmt.Fprintf(w, "launcher-version\t%s\n", c.Launcher.Version)
-			fmt.Fprintf(w, "launcher-image\t%s\n", c.Launcher.Image)
+			fmt.Fprintf(w, "api-url\t%s\n", entry.APIURL)
+			fmt.Fprintf(w, "store-url\t%s\n", entry.StoreURL)
+			fmt.Fprintf(w, "token\t%s\n", entry.Token)
+			fmt.Fprintf(w, "launcher-version\t%s\n", entry.Launcher.Version)
+			fmt.Fprintf(w, "launcher-image\t%s\n", entry.Launcher.Image)
 
 			w.Flush()
 			return nil
