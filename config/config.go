@@ -14,19 +14,19 @@ type Launcher struct {
 	Image   string `yaml:"image"`
 }
 
-// Config is entity struct of sd-local config
-type Config struct {
+// Entry is entity struct of sd-local config
+type Entry struct {
 	APIURL   string   `yaml:"api-url"`
 	StoreURL string   `yaml:"store-url"`
 	Token    string   `yaml:"token"`
 	Launcher Launcher `yaml:"launcher"`
-	filePath string   `yaml:"-"`
 }
 
-// configList is a set of sd-local config entities
-type configList struct {
-	Configs map[string]Config `yaml:"configs"`
-	Current string            `yaml:"current"`
+// Config is a set of sd-local config entities
+type Config struct {
+	Entries  map[string]*Entry `yaml:"configs"`
+	Current  string            `yaml:"current"`
+	filePath string            `yaml:"-"`
 }
 
 func create(configPath string) error {
@@ -47,14 +47,9 @@ func create(configPath string) error {
 	}
 	defer file.Close()
 
-	err = yaml.NewEncoder(file).Encode(configList{
-		Configs: map[string]Config{
-			"default": {
-				Launcher: Launcher{
-					Version: "stable",
-					Image:   "screwdrivercd/launcher",
-				},
-			},
+	err = yaml.NewEncoder(file).Encode(Config{
+		Entries: map[string]*Entry{
+			"default": newEntry(),
 		},
 		Current: "default",
 	})
@@ -65,6 +60,15 @@ func create(configPath string) error {
 	return nil
 }
 
+func newEntry() *Entry {
+	return &Entry{
+		Launcher: Launcher{
+			Version: "stable",
+			Image:   "screwdrivercd/launcher",
+		},
+	}
+}
+
 // New returns parsed config
 func New(configPath string) (Config, error) {
 	err := create(configPath)
@@ -72,80 +76,82 @@ func New(configPath string) (Config, error) {
 		return Config{}, err
 	}
 
-	configList, err := newConfigList(configPath)
-	if err != nil {
-		return Config{}, err
-	}
-
-	currentConfig, exists := configList.Configs[configList.Current]
-	if !exists {
-		return Config{}, fmt.Errorf("config `%s` does not exist", configList.Current)
-	}
-
-	currentConfig.filePath = configPath
-
-	return currentConfig, nil
-}
-
-func newConfigList(configPath string) (configList, error) {
 	file, err := os.Open(configPath)
 	if err != nil {
-		return configList{}, fmt.Errorf("failed to read config file: %v", err)
+		return Config{}, fmt.Errorf("failed to read config file: %v", err)
 	}
 	defer file.Close()
 
-	var c = configList{}
+	var c = Config{
+		filePath: configPath,
+	}
 
 	err = yaml.NewDecoder(file).Decode(&c)
-
 	if err != nil {
-		return configList{}, fmt.Errorf("failed to parse config file: %v", err)
+		return Config{}, fmt.Errorf("failed to parse config file: %v", err)
 	}
 
 	return c, nil
 }
 
-// Set preserve sd-local config with new value.
-func (c *Config) Set(key, value string) error {
-	switch key {
-	case "api-url":
-		c.APIURL = value
-	case "store-url":
-		c.StoreURL = value
-	case "token":
-		c.Token = value
-	case "launcher-version":
-		if value == "" {
-			value = "stable"
-		}
-		c.Launcher.Version = value
-	case "launcher-image":
-		if value == "" {
-			value = "screwdrivercd/launcher"
-		}
-		c.Launcher.Image = value
-	default:
-		return fmt.Errorf("invalid key %s", key)
+// Add create new Entry and addd it to Config
+func (c *Config) AddEntry(name string) error {
+	_, exist := c.Entries[name]
+	if exist {
+		return fmt.Errorf("config `%s` already exists", name)
 	}
 
-	// If read configList after open with O_TRUNC, config file has been truncated to be empty.
-	// Therefore we have to open another file descriptor to read configList.
-	configList, err := newConfigList(c.filePath)
-	if err != nil {
-		return err
+	c.Entries[name] = newEntry()
+	return nil
+}
+
+// Entry returns an Entry object named `name`
+func (c *Config) Entry(name string) (*Entry, error) {
+	entry, exists := c.Entries[name]
+	if !exists {
+		return &Entry{}, fmt.Errorf("config `%s` does not exist", name)
 	}
 
-	configList.Configs[configList.Current] = *c
+	return entry, nil
+}
 
+// Save write Config to config file
+func (c *Config) Save() error {
 	file, err := os.OpenFile(c.filePath, os.O_RDWR|os.O_TRUNC, 0666)
 	if err != nil {
 		return err
 	}
 	defer file.Close()
 
-	err = yaml.NewEncoder(file).Encode(configList)
+	err = yaml.NewEncoder(file).Encode(c)
 	if err != nil {
 		return err
+	}
+
+	return nil
+}
+
+// Set preserve sd-local config with new value.
+func (e *Entry) Set(key, value string) error {
+	switch key {
+	case "api-url":
+		e.APIURL = value
+	case "store-url":
+		e.StoreURL = value
+	case "token":
+		e.Token = value
+	case "launcher-version":
+		if value == "" {
+			value = "stable"
+		}
+		e.Launcher.Version = value
+	case "launcher-image":
+		if value == "" {
+			value = "screwdrivercd/launcher"
+		}
+		e.Launcher.Image = value
+	default:
+		return fmt.Errorf("invalid key %s", key)
 	}
 
 	return nil

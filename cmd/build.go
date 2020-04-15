@@ -158,7 +158,12 @@ func newBuildCmd() *cobra.Command {
 				return err
 			}
 
-			api, err := apiNew(config.APIURL, config.Token)
+			entry, err := config.Entry(config.Current)
+			if err != nil {
+				return err
+			}
+
+			api, err := apiNew(entry.APIURL, entry.Token)
 			if err != nil {
 				return err
 			}
@@ -188,7 +193,7 @@ func newBuildCmd() *cobra.Command {
 
 			option := launch.Option{
 				Job:           job,
-				Config:        config,
+				Entry:         *entry,
 				JobName:       jobName,
 				JWT:           api.JWT(),
 				ArtifactsPath: artifactsPath,
