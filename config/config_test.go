@@ -107,6 +107,24 @@ func TestNewConfig(t *testing.T) {
 		assert.Equal(t, testConfig, actual)
 	})
 
+	t.Run("success with empty configs", func(t *testing.T) {
+		cnfPath := filepath.Join(testDir, "emptyConfigs")
+
+		actual, err := New(cnfPath)
+		if err != nil {
+			t.Fatal(err)
+		}
+
+		testConfig := Config{
+			Entries:  map[string]*Entry{},
+			Current:  "default",
+			filePath: cnfPath,
+		}
+
+		assert.Nil(t, err)
+		assert.Equal(t, testConfig, actual)
+	})
+
 	t.Run("failure by invalid yaml", func(t *testing.T) {
 		cnfPath := filepath.Join(testDir, "failureConfig")
 
@@ -241,6 +259,57 @@ func TestConfigAddEntry(t *testing.T) {
 
 		err := config.AddEntry("default")
 		assert.Equal(t, "config `default` already exists", err.Error())
+	})
+}
+
+func TestConfigDeleteEntry(t *testing.T) {
+	t.Run("success", func(t *testing.T) {
+		config := Config{
+			Current: "default",
+			Entries: map[string]*Entry{
+				"default": {
+					APIURL:   "api-url",
+					StoreURL: "store-api-url",
+					Token:    "dummy_token",
+					Launcher: Launcher{
+						Version: "latest",
+						Image:   "screwdrivercd/launcher",
+					},
+				},
+			},
+		}
+
+		err := config.DeleteEntry("default")
+		if err != nil {
+			t.Fatal(err)
+		}
+
+		expected := Config{
+			Entries: map[string]*Entry{},
+			Current: "default",
+		}
+
+		assert.Equal(t, expected, config)
+	})
+
+	t.Run("failure", func(t *testing.T) {
+		config := Config{
+			Current: "default",
+			Entries: map[string]*Entry{
+				"default": {
+					APIURL:   "api-url",
+					StoreURL: "store-api-url",
+					Token:    "dummy_token",
+					Launcher: Launcher{
+						Version: "latest",
+						Image:   "screwdrivercd/launcher",
+					},
+				},
+			},
+		}
+
+		err := config.DeleteEntry("test")
+		assert.Equal(t, "config `test` does not exist", err.Error())
 	})
 }
 

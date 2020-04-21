@@ -91,10 +91,14 @@ func New(configPath string) (Config, error) {
 		return Config{}, fmt.Errorf("failed to parse config file: %v", err)
 	}
 
+	if c.Entries == nil {
+		c.Entries = make(map[string]*Entry, 0)
+	}
+
 	return c, nil
 }
 
-// Add create new Entry and addd it to Config
+// Add create new Entry and add it to Config
 func (c *Config) AddEntry(name string) error {
 	_, exist := c.Entries[name]
 	if exist {
@@ -113,6 +117,17 @@ func (c *Config) Entry(name string) (*Entry, error) {
 	}
 
 	return entry, nil
+}
+
+// DeleteEntry deletes Entry object named `name`
+func (c *Config) DeleteEntry(name string) error {
+	_, exist := c.Entries[name]
+	if !exist {
+		return fmt.Errorf("config `%s` does not exist", name)
+	}
+
+	delete(c.Entries, name)
+	return nil
 }
 
 // Save write Config to config file
