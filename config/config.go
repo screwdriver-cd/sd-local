@@ -121,11 +121,13 @@ func (c *Config) Entry(name string) (*Entry, error) {
 
 // DeleteEntry deletes Entry object named `name`
 func (c *Config) DeleteEntry(name string) error {
+	if name == c.Current {
+		return fmt.Errorf("config `%s` is current config", name)
+	}
 	_, exist := c.Entries[name]
 	if !exist {
 		return fmt.Errorf("config `%s` does not exist", name)
 	}
-
 	delete(c.Entries, name)
 	return nil
 }

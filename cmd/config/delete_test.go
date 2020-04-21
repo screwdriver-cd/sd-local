@@ -75,6 +75,12 @@ func TestConfigDeleteCmd(t *testing.T) {
 			wantOut:  "",
 			checkErr: true,
 		},
+		{
+			name:     "failure by trying delete current config",
+			args:     []string{"delete", "default"},
+			wantOut:  "",
+			checkErr: true,
+		},
 	}
 
 	for _, tt := range testCase {

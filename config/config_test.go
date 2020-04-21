@@ -331,9 +331,25 @@ func TestConfigDeleteEntry(t *testing.T) {
 		assert.Equal(t, "config `test` does not exist", err.Error())
 	})
 
-	// t.Run("failure by trying to delete current entry", func(t *testing.T{
+	t.Run("failure by trying to delete current entry", func(t *testing.T) {
+		config := Config{
+			Current: "default",
+			Entries: map[string]*Entry{
+				"default": {
+					APIURL:   "api-url",
+					StoreURL: "store-api-url",
+					Token:    "dummy_token",
+					Launcher: Launcher{
+						Version: "latest",
+						Image:   "screwdrivercd/launcher",
+					},
+				},
+			},
+		}
 
-	// }))
+		err := config.DeleteEntry("default")
+		assert.Equal(t, "config `default` is current config", err.Error())
+	})
 }
 
 func TestConfigSave(t *testing.T) {
