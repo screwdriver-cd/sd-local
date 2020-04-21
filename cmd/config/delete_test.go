@@ -3,6 +3,7 @@ package config
 import (
 	"bytes"
 	"fmt"
+	"io"
 	"math/rand"
 	"os"
 	"testing"
@@ -26,6 +27,24 @@ func TestConfigDeleteCmd(t *testing.T) {
 		return config.New(cnfPath)
 	}
 
+	f, err := os.Create(cnfPath)
+	if err != nil {
+		t.Fatal(err)
+	}
+	cf, err := os.Open("./testdata/config")
+	_, err = io.Copy(f, cf)
+	if err != nil {
+		t.Fatal(err)
+	}
+	err = f.Close()
+	if err != nil {
+		t.Fatal(err)
+	}
+	err = cf.Close()
+	if err != nil {
+		t.Fatal(err)
+	}
+
 	testCase := []struct {
 		name     string
 		args     []string
@@ -34,7 +53,7 @@ func TestConfigDeleteCmd(t *testing.T) {
 	}{
 		{
 			name:     "success",
-			args:     []string{"delete", "default"},
+			args:     []string{"delete", "test"},
 			wantOut:  "",
 			checkErr: false,
 		},

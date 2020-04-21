@@ -276,17 +276,36 @@ func TestConfigDeleteEntry(t *testing.T) {
 						Image:   "screwdrivercd/launcher",
 					},
 				},
+				"test": {
+					APIURL:   "api-url",
+					StoreURL: "store-api-url",
+					Token:    "dummy_token",
+					Launcher: Launcher{
+						Version: "latest",
+						Image:   "screwdrivercd/launcher",
+					},
+				},
 			},
 		}
 
-		err := config.DeleteEntry("default")
+		err := config.DeleteEntry("test")
 		if err != nil {
 			t.Fatal(err)
 		}
 
 		expected := Config{
-			Entries: map[string]*Entry{},
 			Current: "default",
+			Entries: map[string]*Entry{
+				"default": {
+					APIURL:   "api-url",
+					StoreURL: "store-api-url",
+					Token:    "dummy_token",
+					Launcher: Launcher{
+						Version: "latest",
+						Image:   "screwdrivercd/launcher",
+					},
+				},
+			},
 		}
 
 		assert.Equal(t, expected, config)
@@ -311,6 +330,10 @@ func TestConfigDeleteEntry(t *testing.T) {
 		err := config.DeleteEntry("test")
 		assert.Equal(t, "config `test` does not exist", err.Error())
 	})
+
+	// t.Run("failure by trying to delete current entry", func(t *testing.T{
+
+	// }))
 }
 
 func TestConfigSave(t *testing.T) {
