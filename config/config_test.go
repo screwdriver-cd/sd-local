@@ -107,24 +107,6 @@ func TestNewConfig(t *testing.T) {
 		assert.Equal(t, testConfig, actual)
 	})
 
-	t.Run("success with empty configs", func(t *testing.T) {
-		cnfPath := filepath.Join(testDir, "emptyConfigs")
-
-		actual, err := New(cnfPath)
-		if err != nil {
-			t.Fatal(err)
-		}
-
-		testConfig := Config{
-			Entries:  map[string]*Entry{},
-			Current:  "default",
-			filePath: cnfPath,
-		}
-
-		assert.Nil(t, err)
-		assert.Equal(t, testConfig, actual)
-	})
-
 	t.Run("failure by invalid yaml", func(t *testing.T) {
 		cnfPath := filepath.Join(testDir, "failureConfig")
 
