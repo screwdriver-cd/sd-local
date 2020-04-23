@@ -3,6 +3,7 @@ package config
 import (
 	"bytes"
 	"fmt"
+	"io"
 	"math/rand"
 	"os"
 	"testing"
@@ -13,6 +14,21 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
+func createRandNameConfig(conf io.Reader) (string, error) {
+	rand.Seed(time.Now().UnixNano())
+	cnfPath := fmt.Sprintf("%vconfig", rand.Int())
+	f, err := os.Create(cnfPath)
+	if err != nil {
+		return "", err
+	}
+	defer f.Close()
+	_, err = io.Copy(f, conf)
+	if err != nil {
+		os.Remove(cnfPath)
+		return "", err
+	}
+	return cnfPath, nil
+}
 func TestConfigCreateCmd(t *testing.T) {
 	rand.Seed(time.Now().UnixNano())
 	cnfPath := fmt.Sprintf("%vconfig", rand.Int())
