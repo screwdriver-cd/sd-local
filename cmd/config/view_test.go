@@ -2,8 +2,8 @@ package config
 
 import (
 	"bytes"
-	"testing"
 	"strings"
+	"testing"
 
 	"github.com/stretchr/testify/assert"
 )
