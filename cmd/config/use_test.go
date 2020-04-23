@@ -6,11 +6,10 @@ import (
 	"testing"
 
 	"github.com/screwdriver-cd/sd-local/config"
-
 	"github.com/stretchr/testify/assert"
 )
 
-func TestConfigDeleteCmd(t *testing.T) {
+func TestConfigUseCmd(t *testing.T) {
 	f, err := os.Open("./testdata/config")
 	if err != nil {
 		t.Fatal(err)
@@ -23,9 +22,9 @@ func TestConfigDeleteCmd(t *testing.T) {
 	}
 	defer os.Remove(cnfPath)
 
-	cnew := configNew
+	preconf := configNew
 	defer func() {
-		configNew = cnew
+		configNew = preconf
 	}()
 	configNew = func(configPath string) (c config.Config, err error) {
 		return config.New(cnfPath)
@@ -39,32 +38,25 @@ func TestConfigDeleteCmd(t *testing.T) {
 	}{
 		{
 			name:     "success",
-			args:     []string{"delete", "test"},
+			args:     []string{"use", "test"},
 			wantOut:  "",
 			checkErr: false,
 		},
 		{
-			name:     "failure by Entry that does not exist",
-			args:     []string{"delete", "test"},
-			wantOut:  "",
+			name:     "failure with too many args",
+			args:     []string{"use", "test", "args"},
+			wantOut:  "Error: accepts 1 arg(s), received 2\n",
+			checkErr: true,
+		},
+		{name: "failure without args",
+			args:     []string{"use"},
+			wantOut:  "Error: accepts 1 arg(s), received 0\n",
 			checkErr: true,
 		},
 		{
-			name:     "failure by too many args",
-			args:     []string{"delete", "test", "many"},
-			wantOut:  "",
-			checkErr: true,
-		},
-		{
-			name:     "failure by too little args",
-			args:     []string{"delete"},
-			wantOut:  "",
-			checkErr: true,
-		},
-		{
-			name:     "failure by trying delete current config",
-			args:     []string{"delete", "default"},
-			wantOut:  "",
+			name:     "failure because of passing unknown config",
+			args:     []string{"use", "unknownconfig"},
+			wantOut:  "Error: config `unknownconfig` does not exist\n",
 			checkErr: true,
 		},
 	}
@@ -72,16 +64,19 @@ func TestConfigDeleteCmd(t *testing.T) {
 	for _, tt := range testCase {
 		t.Run(tt.name, func(t *testing.T) {
 			cmd := NewConfigCmd()
+			cmd.SilenceUsage = true
 			cmd.SetArgs(tt.args)
 			buf := bytes.NewBuffer(nil)
 			cmd.SetOut(buf)
 			err := cmd.Execute()
 			if tt.checkErr {
 				assert.NotNil(t, err)
+				assert.Equal(t, tt.wantOut, buf.String())
 			} else {
 				assert.Nil(t, err)
 				assert.Equal(t, tt.wantOut, buf.String())
 			}
+
 		})
 	}
 }

@@ -98,7 +98,7 @@ func New(configPath string) (Config, error) {
 	return c, nil
 }
 
-// Add create new Entry and add it to Config
+// AddEntry create new Entry and add it to Config
 func (c *Config) AddEntry(name string) error {
 	_, exist := c.Entries[name]
 	if exist {
@@ -129,6 +129,18 @@ func (c *Config) DeleteEntry(name string) error {
 		return fmt.Errorf("config `%s` does not exist", name)
 	}
 	delete(c.Entries, name)
+	return nil
+}
+
+// SetCurrent set a specified entry as current config
+func (c *Config) SetCurrent(name string) error {
+	_, err := c.Entry(name)
+	if err != nil {
+		return err
+	}
+
+	c.Current = name
+
 	return nil
 }
 

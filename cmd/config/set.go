@@ -23,6 +23,8 @@ Can set the below settings:
 * Screwdriver.cd launcher image as "launcher-image"`,
 		Args: cobra.ExactArgs(2),
 		RunE: func(cmd *cobra.Command, args []string) error {
+			cmd.SilenceUsage = true
+
 			key, value := args[0], args[1]
 
 			path, err := filePath()
