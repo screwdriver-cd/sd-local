@@ -2,10 +2,10 @@ package config
 
 import (
 	"fmt"
+	"strings"
 
 	"github.com/go-yaml/yaml"
 	"github.com/spf13/cobra"
-	"strings"
 )
 
 func newConfigViewCmd() *cobra.Command {

@@ -81,6 +81,8 @@ func TestViewCmd(t *testing.T) {
 			}
 			actual := buf.String()
 			for _, expect := range tt.expect {
+				// we do not use assert.Equal but string.Contains.
+				// because maps deserialized by go-yaml has an order different from the written order.
 				assert.True(t, strings.Contains(actual, expect), "expect to contain %q \nbut got \n%q", expect, actual)
 
 			}
