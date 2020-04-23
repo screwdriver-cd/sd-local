@@ -5,7 +5,10 @@ import (
 	"testing"
 
 	"github.com/stretchr/testify/assert"
+	"strings"
 )
+
+var testConfig string
 
 func TestViewCmd(t *testing.T) {
 	fp := filePath
@@ -14,35 +17,73 @@ func TestViewCmd(t *testing.T) {
 	}()
 
 	filePath = func() (string, error) {
-		return "./testdata/config", nil
+		return testConfig, nil
 	}
 
 	testCase := []struct {
 		name   string
 		args   []string
-		expect string
+		expect []string
+		config string
 	}{
 		{
 			name: "success",
 			args: []string{"view"},
-			expect: `KEY               VALUE
-api-url           api.screwdriver.com
-store-url         store.screwdriver.com
-token             sd-token
-launcher-version  1.0.0
-launcher-image    screwdrivercd/launcher
-`,
+			expect: []string{`* default:
+    api-url: api.screwdriver.com
+    store-url: store.screwdriver.com
+    token: sd-token
+    launcher:
+      version: 1.0.0
+      image: screwdrivercd/launcher`,
+				`  test:
+    api-url: api-test.screwdriver.com
+    store-url: store-test.screwdriver.com
+    token: sd-token-test
+    launcher:
+      version: 1.0.0-test
+      image: screwdrivercd/launcher
+`},
+			config: "./testdata/config",
+		},
+		{
+			name: "success with no current",
+			args: []string{"view"},
+			expect: []string{`  default:
+    api-url: api.screwdriver.com
+    store-url: store.screwdriver.com
+    token: sd-token
+    launcher:
+      version: 1.0.0
+      image: screwdrivercd/launcher`,
+				`  test:
+    api-url: api-test.screwdriver.com
+    store-url: store-test.screwdriver.com
+    token: sd-token-test
+    launcher:
+      version: 1.0.0-test
+      image: screwdrivercd/launcher
+`},
+			config: "./testdata/config_no_current",
 		},
 	}
 
 	for _, tt := range testCase {
 		t.Run(tt.name, func(t *testing.T) {
+			testConfig = tt.config
 			cmd := NewConfigCmd()
 			cmd.SetArgs(tt.args)
 			buf := bytes.NewBuffer(nil)
 			cmd.SetOut(buf)
-			cmd.Execute()
-			assert.Equal(t, tt.expect, buf.String())
+			err := cmd.Execute()
+			if err != nil {
+				t.Fatal(err)
+			}
+			actual := buf.String()
+			for _, expect := range tt.expect {
+				assert.True(t, strings.Contains(actual, expect), "expect to contain %q \nbut got \n%q", expect, actual)
+
+			}
 		})
 	}
 }
