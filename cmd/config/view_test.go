@@ -3,9 +3,9 @@ package config
 import (
 	"bytes"
 	"testing"
+	"strings"
 
 	"github.com/stretchr/testify/assert"
-	"strings"
 )
 
 var testConfig string
