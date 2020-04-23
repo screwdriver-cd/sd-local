@@ -14,9 +14,33 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
-func TestConfigDeleteCmd(t *testing.T) {
+func createRandNameConfig(conf io.Reader) (string, error) {
 	rand.Seed(time.Now().UnixNano())
 	cnfPath := fmt.Sprintf("%vconfig", rand.Int())
+	f, err := os.Create(cnfPath)
+	if err != nil {
+		return "", err
+	}
+	defer f.Close()
+	_, err = io.Copy(f, conf)
+	if err != nil {
+		os.Remove(cnfPath)
+		return "", err
+	}
+	return cnfPath, nil
+}
+
+func TestConfigDeleteCmd(t *testing.T) {
+	f, err := os.Open("./testdata/config")
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer f.Close()
+
+	cnfPath, err := createRandNameConfig(f)
+	if err != nil {
+		t.Fatal(err)
+	}
 	defer os.Remove(cnfPath)
 
 	cnew := configNew
@@ -25,24 +49,6 @@ func TestConfigDeleteCmd(t *testing.T) {
 	}()
 	configNew = func(configPath string) (c config.Config, err error) {
 		return config.New(cnfPath)
-	}
-
-	f, err := os.Create(cnfPath)
-	if err != nil {
-		t.Fatal(err)
-	}
-	cf, err := os.Open("./testdata/config")
-	_, err = io.Copy(f, cf)
-	if err != nil {
-		t.Fatal(err)
-	}
-	err = f.Close()
-	if err != nil {
-		t.Fatal(err)
-	}
-	err = cf.Close()
-	if err != nil {
-		t.Fatal(err)
 	}
 
 	testCase := []struct {

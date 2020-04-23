@@ -2,12 +2,33 @@ package config
 
 import (
 	"bytes"
+	"os"
 	"testing"
 
+	"github.com/screwdriver-cd/sd-local/config"
 	"github.com/stretchr/testify/assert"
 )
 
 func TestConfigUseCmd(t *testing.T) {
+	f, err := os.Open("./testdata/config")
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer f.Close()
+
+	cnfPath, err := createRandNameConfig(f)
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer os.Remove(cnfPath)
+
+	preconf := configNew
+	defer func() {
+		configNew = preconf
+	}()
+	configNew = func(configPath string) (c config.Config, err error) {
+		return config.New(cnfPath)
+	}
 
 	testCase := []struct {
 		name     string
