@@ -19,6 +19,8 @@ Can see the below settings:
 * Screwdriver.cd launcher version
 * Screwdriver.cd launcher image`,
 		RunE: func(cmd *cobra.Command, args []string) error {
+			cmd.SilenceUsage = true
+
 			path, err := filePath()
 			if err != nil {
 				return err

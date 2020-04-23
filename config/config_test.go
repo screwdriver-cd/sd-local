@@ -77,7 +77,6 @@ func TestCreateConfig(t *testing.T) {
 		assert.Equal(t, expect, actual)
 	})
 }
-
 func TestNewConfig(t *testing.T) {
 	t.Run("success", func(t *testing.T) {
 		cnfPath := filepath.Join(testDir, "successConfig")
@@ -331,6 +330,41 @@ func TestConfigDeleteEntry(t *testing.T) {
 
 		err := config.DeleteEntry("default")
 		assert.Equal(t, "config `default` is current config", err.Error())
+	})
+}
+
+func TestConfigSetCurrent(t *testing.T) {
+	testConfig := func() Config {
+		return Config{
+			Current: "default",
+			Entries: map[string]*Entry{
+				"default": {
+					APIURL:   "api-url",
+					StoreURL: "store-api-url",
+					Token:    "dummy_token",
+					Launcher: Launcher{},
+				},
+				"test": {
+					APIURL:   "api-url",
+					StoreURL: "store-api-url",
+					Token:    "dummy_token",
+					Launcher: Launcher{},
+				},
+			},
+			filePath: "/home/user/.sdlocal/config",
+		}
+	}
+	t.Run("success", func(t *testing.T) {
+		c := testConfig()
+		c.SetCurrent("test")
+
+		assert.Equal(t, "test", c.Current)
+	})
+	t.Run("failure", func(t *testing.T) {
+		c := testConfig()
+		err := c.SetCurrent("unknownconfig")
+
+		assert.Equal(t, "config `unknownconfig` does not exist", err.Error())
 	})
 }
 

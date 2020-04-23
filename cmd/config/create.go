@@ -17,6 +17,8 @@ func newConfigCreateCmd() *cobra.Command {
 The new config has only launcher-version and launcher-image.`,
 		Args: cobra.ExactArgs(1),
 		RunE: func(cmd *cobra.Command, args []string) error {
+			cmd.SilenceUsage = true
+
 			name := args[0]
 
 			path, err := filePath()

@@ -4,12 +4,13 @@ import (
 	"github.com/spf13/cobra"
 )
 
-func newConfigDeleteCmd() *cobra.Command {
-	configDeleteCmd := &cobra.Command{
-		Use:   "delete [name]",
-		Short: "Delete the config of sd-local",
-		Long:  `Delete the config of sd-local.`,
-		Args:  cobra.ExactArgs(1),
+func newConfigUseCmd() *cobra.Command {
+	configUseCmd := &cobra.Command{
+		Use:   "use [name]",
+		Short: "Use the config of sd-local",
+		Long: `Use the specified config as current config.
+You can confirm the current config in view sub command.`,
+		Args: cobra.ExactArgs(1),
 		RunE: func(cmd *cobra.Command, args []string) error {
 			cmd.SilenceUsage = true
 
@@ -25,7 +26,7 @@ func newConfigDeleteCmd() *cobra.Command {
 				return err
 			}
 
-			err = config.DeleteEntry(name)
+			err = config.SetCurrent(name)
 			if err != nil {
 				return err
 			}
@@ -38,5 +39,5 @@ func newConfigDeleteCmd() *cobra.Command {
 		},
 	}
 
-	return configDeleteCmd
+	return configUseCmd
 }

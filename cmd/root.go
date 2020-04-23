@@ -60,6 +60,7 @@ func Execute() error {
 	}()
 
 	rootCmd := newRootCmd()
+	rootCmd.SilenceErrors = true
 	rootCmd.AddCommand(
 		newBuildCmd(),
 		config.NewConfigCmd(),
