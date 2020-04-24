@@ -2,8 +2,9 @@ package config
 
 import (
 	"fmt"
-	"text/tabwriter"
+	"strings"
 
+	"github.com/go-yaml/yaml"
 	"github.com/spf13/cobra"
 )
 
@@ -31,20 +32,26 @@ Can see the below settings:
 				return err
 			}
 
-			entry, err := config.Entry(config.Current)
-			if err != nil {
-				return err
+			for name, entry := range config.Entries {
+				if name == config.Current {
+					fmt.Fprintf(cmd.OutOrStdout(), "* %s:\n", name)
+				} else {
+					fmt.Fprintf(cmd.OutOrStdout(), "  %s:\n", name)
+				}
+
+				yaml, err := yaml.Marshal(entry)
+				if err != nil {
+					return err
+				}
+
+				for _, line := range strings.Split(string(yaml), "\n") {
+					if line != "" {
+						fmt.Fprintf(cmd.OutOrStdout(), "    %s\n", line)
+					}
+				}
+
 			}
-			w := tabwriter.NewWriter(cmd.OutOrStdout(), 5, 2, 2, ' ', 0)
 
-			fmt.Fprintln(w, "KEY\tVALUE")
-			fmt.Fprintf(w, "api-url\t%s\n", entry.APIURL)
-			fmt.Fprintf(w, "store-url\t%s\n", entry.StoreURL)
-			fmt.Fprintf(w, "token\t%s\n", entry.Token)
-			fmt.Fprintf(w, "launcher-version\t%s\n", entry.Launcher.Version)
-			fmt.Fprintf(w, "launcher-image\t%s\n", entry.Launcher.Image)
-
-			w.Flush()
 			return nil
 		},
 	}

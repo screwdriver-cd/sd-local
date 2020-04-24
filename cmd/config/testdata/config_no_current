@@ -1,0 +1,16 @@
+configs:
+  default:
+    api-url: api.screwdriver.com
+    store-url: store.screwdriver.com
+    token: sd-token
+    launcher:
+      version: 1.0.0
+      image: screwdrivercd/launcher
+  test:
+    api-url: api-test.screwdriver.com
+    store-url: store-test.screwdriver.com
+    token: sd-token-test
+    launcher:
+      version: 1.0.0-test
+      image: screwdrivercd/launcher
+current: doesnotexist
