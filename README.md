@@ -44,7 +44,6 @@ Flags:
   -e, --env stringToString     Set key and value relationship which is set as environment variables of Build Container. (<key>=<value>) (default [])
       --env-file string        Path to config file of environment variables. '.env' format file can be used.
   -h, --help                   help for build
-      --local                  Run command with .sdlocal/config file in current directory.
   -m, --memory string          Memory limit for build container, which take a positive integer, followed by a suffix of b, k, m, g.
       --meta string            Metadata to pass into the build environment, which is represented with JSON format
       --meta-file string       Path to the meta file. meta file is represented with JSON format.
@@ -55,6 +54,44 @@ Flags:
 ```
 
 ##### config
+_create_
+```bash
+$ sd-local config create --help
+Create the config of sd-local.
+The new config has only launcher-version and launcher-image.
+
+Usage:
+  sd-local config create [name] [flags]
+
+Flags:
+  -h, --help   help for create
+```
+
+_delete_
+```bash
+$ sd-local config delete --help
+Delete the config of sd-local.
+
+Usage:
+  sd-local config delete [name] [flags]
+
+Flags:
+  -h, --help   help for delete
+```
+
+_use_
+```bash
+$ sd-local config use --help
+Use the specified config as current config.
+You can confirm the current config in view sub command.
+
+Usage:
+  sd-local config use [name] [flags]
+
+Flags:
+  -h, --help   help for use
+```
+
 _set_
 ```bash
 $ sd-local config set --help
@@ -71,20 +108,25 @@ Usage:
 
 Flags:
   -h, --help   help for set
-
-Global Flags:
-      --local   Run command with .sdlocal/config file in current directory.
 ```
 
 _view_
 ```bash
 $ sd-local config view
-KEY               VALUE
-api-url           https://api.screwdriver.cd
-store-url         https://store.screwdriver.cd
-token             <API Token>
-launcher-version  latest
-launcher-image    screwdrivercd/launcher
+  anoter:
+    api-url: ""
+    store-url: ""
+    token: ""
+    launcher:
+      version: stable
+      image: screwdrivercd/launcher
+* default:
+    api-url: https://api.screwdriver.cd
+    store-url: https://store.screwdriver.cd
+    token: <API Token>
+    launcher:
+      version: stable
+      image: screwdrivercd/launcher
 ```
 
 ##### version
