@@ -35,8 +35,6 @@ func NewConfigCmd() *cobra.Command {
 		},
 	}
 
-	configCmd.PersistentFlags().Bool("local", false, "Run command with .sdlocal/config file in current directory.")
-
 	configCmd.AddCommand(
 		newConfigSetCmd(),
 		newConfigViewCmd(),

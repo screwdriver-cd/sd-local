@@ -20,7 +20,6 @@ Flags:
   -e, --env stringToString     Set key and value relationship which is set as environment variables of Build Container. (<key>=<value>) (default [])
       --env-file string        Path to config file of environment variables. '.env' format file can be used.
   -h, --help                   help for build
-      --local                  Run command with .sdlocal/config file in current directory.
   -m, --memory string          Memory limit for build container, which take a positive integer, followed by a suffix of b, k, m, g.
       --meta string            Metadata to pass into the build environment, which is represented with JSON format
       --meta-file string       Path to the meta file. meta file is represented with JSON format.
