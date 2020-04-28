@@ -36,7 +36,21 @@ func (mock mockLaunch) Kill(os.Signal) {}
 func (mock mockLaunch) Clean() {}
 
 func setup() {
-	configNew = func(confPath string) (config.Config, error) { return config.Config{}, nil }
+	configNew = func(confPath string) (config.Config, error) {
+		defaultEntry := &config.Entry{
+			Launcher: config.Launcher{
+				Version: "stable",
+				Image:   "screwdrivercd/launcher",
+			},
+		}
+
+		return config.Config{
+			Entries: map[string]*config.Entry{
+				"default": defaultEntry,
+			},
+			Current: "default",
+		}, nil
+	}
 	apiNew = func(url, token string) (screwdriver.API, error) { return mockAPI{}, nil }
 	buildLogNew = func(filepath string, writer io.Writer) (logger buildlog.Logger, err error) { return mockLogger{}, nil }
 	launchNew = func(option launch.Option) launch.Launcher {
@@ -80,7 +94,6 @@ Flags:
   -e, --env stringToString     Set key and value relationship which is set as environment variables of Build Container. (<key>=<value>) (default [])
       --env-file string        Path to config file of environment variables. '.env' format file can be used.
   -h, --help                   help for build
-      --local                  Run command with .sdlocal/config file in current directory.
   -m, --memory string          Memory limit for build container, which take a positive integer, followed by a suffix of b, k, m, g.
       --meta string            Metadata to pass into the build environment, which is represented with JSON format
       --meta-file string       Path to the meta file. meta file is represented with JSON format.

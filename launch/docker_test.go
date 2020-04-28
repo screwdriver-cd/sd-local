@@ -141,29 +141,29 @@ func TestRunBuild(t *testing.T) {
 		id               string
 		expectError      error
 		expectedCommands []string
-		buildConfig      buildConfig
+		buildEntry       buildEntry
 	}{
 		{"success", "SUCCESS_RUN_BUILD", nil,
 			[]string{
 				"docker pull node:12",
 				fmt.Sprintf("docker container run --rm -v /:/sd/workspace/src/screwdriver.cd/sd-local/local-build -v sd-artifacts/:/test/artifacts -v %s:/opt/sd node:12 /opt/sd/local_run.sh ", d.volume)},
-			newBuildConfig()},
+			newBuildEntry()},
 		{"success with memory limit", "SUCCESS_RUN_BUILD", nil,
 			[]string{
 				"docker pull node:12",
 				fmt.Sprintf("docker container run -m2GB --rm -v /:/sd/workspace/src/screwdriver.cd/sd-local/local-build -v sd-artifacts/:/test/artifacts -v %s:/opt/sd node:12 /opt/sd/local_run.sh ", d.volume)},
-			newBuildConfig(func(b *buildConfig) {
+			newBuildEntry(func(b *buildEntry) {
 				b.MemoryLimit = "2GB"
 			})},
-		{"failure build run", "FAIL_BUILD_CONTAINER_RUN", fmt.Errorf("failed to run build container: exit status 1"), []string{}, newBuildConfig()},
-		{"failure build image pull", "FAIL_BUILD_IMAGE_PULL", fmt.Errorf("failed to pull user image exit status 1"), []string{}, newBuildConfig()},
+		{"failure build run", "FAIL_BUILD_CONTAINER_RUN", fmt.Errorf("failed to run build container: exit status 1"), []string{}, newBuildEntry()},
+		{"failure build image pull", "FAIL_BUILD_IMAGE_PULL", fmt.Errorf("failed to pull user image exit status 1"), []string{}, newBuildEntry()},
 	}
 
 	for _, tt := range testCase {
 		t.Run(tt.name, func(t *testing.T) {
 			c := newFakeExecCommand(tt.id)
 			execCommand = c.execCmd
-			err := d.runBuild(tt.buildConfig)
+			err := d.runBuild(tt.buildEntry)
 			for i, expectedCommand := range tt.expectedCommands {
 				assert.True(t, strings.Contains(c.commands[i], expectedCommand), "expect %q \nbut got \n%q", expectedCommand, c.commands[i])
 			}
@@ -193,29 +193,29 @@ func TestRunBuildWithSudo(t *testing.T) {
 		id               string
 		expectError      error
 		expectedCommands []string
-		buildConfig      buildConfig
+		buildEntry       buildEntry
 	}{
 		{"success", "SUCCESS_RUN_BUILD_SUDO", nil,
 			[]string{
 				"sudo docker pull node:12",
 				fmt.Sprintf("sudo docker container run --rm -v /:/sd/workspace/src/screwdriver.cd/sd-local/local-build -v sd-artifacts/:/test/artifacts -v %s:/opt/sd node:12 /opt/sd/local_run.sh ", d.volume)},
-			newBuildConfig()},
+			newBuildEntry()},
 		{"success with memory limit", "SUCCESS_RUN_BUILD_SUDO", nil,
 			[]string{
 				"sudo docker pull node:12",
 				fmt.Sprintf("sudo docker container run -m2GB --rm -v /:/sd/workspace/src/screwdriver.cd/sd-local/local-build -v sd-artifacts/:/test/artifacts -v %s:/opt/sd node:12 /opt/sd/local_run.sh ", d.volume)},
-			newBuildConfig(func(b *buildConfig) {
+			newBuildEntry(func(b *buildEntry) {
 				b.MemoryLimit = "2GB"
 			})},
-		{"failure build run", "FAIL_BUILD_CONTAINER_RUN_SUDO", fmt.Errorf("failed to run build container: exit status 1"), []string{}, newBuildConfig()},
-		{"failure build image pull", "FAIL_BUILD_IMAGE_PULL_SUDO", fmt.Errorf("failed to pull user image exit status 1"), []string{}, newBuildConfig()},
+		{"failure build run", "FAIL_BUILD_CONTAINER_RUN_SUDO", fmt.Errorf("failed to run build container: exit status 1"), []string{}, newBuildEntry()},
+		{"failure build image pull", "FAIL_BUILD_IMAGE_PULL_SUDO", fmt.Errorf("failed to pull user image exit status 1"), []string{}, newBuildEntry()},
 	}
 
 	for _, tt := range testCase {
 		t.Run(tt.name, func(t *testing.T) {
 			c := newFakeExecCommand(tt.id)
 			execCommand = c.execCmd
-			err := d.runBuild(tt.buildConfig)
+			err := d.runBuild(tt.buildEntry)
 			for i, expectedCommand := range tt.expectedCommands {
 				assert.True(t, strings.Contains(c.commands[i], expectedCommand), "expect %q \nbut got \n%q", expectedCommand, c.commands[i])
 			}
