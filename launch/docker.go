@@ -9,6 +9,7 @@ import (
 	"os/exec"
 	"path/filepath"
 	"strconv"
+	"strings"
 	"sync"
 	"syscall"
 	"time"
@@ -112,7 +113,10 @@ func (d *docker) execDockerCommand(args ...string) error {
 	if d.useSudo {
 		commands = append([]string{"sudo"}, commands...)
 	}
+	logrus.Infof("$ %s", strings.Join(commands, " "))
 	cmd := execCommand(commands[0], commands[1:]...)
+	cmd.Stdout = logrus.StandardLogger().Writer()
+	cmd.Stderr = logrus.StandardLogger().WriterLevel(logrus.ErrorLevel)
 	d.commands = append(d.commands, cmd)
 	buf := bytes.NewBuffer(nil)
 	cmd.Stderr = buf
