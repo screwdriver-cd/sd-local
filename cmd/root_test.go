@@ -73,7 +73,7 @@ func TestRootCmd(t *testing.T) {
 		buf := bytes.NewBuffer(nil)
 		root.SetOut(buf)
 		err := root.Execute()
-		want := "Run build instantly on your local machine with\na mostly the same environment as Screwdriver.cd's\n\nUsage:\n  sd-local [command]\n\nAvailable Commands:\n  build       Run screwdriver build.\n  help        Help about any command\n\nFlags:\n  -h, --help   help for sd-local\n\nUse \"sd-local [command] --help\" for more information about a command.\n"
+		want := "Run build instantly on your local machine with\na mostly the same environment as Screwdriver.cd's\n\nUsage:\n  sd-local [command]\n\nAvailable Commands:\n  build       Run screwdriver build.\n  help        Help about any command\n\nFlags:\n  -h, --help      help for sd-local\n  -v, --verbose   verbose output.\n\nUse \"sd-local [command] --help\" for more information about a command.\n"
 		assert.Equal(t, want, buf.String())
 		assert.Nil(t, err)
 	})
@@ -101,6 +101,9 @@ Flags:
                                ex) git@github.com:<org>/<repo>.git[#<branch>]
                                    https://github.com/<org>/<repo>.git[#<branch>]
       --sudo                   Use sudo command for container runtime.
+
+Global Flags:
+  -v, --verbose   verbose output.
 
 `
 		assert.Equal(t, want, buf.String())

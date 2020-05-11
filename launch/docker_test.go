@@ -50,9 +50,10 @@ func TestNewDocker(t *testing.T) {
 			useSudo:           false,
 			commands:          make([]*exec.Cmd, 0, 10),
 			mutex:             &sync.Mutex{},
+			flagVerbose:       false,
 		}
 
-		d := newDocker("launcher", "latest", false)
+		d := newDocker("launcher", "latest", false, false)
 
 		assert.Equal(t, expected, d)
 	})

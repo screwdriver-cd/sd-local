@@ -19,13 +19,26 @@ type Cleaner interface {
 	Clean()
 }
 
+var (
+	flagVerbose bool
+)
+
 func newRootCmd() *cobra.Command {
+
 	rootCmd := &cobra.Command{
 		Use:   "sd-local",
 		Short: "Run build in local",
 		Long: `Run build instantly on your local machine with
 a mostly the same environment as Screwdriver.cd's`,
 	}
+
+	rootCmd.PersistentFlags().BoolVarP(
+		&flagVerbose,
+		"verbose",
+		"v",
+		false,
+		"verbose output.")
+
 	return rootCmd
 }
 

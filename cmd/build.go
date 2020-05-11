@@ -196,6 +196,7 @@ func newBuildCmd() *cobra.Command {
 				OptionEnv:     optionEnv,
 				Meta:          meta,
 				UseSudo:       useSudo,
+				FlagVerbose:   flagVerbose,
 			}
 
 			launch := launchNew(option)
