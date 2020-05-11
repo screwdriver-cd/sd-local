@@ -74,6 +74,7 @@ type Option struct {
 	OptionEnv     EnvVar
 	Meta          Meta
 	UseSudo       bool
+	FlagVerbose   bool
 }
 
 const (
@@ -141,7 +142,7 @@ func createBuildEntry(option Option) buildEntry {
 func New(option Option) Launcher {
 	l := new(launch)
 
-	l.runner = newDocker(option.Entry.Launcher.Image, option.Entry.Launcher.Version, option.UseSudo)
+	l.runner = newDocker(option.Entry.Launcher.Image, option.Entry.Launcher.Version, option.UseSudo, option.FlagVerbose)
 	l.buildEntry = createBuildEntry(option)
 
 	return l

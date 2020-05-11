@@ -9,6 +9,7 @@ import (
 	"os/exec"
 	"path/filepath"
 	"strconv"
+	"strings"
 	"sync"
 	"syscall"
 	"time"
@@ -23,6 +24,7 @@ type docker struct {
 	useSudo           bool
 	commands          []*exec.Cmd
 	mutex             *sync.Mutex
+	flagVerbose       bool
 }
 
 var _ runner = (*docker)(nil)
@@ -38,7 +40,7 @@ const (
 	orgRepo = "sd-local/local-build"
 )
 
-func newDocker(setupImage, setupImageVer string, useSudo bool) runner {
+func newDocker(setupImage, setupImageVer string, useSudo bool, flagVerbose bool) runner {
 	return &docker{
 		volume:            "SD_LAUNCH_BIN",
 		setupImage:        setupImage,
@@ -46,6 +48,7 @@ func newDocker(setupImage, setupImageVer string, useSudo bool) runner {
 		useSudo:           useSudo,
 		commands:          make([]*exec.Cmd, 0, 10),
 		mutex:             &sync.Mutex{},
+		flagVerbose:       flagVerbose,
 	}
 }
 
@@ -87,6 +90,7 @@ func (d *docker) runBuild(buildEntry buildEntry) error {
 		return err
 	}
 
+	logrus.Infof("Pulling docker image from %s...", buildImage)
 	err = d.execDockerCommand("pull", buildImage)
 	if err != nil {
 		return fmt.Errorf("failed to pull user image %v", err)
@@ -113,6 +117,11 @@ func (d *docker) execDockerCommand(args ...string) error {
 		commands = append([]string{"sudo"}, commands...)
 	}
 	cmd := execCommand(commands[0], commands[1:]...)
+	if d.flagVerbose {
+		logrus.Infof("$ %s", strings.Join(commands, " "))
+		cmd.Stdout = logrus.StandardLogger().WriterLevel(logrus.InfoLevel)
+	}
+	cmd.Stderr = logrus.StandardLogger().WriterLevel(logrus.ErrorLevel)
 	d.commands = append(d.commands, cmd)
 	buf := bytes.NewBuffer(nil)
 	cmd.Stderr = buf

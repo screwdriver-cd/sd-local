@@ -26,7 +26,8 @@ Available Commands:
   version     Display command's version.
 
 Flags:
-  -h, --help   help for sd-local
+  -h, --help      help for sd-local
+  -v, --verbose   verbose output.
 
 Use "sd-local [command] --help" for more information about a command.
 ```
@@ -51,6 +52,9 @@ Flags:
                                ex) git@github.com:<org>/<repo>.git[#<branch>]
                                    https://github.com/<org>/<repo>.git[#<branch>]
       --sudo                   Use sudo command for container runtime.
+
+Global Flags:
+  -v, --verbose   verbose output.
 ```
 
 ##### config
@@ -65,6 +69,9 @@ Usage:
 
 Flags:
   -h, --help   help for create
+
+Global Flags:
+  -v, --verbose   verbose output.
 ```
 
 _delete_
@@ -77,6 +84,9 @@ Usage:
 
 Flags:
   -h, --help   help for delete
+
+Global Flags:
+  -v, --verbose   verbose output.
 ```
 
 _use_
@@ -90,6 +100,9 @@ Usage:
 
 Flags:
   -h, --help   help for use
+
+Global Flags:
+  -v, --verbose   verbose output.
 ```
 
 _set_
@@ -108,6 +121,9 @@ Usage:
 
 Flags:
   -h, --help   help for set
+
+Global Flags:
+  -v, --verbose   verbose output.
 ```
 
 _view_
