@@ -7,7 +7,6 @@ import (
 	"io/ioutil"
 	"os"
 	"path/filepath"
-	"time"
 
 	"github.com/joho/godotenv"
 	"github.com/mitchellh/go-homedir"
@@ -211,9 +210,8 @@ func newBuildCmd() *cobra.Command {
 				return err
 			}
 
-			// Wait for I/O processing.
-			time.Sleep(time.Second * waitIO)
 			logger.Stop()
+			<-logger.Done()
 
 			return nil
 		},
