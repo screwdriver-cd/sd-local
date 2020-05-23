@@ -19,10 +19,6 @@ import (
 	"github.com/spf13/cobra"
 )
 
-const (
-	waitIO = 1
-)
-
 var (
 	configNew    = config.New
 	apiNew       = screwdriver.New
@@ -33,6 +29,7 @@ var (
 	scmNew       = scm.New
 	osMkdirAll   = os.MkdirAll
 	useSudo      = false
+	loggerDone   chan interface{}
 )
 
 func mergeEnvFromFile(optionEnv *map[string]string, envFilePath string) error {
@@ -178,7 +175,9 @@ func newBuildCmd() *cobra.Command {
 			if err != nil {
 				return err
 			}
-			logger, err := buildLogNew(filepath.Join(artifactsPath, launch.LogFile), os.Stdout)
+
+			loggerDone = make(chan interface{})
+			logger, err := buildLogNew(filepath.Join(artifactsPath, launch.LogFile), os.Stdout, loggerDone)
 			if err != nil {
 				return err
 			}
@@ -211,7 +210,7 @@ func newBuildCmd() *cobra.Command {
 			}
 
 			logger.Stop()
-			<-logger.Done()
+			<-loggerDone
 
 			return nil
 		},

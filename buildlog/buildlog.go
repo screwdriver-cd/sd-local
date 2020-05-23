@@ -18,7 +18,6 @@ var readInterval time.Duration = 10 * time.Millisecond
 type Logger interface {
 	Run()
 	Stop()
-	Done() <-chan interface{}
 }
 
 type log struct {
@@ -26,7 +25,7 @@ type log struct {
 	file   io.Reader
 	writer io.Writer
 	cancel context.CancelFunc
-	done   chan interface{}
+	done   chan<- interface{}
 }
 
 type logLine struct {
@@ -37,10 +36,10 @@ type logLine struct {
 }
 
 // New creates new Logger interface.
-func New(filepath string, writer io.Writer) (Logger, error) {
+func New(filepath string, writer io.Writer, done chan<- interface{}) (Logger, error) {
 	log := log{
 		writer: writer,
-		done:   make(chan interface{}),
+		done:   done,
 	}
 
 	var err error
@@ -67,6 +66,7 @@ func (l log) Run() {
 			select {
 			case <-l.ctx.Done():
 				buildDone = true
+			default:
 			}
 		}
 
@@ -83,10 +83,6 @@ func (l log) Run() {
 		}
 		time.Sleep(readInterval)
 	}
-}
-
-func (l log) Done() <-chan interface{} {
-	return l.done
 }
 
 func (l log) output(reader *bufio.Reader) (bool, error) {

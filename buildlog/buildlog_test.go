@@ -62,6 +62,7 @@ func TestRun(t *testing.T) {
 			writer: writer,
 			ctx:    parent,
 			cancel: cancel,
+			done:   make(chan interface{}),
 		}
 
 		go l.Run()
@@ -93,6 +94,7 @@ func TestRun(t *testing.T) {
 			writer: writer,
 			ctx:    parent,
 			cancel: cancel,
+			done:   make(chan interface{}),
 		}
 
 		go l.Run()
@@ -126,6 +128,7 @@ func TestStop(t *testing.T) {
 			writer: writer,
 			ctx:    parent,
 			cancel: cancel,
+			done:   make(chan interface{}),
 		}
 
 		go l.Run()
@@ -151,7 +154,8 @@ func TestNew(t *testing.T) {
 
 		writer := bytes.NewBuffer(nil)
 
-		logger, err := New(tmpFile.Name(), writer)
+		loggerDone := make(chan interface{})
+		logger, err := New(tmpFile.Name(), writer, loggerDone)
 		if err != nil {
 			t.Fatal(err)
 		}
@@ -173,7 +177,8 @@ func TestNew(t *testing.T) {
 	t.Run("failure", func(t *testing.T) {
 		writer := bytes.NewBuffer(nil)
 
-		logger, err := New("/", writer)
+		loggerDone := make(chan interface{})
+		logger, err := New("/", writer, loggerDone)
 		if err == nil {
 			t.Fatal("failure err is nil")
 		}
@@ -181,6 +186,7 @@ func TestNew(t *testing.T) {
 		expected := log{
 			writer: writer,
 			file:   (*os.File)(nil),
+			done:   loggerDone,
 		}
 
 		msg := err.Error()
