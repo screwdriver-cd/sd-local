@@ -62,23 +62,24 @@ func (l log) Run() {
 	reader := bufio.NewReader(l.file)
 	buildDone := false
 
-loop:
 	for {
-		select {
-		case <-l.ctx.Done():
-			buildDone = true
-		default:
-			readDone, err := l.output(reader)
-			if err != nil {
-				logrus.Errorf("failed to run logger: %v\n", err)
-				logrus.Info("But build is not stopping")
-				l.cancel()
+		if !buildDone {
+			select {
+			case <-l.ctx.Done():
+				buildDone = true
 			}
+		}
 
-			if buildDone && readDone {
-				close(l.done)
-				break loop
-			}
+		readDone, err := l.output(reader)
+		if err != nil {
+			logrus.Errorf("failed to run logger: %v\n", err)
+			logrus.Info("But build is not stopping")
+			l.cancel()
+		}
+
+		if buildDone && readDone {
+			close(l.done)
+			break
 		}
 		time.Sleep(readInterval)
 	}
