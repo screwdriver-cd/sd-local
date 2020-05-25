@@ -62,7 +62,7 @@ func TestRun(t *testing.T) {
 			writer: writer,
 			ctx:    parent,
 			cancel: cancel,
-			done:   make(chan interface{}),
+			done:   make(chan struct{}),
 		}
 
 		go l.Run()
@@ -94,7 +94,7 @@ func TestRun(t *testing.T) {
 			writer: writer,
 			ctx:    parent,
 			cancel: cancel,
-			done:   make(chan interface{}),
+			done:   make(chan struct{}),
 		}
 
 		go l.Run()
@@ -128,7 +128,7 @@ func TestStop(t *testing.T) {
 			writer: writer,
 			ctx:    parent,
 			cancel: cancel,
-			done:   make(chan interface{}),
+			done:   make(chan struct{}),
 		}
 
 		go l.Run()
@@ -154,7 +154,7 @@ func TestNew(t *testing.T) {
 
 		writer := bytes.NewBuffer(nil)
 
-		loggerDone := make(chan interface{})
+		loggerDone := make(chan struct{})
 		logger, err := New(tmpFile.Name(), writer, loggerDone)
 		if err != nil {
 			t.Fatal(err)
@@ -177,7 +177,7 @@ func TestNew(t *testing.T) {
 	t.Run("failure", func(t *testing.T) {
 		writer := bytes.NewBuffer(nil)
 
-		loggerDone := make(chan interface{})
+		loggerDone := make(chan struct{})
 		logger, err := New("/", writer, loggerDone)
 		if err == nil {
 			t.Fatal("failure err is nil")

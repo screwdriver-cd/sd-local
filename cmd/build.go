@@ -29,7 +29,7 @@ var (
 	scmNew       = scm.New
 	osMkdirAll   = os.MkdirAll
 	useSudo      = false
-	loggerDone   chan interface{}
+	loggerDone   chan struct{}
 )
 
 func mergeEnvFromFile(optionEnv *map[string]string, envFilePath string) error {
@@ -176,7 +176,7 @@ func newBuildCmd() *cobra.Command {
 				return err
 			}
 
-			loggerDone = make(chan interface{})
+			loggerDone = make(chan struct{})
 			logger, err := buildLogNew(filepath.Join(artifactsPath, launch.LogFile), os.Stdout, loggerDone)
 			if err != nil {
 				return err

@@ -25,7 +25,7 @@ type log struct {
 	file   io.Reader
 	writer io.Writer
 	cancel context.CancelFunc
-	done   chan<- interface{}
+	done   chan<- struct{}
 }
 
 type logLine struct {
@@ -36,7 +36,7 @@ type logLine struct {
 }
 
 // New creates new Logger interface.
-func New(filepath string, writer io.Writer, done chan<- interface{}) (Logger, error) {
+func New(filepath string, writer io.Writer, done chan<- struct{}) (Logger, error) {
 	log := log{
 		writer: writer,
 		done:   done,

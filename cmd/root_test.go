@@ -52,7 +52,7 @@ func setup() {
 		}, nil
 	}
 	apiNew = func(url, token string) (screwdriver.API, error) { return mockAPI{}, nil }
-	buildLogNew = func(filepath string, writer io.Writer, done chan<- interface{}) (logger buildlog.Logger, err error) {
+	buildLogNew = func(filepath string, writer io.Writer, done chan<- struct{}) (logger buildlog.Logger, err error) {
 		return mockLogger{}, nil
 	}
 	launchNew = func(option launch.Option) launch.Launcher {
