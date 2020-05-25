@@ -27,7 +27,7 @@ func (mock mockAPI) JWT() string { return "" }
 
 func (mock mockLogger) Run() {}
 
-func (mock mockLogger) Stop() {}
+func (mock mockLogger) Stop() { close(loggerDone) }
 
 func (mock mockLaunch) Run() error { return nil }
 
@@ -52,7 +52,9 @@ func setup() {
 		}, nil
 	}
 	apiNew = func(url, token string) (screwdriver.API, error) { return mockAPI{}, nil }
-	buildLogNew = func(filepath string, writer io.Writer) (logger buildlog.Logger, err error) { return mockLogger{}, nil }
+	buildLogNew = func(filepath string, writer io.Writer, done chan<- struct{}) (logger buildlog.Logger, err error) {
+		return mockLogger{}, nil
+	}
 	launchNew = func(option launch.Option) launch.Launcher {
 		return mockLaunch{}
 	}

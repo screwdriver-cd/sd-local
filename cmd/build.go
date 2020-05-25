@@ -7,7 +7,6 @@ import (
 	"io/ioutil"
 	"os"
 	"path/filepath"
-	"time"
 
 	"github.com/joho/godotenv"
 	"github.com/mitchellh/go-homedir"
@@ -20,10 +19,6 @@ import (
 	"github.com/spf13/cobra"
 )
 
-const (
-	waitIO = 1
-)
-
 var (
 	configNew    = config.New
 	apiNew       = screwdriver.New
@@ -34,6 +29,7 @@ var (
 	scmNew       = scm.New
 	osMkdirAll   = os.MkdirAll
 	useSudo      = false
+	loggerDone   chan struct{}
 )
 
 func mergeEnvFromFile(optionEnv *map[string]string, envFilePath string) error {
@@ -179,7 +175,9 @@ func newBuildCmd() *cobra.Command {
 			if err != nil {
 				return err
 			}
-			logger, err := buildLogNew(filepath.Join(artifactsPath, launch.LogFile), os.Stdout)
+
+			loggerDone = make(chan struct{})
+			logger, err := buildLogNew(filepath.Join(artifactsPath, launch.LogFile), os.Stdout, loggerDone)
 			if err != nil {
 				return err
 			}
@@ -211,9 +209,8 @@ func newBuildCmd() *cobra.Command {
 				return err
 			}
 
-			// Wait for I/O processing.
-			time.Sleep(time.Second * waitIO)
 			logger.Stop()
+			<-loggerDone
 
 			return nil
 		},
