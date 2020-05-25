@@ -73,7 +73,7 @@ func (l log) Run() {
 		readDone, err := l.output(reader)
 		if err != nil {
 			logrus.Errorf("failed to run logger: %v\n", err)
-			logrus.Info("But build is not stopping")
+			logrus.Info("But build is still running")
 			close(l.done)
 			break
 		}
