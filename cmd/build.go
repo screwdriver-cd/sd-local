@@ -20,16 +20,17 @@ import (
 )
 
 var (
-	configNew    = config.New
-	apiNew       = screwdriver.New
-	buildLogNew  = buildlog.New
-	launchNew    = launch.New
-	artifactsDir = launch.ArtifactsDir
-	memory       = ""
-	scmNew       = scm.New
-	osMkdirAll   = os.MkdirAll
-	useSudo      = false
-	loggerDone   chan struct{}
+	configNew     = config.New
+	apiNew        = screwdriver.New
+	buildLogNew   = buildlog.New
+	launchNew     = launch.New
+	artifactsDir  = launch.ArtifactsDir
+	memory        = ""
+	scmNew        = scm.New
+	osMkdirAll    = os.MkdirAll
+	useSudo       = false
+	usePrivileged = false
+	loggerDone    chan struct{}
 )
 
 func mergeEnvFromFile(optionEnv *map[string]string, envFilePath string) error {
@@ -194,6 +195,7 @@ func newBuildCmd() *cobra.Command {
 				OptionEnv:     optionEnv,
 				Meta:          meta,
 				UseSudo:       useSudo,
+				UsePrivileged: usePrivileged,
 				FlagVerbose:   flagVerbose,
 			}
 
@@ -269,6 +271,12 @@ ex) git@github.com:<org>/<repo>.git[#<branch>]
 		"sudo",
 		false,
 		"Use sudo command for container runtime.")
+
+	buildCmd.Flags().BoolVar(
+		&usePrivileged,
+		"privileged",
+		false,
+		"Use privileged mode for container runtime.")
 
 	return buildCmd
 }

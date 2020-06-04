@@ -103,6 +103,10 @@ func (d *docker) runBuild(buildEntry buildEntry) error {
 		dockerCommandOptions = append([]string{fmt.Sprintf("-m%s", buildEntry.MemoryLimit)}, dockerCommandOptions...)
 	}
 
+	if buildEntry.UsePrivileged {
+		dockerCommandOptions = append([]string{"--privileged"}, dockerCommandOptions...)
+	}
+
 	err = d.execDockerCommand(append(dockerCommandArgs, dockerCommandOptions...)...)
 	if err != nil {
 		return fmt.Errorf("failed to run build container: %v", err)
