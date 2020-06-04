@@ -19,6 +19,7 @@ import (
 
 type docker struct {
 	volume            string
+	habVolume         string
 	setupImage        string
 	setupImageVersion string
 	useSudo           bool
@@ -43,6 +44,7 @@ const (
 func newDocker(setupImage, setupImageVer string, useSudo bool, flagVerbose bool) runner {
 	return &docker{
 		volume:            "SD_LAUNCH_BIN",
+		habVolume:         "SD_LAUNCH_HAB",
 		setupImage:        setupImage,
 		setupImageVersion: setupImageVer,
 		useSudo:           useSudo,
@@ -58,14 +60,22 @@ func (d *docker) setupBin() error {
 		return fmt.Errorf("failed to create docker volume: %v", err)
 	}
 
+	err = d.execDockerCommand("volume", "create", "--name", d.habVolume)
+	if err != nil {
+		return fmt.Errorf("failed to create docker hab volume: %v", err)
+	}
+
 	mount := fmt.Sprintf("%s:/opt/sd/", d.volume)
+	habMount := fmt.Sprintf("%s:/hab", d.habVolume)
 	image := fmt.Sprintf("%s:%s", d.setupImage, d.setupImageVersion)
 	err = d.execDockerCommand("pull", image)
 	if err != nil {
-		return fmt.Errorf("failed to pull launcher image: %v", err)
+		// To enable local launcher development.
+		// Worst case docker run in next step fails.
+		logrus.Warn(fmt.Errorf("failed to pull launcher image: %v", err))
 	}
 
-	err = d.execDockerCommand("container", "run", "--rm", "-v", mount, image, "--entrypoint", "/bin/echo set up bin")
+	err = d.execDockerCommand("container", "run", "--rm", "-v", mount, "-v", habMount, image, "--entrypoint", "/bin/echo set up bin")
 	if err != nil {
 		return fmt.Errorf("failed to prepare build scripts: %v", err)
 	}
@@ -85,6 +95,7 @@ func (d *docker) runBuild(buildEntry buildEntry) error {
 	srcVol := fmt.Sprintf("%s/:/sd/workspace/src/%s/%s", srcDir, scmHost, orgRepo)
 	artVol := fmt.Sprintf("%s/:%s", hostArtDir, containerArtDir)
 	binVol := fmt.Sprintf("%s:%s", d.volume, "/opt/sd")
+	habVol := fmt.Sprintf("%s:%s", d.habVolume, "/opt/sd/hab")
 	configJSON, err := json.Marshal(buildEntry)
 	if err != nil {
 		return err
@@ -97,7 +108,7 @@ func (d *docker) runBuild(buildEntry buildEntry) error {
 	}
 
 	dockerCommandArgs := []string{"container", "run"}
-	dockerCommandOptions := []string{"--rm", "-v", srcVol, "-v", artVol, "-v", binVol, buildImage, "/opt/sd/local_run.sh", string(configJSON), buildEntry.JobName, environment["SD_API_URL"], environment["SD_STORE_URL"], logfilePath}
+	dockerCommandOptions := []string{"--rm", "-v", srcVol, "-v", artVol, "-v", binVol, "-v", habVol, buildImage, "/opt/sd/local_run.sh", string(configJSON), buildEntry.JobName, environment["SD_API_URL"], environment["SD_STORE_URL"], logfilePath}
 
 	if buildEntry.MemoryLimit != "" {
 		dockerCommandOptions = append([]string{fmt.Sprintf("-m%s", buildEntry.MemoryLimit)}, dockerCommandOptions...)
@@ -173,6 +184,12 @@ func (d *docker) clean() {
 
 	if err != nil {
 		logrus.Warn(fmt.Errorf("failed to remove volume: %v", err))
+	}
+
+	err = d.execDockerCommand("volume", "rm", "--force", d.habVolume)
+
+	if err != nil {
+		logrus.Warn(fmt.Errorf("failed to remove hab volume: %v", err))
 	}
 }
 
