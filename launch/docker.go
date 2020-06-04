@@ -70,9 +70,7 @@ func (d *docker) setupBin() error {
 	image := fmt.Sprintf("%s:%s", d.setupImage, d.setupImageVersion)
 	err = d.execDockerCommand("pull", image)
 	if err != nil {
-		// To enable local launcher development.
-		// Worst case docker run in next step fails.
-		logrus.Warn(fmt.Errorf("failed to pull launcher image: %v", err))
+		return fmt.Errorf("failed to pull launcher image: %v", err)
 	}
 
 	err = d.execDockerCommand("container", "run", "--rm", "-v", mount, "-v", habMount, image, "--entrypoint", "/bin/echo set up bin")
