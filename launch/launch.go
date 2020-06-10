@@ -60,6 +60,7 @@ type buildEntry struct {
 	MemoryLimit   string             `json:"-"`
 	SrcPath       string             `json:"-"`
 	UseSudo       bool               `json:"-"`
+	UsePrivileged bool               `json:"-"`
 }
 
 // Option is option for launch New
@@ -74,6 +75,7 @@ type Option struct {
 	OptionEnv     EnvVar
 	Meta          Meta
 	UseSudo       bool
+	UsePrivileged bool
 	FlagVerbose   bool
 }
 
@@ -135,6 +137,7 @@ func createBuildEntry(option Option) buildEntry {
 		MemoryLimit:   option.Memory,
 		SrcPath:       option.SrcPath,
 		UseSudo:       option.UseSudo,
+		UsePrivileged: option.UsePrivileged,
 	}
 }
 
