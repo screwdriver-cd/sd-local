@@ -74,6 +74,44 @@ func TestRun(t *testing.T) {
 		assert.Equal(t, expected, writer.String())
 	})
 
+	t.Run("success with long JSON output", func(t *testing.T) {
+		tmpFile, err := ioutil.TempFile("", "")
+		if err != nil {
+			t.Fatal(err)
+		}
+		defer tmpFile.Close()
+
+		longBuffer := make([]byte, 4096, 4096)
+		for i := 0; i < 4096; i++ {
+			longBuffer[i] = '*'
+		}
+		longInputs := []string{
+			`{"t": 1581662022394, "m": "test 1", "n": 0, "s": "main"}` + "\n",
+			`{"t": 1581662022395, "m": "long input ` + string(longBuffer) + `", "n": 1, "s": "main"}` + "\n",
+			`{"t": 1581662022394, "m": "test 3", "n": 2, "s": "main"}` + "\n",
+		}
+
+		go write(t, tmpFile.Name(), longInputs)
+
+		parent, cancel := context.WithCancel(context.Background())
+		writer := bytes.NewBuffer(nil)
+		l := log{
+			file:   tmpFile,
+			writer: writer,
+			ctx:    parent,
+			cancel: cancel,
+			done:   make(chan struct{}),
+		}
+
+		go l.Run()
+
+		time.Sleep(intervalTime * time.Millisecond)
+		l.Stop()
+
+		expected := "main: test 1\nmain: long input " + string(longBuffer) + "\nmain: test 3\n"
+		assert.Equal(t, expected, writer.String())
+	})
+
 	t.Run("failure by parsing error", func(t *testing.T) {
 		tmpFile, err := ioutil.TempFile("", "")
 		if err != nil {
