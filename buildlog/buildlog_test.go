@@ -141,7 +141,7 @@ func TestRun(t *testing.T) {
 		time.Sleep(intervalTime * time.Millisecond)
 		l.Stop()
 
-		expected := "main: test 1\n\\e[33mwaring: parsed error\\e[m\nmain: test 3\n"
+		expected := "main: test 1\n\x1b[33mwaring: parsed error\x1b[0m\nmain: test 3\n"
 		assert.Equal(t, expected, writer.String())
 	})
 }

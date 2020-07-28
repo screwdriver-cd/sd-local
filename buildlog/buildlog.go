@@ -120,7 +120,7 @@ func (l log) output(reader *bufio.Reader) (bool, error) {
 
 	parsedLog, err := parse(line)
 	if err != nil {
-		fmt.Fprintln(l.writer, "\\e[33mwaring: parsed error\\e[m")
+		fmt.Fprintln(l.writer, "\x1b[33mwaring: parsed error\x1b[0m")
 		return false, &parseError{}
 	}
 
