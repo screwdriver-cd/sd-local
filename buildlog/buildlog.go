@@ -4,6 +4,7 @@ import (
 	"bufio"
 	"context"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"io"
 	"os"
@@ -34,6 +35,10 @@ type logLine struct {
 	Line     int    `json:"n"`
 	StepName string `json:"s"`
 }
+
+type parseError struct{}
+
+func (e *parseError) Error() string { return "Parse Error" }
 
 // New creates new Logger interface.
 func New(filepath string, writer io.Writer, done chan<- struct{}) (Logger, error) {
@@ -71,6 +76,11 @@ func (l log) Run() {
 		}
 
 		readDone, err := l.output(reader)
+		parseErr := &parseError{}
+		if errors.As(err, &parseErr) {
+			continue
+		}
+
 		if err != nil {
 			logrus.Errorf("failed to run logger: %v\n", err)
 			logrus.Info("But build is still running")
@@ -88,7 +98,6 @@ func (l log) Run() {
 
 func readln(prefix []byte, r *bufio.Reader) ([]byte, error) {
 	line, isPrefix, err := r.ReadLine()
-
 	if err != nil {
 		return []byte{}, err
 	}
@@ -102,7 +111,6 @@ func readln(prefix []byte, r *bufio.Reader) ([]byte, error) {
 
 func (l log) output(reader *bufio.Reader) (bool, error) {
 	line, err := readln([]byte{}, reader)
-
 	if err != nil {
 		if err == io.EOF {
 			return true, nil
@@ -112,7 +120,8 @@ func (l log) output(reader *bufio.Reader) (bool, error) {
 
 	parsedLog, err := parse(line)
 	if err != nil {
-		return false, fmt.Errorf("failed to output log: %w", err)
+		fmt.Fprintln(l.writer, "\\e[33mwaring: parsed error\\e[m")
+		return false, &parseError{}
 	}
 
 	fmt.Fprintln(l.writer, parsedLog)

@@ -112,7 +112,7 @@ func TestRun(t *testing.T) {
 		assert.Equal(t, expected, writer.String())
 	})
 
-	t.Run("failure by parsing error", func(t *testing.T) {
+	t.Run("continue builds with parsing error", func(t *testing.T) {
 		tmpFile, err := ioutil.TempFile("", "")
 		if err != nil {
 			t.Fatal(err)
@@ -122,6 +122,7 @@ func TestRun(t *testing.T) {
 		testInvalidInputs := []string{
 			`{"t": 1581662022394, "m": "test 1", "n": 0, "s": "main"}` + "\n",
 			`{` + "\n",
+			`{"t": 1581662022394, "m": "test 3", "n": 0, "s": "main"}` + "\n",
 		}
 		go write(t, tmpFile.Name(), testInvalidInputs)
 
@@ -140,46 +141,28 @@ func TestRun(t *testing.T) {
 		time.Sleep(intervalTime * time.Millisecond)
 		l.Stop()
 
-		expected := "main: test 1\n"
+		expected := "main: test 1\n\\e[33mwaring: parsed error\\e[m\nmain: test 3\n"
 		assert.Equal(t, expected, writer.String())
 	})
 }
 
 func TestStop(t *testing.T) {
-	t.Run("success, confirm not to write log after stopped", func(t *testing.T) {
-		tmpFile, err := ioutil.TempFile("", "")
-		if err != nil {
-			t.Fatal(err)
-		}
-		defer tmpFile.Close()
+	parent, cancel := context.WithCancel(context.Background())
+	l := log{
+		ctx:    parent,
+		cancel: cancel,
+		done:   make(chan struct{}),
+	}
 
-		testInputsNotWritten := []string{
-			`{test}` + "\n",
-		}
+	timeout := time.After(5 * time.Second)
+	l.Stop()
 
-		go write(t, tmpFile.Name(), testInputs)
-
-		parent, cancel := context.WithCancel(context.Background())
-		writer := bytes.NewBuffer(nil)
-		l := log{
-			file:   tmpFile,
-			writer: writer,
-			ctx:    parent,
-			cancel: cancel,
-			done:   make(chan struct{}),
-		}
-
-		go l.Run()
-
-		time.Sleep(intervalTime * time.Millisecond)
-		l.Stop()
-
-		go write(t, tmpFile.Name(), testInputsNotWritten)
-		time.Sleep(intervalTime * time.Millisecond)
-
-		expected := "main: test 1\nmain: test 2\n"
-		assert.Equal(t, expected, writer.String())
-	})
+	select {
+	case v := <-l.ctx.Done():
+		assert.Equal(t, struct{}{}, v)
+	case <-timeout:
+		assert.Fail(t, "timeout stop buildlog")
+	}
 }
 
 func TestNew(t *testing.T) {
