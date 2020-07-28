@@ -86,8 +86,23 @@ func (l log) Run() {
 	}
 }
 
+func readln(prefix []byte, r *bufio.Reader) ([]byte, error) {
+	line, isPrefix, err := r.ReadLine()
+
+	if err != nil {
+		return []byte{}, err
+	}
+
+	if isPrefix {
+		return readln(append(prefix, line...), r)
+	}
+
+	return append(prefix, line...), err
+}
+
 func (l log) output(reader *bufio.Reader) (bool, error) {
-	line, _, err := reader.ReadLine()
+	line, err := readln([]byte{}, reader)
+
 	if err != nil {
 		if err == io.EOF {
 			return true, nil
