@@ -15,6 +15,10 @@ import (
 
 var readInterval time.Duration = 10 * time.Millisecond
 
+const (
+	rowBuildLogPath = "sd-artifacts/builds.log"
+)
+
 // Logger outputs logs
 type Logger interface {
 	Run()
@@ -22,11 +26,12 @@ type Logger interface {
 }
 
 type log struct {
-	ctx    context.Context
-	file   io.Reader
-	writer io.Writer
-	cancel context.CancelFunc
-	done   chan<- struct{}
+	ctx            context.Context
+	file           io.Reader
+	writer         io.Writer
+	cancel         context.CancelFunc
+	done           chan<- struct{}
+	currentLineNum int
 }
 
 type logLine struct {
@@ -50,19 +55,19 @@ func New(filepath string, writer io.Writer, done chan<- struct{}) (Logger, error
 	var err error
 	log.file, err = os.OpenFile(filepath, os.O_RDONLY|os.O_CREATE|os.O_TRUNC, 0666)
 	if err != nil {
-		return log, fmt.Errorf("failed to open raw build log file: %w", err)
+		return &log, fmt.Errorf("failed to open raw build log file: %w", err)
 	}
 
 	log.ctx, log.cancel = context.WithCancel(context.Background())
 
-	return log, nil
+	return &log, nil
 }
 
-func (l log) Stop() {
+func (l *log) Stop() {
 	l.cancel()
 }
 
-func (l log) Run() {
+func (l *log) Run() {
 	reader := bufio.NewReader(l.file)
 	buildDone := false
 
@@ -96,21 +101,23 @@ func (l log) Run() {
 	}
 }
 
-func readln(prefix []byte, r *bufio.Reader) ([]byte, error) {
+func (l *log) readln(prefix []byte, r *bufio.Reader) ([]byte, error) {
 	line, isPrefix, err := r.ReadLine()
 	if err != nil {
 		return []byte{}, err
 	}
 
 	if isPrefix {
-		return readln(append(prefix, line...), r)
+		return l.readln(append(prefix, line...), r)
+	} else {
+		l.currentLineNum++
 	}
 
 	return append(prefix, line...), err
 }
 
-func (l log) output(reader *bufio.Reader) (bool, error) {
-	line, err := readln([]byte{}, reader)
+func (l *log) output(reader *bufio.Reader) (bool, error) {
+	line, err := l.readln([]byte{}, reader)
 	if err != nil {
 		if err == io.EOF {
 			return true, nil
@@ -120,7 +127,7 @@ func (l log) output(reader *bufio.Reader) (bool, error) {
 
 	parsedLog, err := parse(line)
 	if err != nil {
-		fmt.Fprintln(l.writer, "\x1b[33mwaring: parsed error\x1b[0m")
+		logrus.Warnf("\x1b[33mParsed error. If you want to check see %s:%d \x1b[0m", rowBuildLogPath, l.currentLineNum)
 		return false, &parseError{}
 	}
 
