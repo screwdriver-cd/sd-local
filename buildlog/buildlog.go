@@ -4,6 +4,7 @@ import (
 	"bufio"
 	"context"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"io"
 	"os"
@@ -14,6 +15,10 @@ import (
 
 var readInterval time.Duration = 10 * time.Millisecond
 
+const (
+	rowBuildLogPath = "sd-artifacts/builds.log"
+)
+
 // Logger outputs logs
 type Logger interface {
 	Run()
@@ -21,11 +26,12 @@ type Logger interface {
 }
 
 type log struct {
-	ctx    context.Context
-	file   io.Reader
-	writer io.Writer
-	cancel context.CancelFunc
-	done   chan<- struct{}
+	ctx            context.Context
+	file           io.Reader
+	writer         io.Writer
+	cancel         context.CancelFunc
+	done           chan<- struct{}
+	currentLineNum int
 }
 
 type logLine struct {
@@ -34,6 +40,10 @@ type logLine struct {
 	Line     int    `json:"n"`
 	StepName string `json:"s"`
 }
+
+type parseError struct{}
+
+func (e *parseError) Error() string { return "Parse Error" }
 
 // New creates new Logger interface.
 func New(filepath string, writer io.Writer, done chan<- struct{}) (Logger, error) {
@@ -45,19 +55,19 @@ func New(filepath string, writer io.Writer, done chan<- struct{}) (Logger, error
 	var err error
 	log.file, err = os.OpenFile(filepath, os.O_RDONLY|os.O_CREATE|os.O_TRUNC, 0666)
 	if err != nil {
-		return log, fmt.Errorf("failed to open raw build log file: %w", err)
+		return &log, fmt.Errorf("failed to open raw build log file: %w", err)
 	}
 
 	log.ctx, log.cancel = context.WithCancel(context.Background())
 
-	return log, nil
+	return &log, nil
 }
 
-func (l log) Stop() {
+func (l *log) Stop() {
 	l.cancel()
 }
 
-func (l log) Run() {
+func (l *log) Run() {
 	reader := bufio.NewReader(l.file)
 	buildDone := false
 
@@ -71,6 +81,11 @@ func (l log) Run() {
 		}
 
 		readDone, err := l.output(reader)
+		parseErr := &parseError{}
+		if errors.As(err, &parseErr) {
+			continue
+		}
+
 		if err != nil {
 			logrus.Errorf("failed to run logger: %v\n", err)
 			logrus.Info("But build is still running")
@@ -86,23 +101,23 @@ func (l log) Run() {
 	}
 }
 
-func readln(prefix []byte, r *bufio.Reader) ([]byte, error) {
+func (l *log) readln(prefix []byte, r *bufio.Reader) ([]byte, error) {
 	line, isPrefix, err := r.ReadLine()
-
 	if err != nil {
 		return []byte{}, err
 	}
 
 	if isPrefix {
-		return readln(append(prefix, line...), r)
+		return l.readln(append(prefix, line...), r)
+	} else {
+		l.currentLineNum++
 	}
 
 	return append(prefix, line...), err
 }
 
-func (l log) output(reader *bufio.Reader) (bool, error) {
-	line, err := readln([]byte{}, reader)
-
+func (l *log) output(reader *bufio.Reader) (bool, error) {
+	line, err := l.readln([]byte{}, reader)
 	if err != nil {
 		if err == io.EOF {
 			return true, nil
@@ -112,7 +127,8 @@ func (l log) output(reader *bufio.Reader) (bool, error) {
 
 	parsedLog, err := parse(line)
 	if err != nil {
-		return false, fmt.Errorf("failed to output log: %w", err)
+		logrus.Warnf("\x1b[33mParsed error. If you want to check see %s:%d \x1b[0m", rowBuildLogPath, l.currentLineNum)
+		return false, &parseError{}
 	}
 
 	fmt.Fprintln(l.writer, parsedLog)
