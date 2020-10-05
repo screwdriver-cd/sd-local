@@ -60,6 +60,18 @@ func TestRootCmd(t *testing.T) {
 		assert.Nil(t, err)
 	})
 
+	t.Run("Success root cmd displays update", func(t *testing.T) {
+		root := newRootCmd()
+		root.AddCommand(newUpdateCmd())
+		root.SetArgs([]string{})
+		buf := bytes.NewBuffer(nil)
+		root.SetOut(buf)
+		err := root.Execute()
+		want := "Run build instantly on your local machine with\na mostly the same environment as Screwdriver.cd's\n\nUsage:\n  sd-local [command]\n\nAvailable Commands:\n  help        Help about any command\n  update      Update to the latest version\n\nFlags:\n  -h, --help   help for sd-local\n\nUse \"sd-local [command] --help\" for more information about a command.\n"
+		assert.Equal(t, want, buf.String())
+		assert.Nil(t, err)
+	})
+
 	t.Run("Failed root cmd by no arguments for sub command", func(t *testing.T) {
 		root := newRootCmd()
 		root.AddCommand(newBuildCmd())
