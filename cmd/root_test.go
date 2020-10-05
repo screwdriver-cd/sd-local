@@ -67,7 +67,7 @@ func TestRootCmd(t *testing.T) {
 		buf := bytes.NewBuffer(nil)
 		root.SetOut(buf)
 		err := root.Execute()
-		want := "Run build instantly on your local machine with\na mostly the same environment as Screwdriver.cd's\n\nUsage:\n  sd-local [command]\n\nAvailable Commands:\n  help        Help about any command\n  update      Update to the latest version\n\nFlags:\n  -h, --help   help for sd-local\n\nUse \"sd-local [command] --help\" for more information about a command.\n"
+		want := "Run build instantly on your local machine with\na mostly the same environment as Screwdriver.cd's\n\nUsage:\n  sd-local [command]\n\nAvailable Commands:\n  help        Help about any command\n  update      Update to the latest version\n\nFlags:\n  -h, --help      help for sd-local\n  -v, --verbose   verbose output.\n\nUse \"sd-local [command] --help\" for more information about a command.\n"
 		assert.Equal(t, want, buf.String())
 		assert.Nil(t, err)
 	})
