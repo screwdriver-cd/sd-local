@@ -2,9 +2,9 @@ package config
 
 import (
 	"fmt"
-	"text/tabwriter"
+	"strings"
 
-	"github.com/sirupsen/logrus"
+	"github.com/go-yaml/yaml"
 	"github.com/spf13/cobra"
 )
 
@@ -19,29 +19,40 @@ Can see the below settings:
 * Screwdriver.cd Token
 * Screwdriver.cd launcher version
 * Screwdriver.cd launcher image`,
-		Run: func(cmd *cobra.Command, args []string) {
-			isLocalOpt, err := cmd.Flags().GetBool("local")
-			if err != nil {
-				logrus.Fatal(err)
-			}
-			path, err := filePath(isLocalOpt)
-			if err != nil {
-				logrus.Fatal(err)
-			}
-			c, err := configNew(path)
-			if err != nil {
-				logrus.Fatal(err)
-			}
-			w := tabwriter.NewWriter(cmd.OutOrStdout(), 5, 2, 2, ' ', 0)
+		RunE: func(cmd *cobra.Command, args []string) error {
+			cmd.SilenceUsage = true
 
-			fmt.Fprintln(w, "KEY\tVALUE")
-			fmt.Fprintf(w, "api-url\t%s\n", c.APIURL)
-			fmt.Fprintf(w, "store-url\t%s\n", c.StoreURL)
-			fmt.Fprintf(w, "token\t%s\n", c.Token)
-			fmt.Fprintf(w, "launcher-version\t%s\n", c.Launcher.Version)
-			fmt.Fprintf(w, "launcher-image\t%s\n", c.Launcher.Image)
+			path, err := filePath()
+			if err != nil {
+				return err
+			}
 
-			w.Flush()
+			config, err := configNew(path)
+			if err != nil {
+				return err
+			}
+
+			for name, entry := range config.Entries {
+				if name == config.Current {
+					fmt.Fprintf(cmd.OutOrStdout(), "* %s:\n", name)
+				} else {
+					fmt.Fprintf(cmd.OutOrStdout(), "  %s:\n", name)
+				}
+
+				yaml, err := yaml.Marshal(entry)
+				if err != nil {
+					return err
+				}
+
+				for _, line := range strings.Split(string(yaml), "\n") {
+					if line != "" {
+						fmt.Fprintf(cmd.OutOrStdout(), "    %s\n", line)
+					}
+				}
+
+			}
+
+			return nil
 		},
 	}
 

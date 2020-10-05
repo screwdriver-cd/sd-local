@@ -27,14 +27,34 @@ func (mock mockAPI) JWT() string { return "" }
 
 func (mock mockLogger) Run() {}
 
-func (mock mockLogger) Stop() {}
+func (mock mockLogger) Stop() { close(loggerDone) }
 
 func (mock mockLaunch) Run() error { return nil }
 
+func (mock mockLaunch) Kill(os.Signal) {}
+
+func (mock mockLaunch) Clean() {}
+
 func setup() {
-	configNew = func(confPath string) (config.Config, error) { return config.Config{}, nil }
+	configNew = func(confPath string) (config.Config, error) {
+		defaultEntry := &config.Entry{
+			Launcher: config.Launcher{
+				Version: "stable",
+				Image:   "screwdrivercd/launcher",
+			},
+		}
+
+		return config.Config{
+			Entries: map[string]*config.Entry{
+				"default": defaultEntry,
+			},
+			Current: "default",
+		}, nil
+	}
 	apiNew = func(url, token string) (screwdriver.API, error) { return mockAPI{}, nil }
-	buildLogNew = func(filepath string, writer io.Writer) (logger buildlog.Logger, err error) { return mockLogger{}, nil }
+	buildLogNew = func(filepath string, writer io.Writer, done chan<- struct{}) (logger buildlog.Logger, err error) {
+		return mockLogger{}, nil
+	}
 	launchNew = func(option launch.Option) launch.Launcher {
 		return mockLaunch{}
 	}
@@ -55,7 +75,7 @@ func TestRootCmd(t *testing.T) {
 		buf := bytes.NewBuffer(nil)
 		root.SetOut(buf)
 		err := root.Execute()
-		want := "Run build instantly on your local machine with\na mostly the same environment as Screwdriver.cd's\n\nUsage:\n  sd-local [command]\n\nAvailable Commands:\n  build       Run screwdriver build.\n  help        Help about any command\n\nFlags:\n  -h, --help   help for sd-local\n\nUse \"sd-local [command] --help\" for more information about a command.\n"
+		want := "Run build instantly on your local machine with\na mostly the same environment as Screwdriver.cd's\n\nUsage:\n  sd-local [command]\n\nAvailable Commands:\n  build       Run screwdriver build.\n  help        Help about any command\n\nFlags:\n  -h, --help      help for sd-local\n  -v, --verbose   verbose output.\n\nUse \"sd-local [command] --help\" for more information about a command.\n"
 		assert.Equal(t, want, buf.String())
 		assert.Nil(t, err)
 	})
@@ -88,14 +108,17 @@ Flags:
   -e, --env stringToString     Set key and value relationship which is set as environment variables of Build Container. (<key>=<value>) (default [])
       --env-file string        Path to config file of environment variables. '.env' format file can be used.
   -h, --help                   help for build
-      --local                  Run command with .sdlocal/config file in current directory.
   -m, --memory string          Memory limit for build container, which take a positive integer, followed by a suffix of b, k, m, g.
       --meta string            Metadata to pass into the build environment, which is represented with JSON format
       --meta-file string       Path to the meta file. meta file is represented with JSON format.
+      --privileged             Use privileged mode for container runtime.
       --src-url string         Specify the source url to build.
                                ex) git@github.com:<org>/<repo>.git[#<branch>]
                                    https://github.com/<org>/<repo>.git[#<branch>]
       --sudo                   Use sudo command for container runtime.
+
+Global Flags:
+  -v, --verbose   verbose output.
 
 `
 		assert.Equal(t, want, buf.String())

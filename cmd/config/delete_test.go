@@ -2,26 +2,33 @@ package config
 
 import (
 	"bytes"
-	"fmt"
-	"math/rand"
 	"os"
 	"testing"
-	"time"
+
+	"github.com/screwdriver-cd/sd-local/config"
 
 	"github.com/stretchr/testify/assert"
 )
 
-func TestConfigSetCmd(t *testing.T) {
-	rand.Seed(time.Now().UnixNano())
-	cnfPath := fmt.Sprintf("%vconfig", rand.Int())
+func TestConfigDeleteCmd(t *testing.T) {
+	f, err := os.Open("./testdata/config")
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer f.Close()
+
+	cnfPath, err := createRandNameConfig(f)
+	if err != nil {
+		t.Fatal(err)
+	}
 	defer os.Remove(cnfPath)
 
-	defFilePath := filePath
+	cnew := configNew
 	defer func() {
-		filePath = defFilePath
+		configNew = cnew
 	}()
-	filePath = func() (string, error) {
-		return cnfPath, nil
+	configNew = func(configPath string) (c config.Config, err error) {
+		return config.New(cnfPath)
 	}
 
 	testCase := []struct {
@@ -32,19 +39,31 @@ func TestConfigSetCmd(t *testing.T) {
 	}{
 		{
 			name:     "success",
-			args:     []string{"set", "api-url", "example.com"},
+			args:     []string{"delete", "test"},
 			wantOut:  "",
 			checkErr: false,
 		},
 		{
+			name:     "failure by Entry that does not exist",
+			args:     []string{"delete", "test"},
+			wantOut:  "",
+			checkErr: true,
+		},
+		{
 			name:     "failure by too many args",
-			args:     []string{"set", "api-url", "example.com", "many"},
+			args:     []string{"delete", "test", "many"},
 			wantOut:  "",
 			checkErr: true,
 		},
 		{
 			name:     "failure by too little args",
-			args:     []string{"set", "api-url"},
+			args:     []string{"delete"},
+			wantOut:  "",
+			checkErr: true,
+		},
+		{
+			name:     "failure by trying delete current config",
+			args:     []string{"delete", "default"},
 			wantOut:  "",
 			checkErr: true,
 		},
@@ -63,7 +82,6 @@ func TestConfigSetCmd(t *testing.T) {
 				assert.Nil(t, err)
 				assert.Equal(t, tt.wantOut, buf.String())
 			}
-
 		})
 	}
 }
