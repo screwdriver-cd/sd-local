@@ -3,6 +3,7 @@ package launch
 import (
 	"fmt"
 	"net/url"
+	"os"
 	"os/exec"
 	"path"
 
@@ -18,20 +19,24 @@ var (
 )
 
 type runner interface {
-	runBuild(buildConfig buildConfig) error
+	runBuild(buildEntry buildEntry) error
 	setupBin() error
+	kill(os.Signal)
+	clean()
 }
 
 // Launcher able to run local build
 type Launcher interface {
 	Run() error
+	Kill(os.Signal)
+	Clean()
 }
 
 var _ (Launcher) = (*launch)(nil)
 
 type launch struct {
-	buildConfig buildConfig
-	runner      runner
+	buildEntry buildEntry
+	runner     runner
 }
 
 // EnvVar is a map for environment variables
@@ -40,7 +45,7 @@ type EnvVar map[string]string
 // Meta is a map for metadata
 type Meta map[string]interface{}
 
-type buildConfig struct {
+type buildEntry struct {
 	ID            int                `json:"id"`
 	Environment   []EnvVar           `json:"environment"`
 	EventID       int                `json:"eventId"`
@@ -55,12 +60,13 @@ type buildConfig struct {
 	MemoryLimit   string             `json:"-"`
 	SrcPath       string             `json:"-"`
 	UseSudo       bool               `json:"-"`
+	UsePrivileged bool               `json:"-"`
 }
 
 // Option is option for launch New
 type Option struct {
 	Job           screwdriver.Job
-	Config        config.Config
+	Entry         config.Entry
 	JobName       string
 	JWT           string
 	ArtifactsPath string
@@ -69,6 +75,8 @@ type Option struct {
 	OptionEnv     EnvVar
 	Meta          Meta
 	UseSudo       bool
+	UsePrivileged bool
+	FlagVerbose   bool
 }
 
 const (
@@ -86,10 +94,10 @@ func mergeEnv(env, jobEnv, optionEnv EnvVar) []EnvVar {
 	return []EnvVar{env}
 }
 
-func createBuildConfig(option Option) buildConfig {
-	apiURL, storeURL := option.Config.APIURL, option.Config.StoreURL
+func createBuildEntry(option Option) buildEntry {
+	apiURL, storeURL := option.Entry.APIURL, option.Entry.StoreURL
 
-	a, err := url.Parse(option.Config.APIURL)
+	a, err := url.Parse(option.Entry.APIURL)
 	if err == nil {
 		a.Path = path.Join(a.Path, apiVersion)
 		apiURL = a.String()
@@ -97,7 +105,7 @@ func createBuildConfig(option Option) buildConfig {
 		logrus.Warn("SD_API_URL is invalid. It may cause errors")
 	}
 
-	s, err := url.Parse(option.Config.StoreURL)
+	s, err := url.Parse(option.Entry.StoreURL)
 	if err == nil {
 		s.Path = path.Join(s.Path, storeVersion)
 		storeURL = s.String()
@@ -114,7 +122,7 @@ func createBuildConfig(option Option) buildConfig {
 
 	env := mergeEnv(defaultEnv, option.Job.Environment, option.OptionEnv)
 
-	return buildConfig{
+	return buildEntry{
 		ID:            0,
 		Environment:   env,
 		EventID:       0,
@@ -128,6 +136,8 @@ func createBuildConfig(option Option) buildConfig {
 		ArtifactsPath: option.ArtifactsPath,
 		MemoryLimit:   option.Memory,
 		SrcPath:       option.SrcPath,
+		UseSudo:       option.UseSudo,
+		UsePrivileged: option.UsePrivileged,
 	}
 }
 
@@ -135,8 +145,8 @@ func createBuildConfig(option Option) buildConfig {
 func New(option Option) Launcher {
 	l := new(launch)
 
-	l.runner = newDocker(option.Config.Launcher.Image, option.Config.Launcher.Version, option.UseSudo)
-	l.buildConfig = createBuildConfig(option)
+	l.runner = newDocker(option.Entry.Launcher.Image, option.Entry.Launcher.Version, option.UseSudo, option.FlagVerbose)
+	l.buildEntry = createBuildEntry(option)
 
 	return l
 }
@@ -151,10 +161,18 @@ func (l *launch) Run() error {
 		return fmt.Errorf("failed to setup build: %v", err)
 	}
 
-	err := l.runner.runBuild(l.buildConfig)
+	err := l.runner.runBuild(l.buildEntry)
 	if err != nil {
 		return fmt.Errorf("failed to run build: %v", err)
 	}
 
 	return nil
+}
+
+func (l *launch) Kill(sig os.Signal) {
+	l.runner.kill(sig)
+}
+
+func (l *launch) Clean() {
+	l.runner.clean()
 }

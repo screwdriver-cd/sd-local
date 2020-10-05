@@ -9,6 +9,8 @@ import (
 	"regexp"
 	"strconv"
 	"time"
+
+	"github.com/sirupsen/logrus"
 )
 
 func init() {
@@ -24,7 +26,8 @@ var (
 // SCM is able to fetch source code to build
 type SCM interface {
 	Pull() error
-	Clean() error
+	Kill(os.Signal)
+	Clean()
 	LocalPath() string
 }
 
@@ -33,10 +36,12 @@ type scm struct {
 	remoteURL string
 	branch    string
 	localPath string
+	commands  []*exec.Cmd
+	sudo      bool
 }
 
 // New create new SCM instance
-func New(baseDir, srcURL string) (SCM, error) {
+func New(baseDir, srcURL string, sudo bool) (SCM, error) {
 	results := srcURLRegex.FindStringSubmatch(srcURL)
 
 	if len(results) == 0 {
@@ -50,6 +55,8 @@ func New(baseDir, srcURL string) (SCM, error) {
 		remoteURL: remoteURL,
 		branch:    branch,
 		localPath: filepath.Join(baseDir, "repo", strconv.Itoa(rand.Int())),
+		commands:  make([]*exec.Cmd, 0, 10),
+		sudo:      sudo,
 	}
 
 	err := osMkdirAll(s.LocalPath(), 0777)
@@ -68,6 +75,7 @@ func (s *scm) Pull() error {
 	args = append(args, s.remoteURL, s.LocalPath())
 
 	cmd := execCommand("git", args...)
+	s.commands = append(s.commands, cmd)
 	err := cmd.Run()
 	if err != nil {
 		return fmt.Errorf("failed to clone remote repository: %w", err)
@@ -76,12 +84,27 @@ func (s *scm) Pull() error {
 	return nil
 }
 
-func (s *scm) Clean() error {
-	err := os.RemoveAll(s.LocalPath())
-	if err != nil {
-		return fmt.Errorf("failed to remove local source directory: %w", err)
+func (s *scm) Kill(sig os.Signal) {
+	for _, v := range s.commands {
+		if v.ProcessState != nil {
+			continue
+		}
+		err := v.Process.Signal(sig)
+		if err != nil {
+			logrus.Warn(fmt.Errorf("failed to stop process: %v", err))
+		}
 	}
-	return nil
+}
+
+func (s *scm) Clean() {
+	commands := []string{"rm", "-rf", s.LocalPath()}
+	if s.sudo {
+		commands = append([]string{"sudo"}, commands...)
+	}
+	err := execCommand(commands[0], commands[1:]...).Run()
+	if err != nil {
+		logrus.Warn(fmt.Errorf("failed to remove local source directory: %w", err))
+	}
 }
 
 func (s *scm) LocalPath() string {

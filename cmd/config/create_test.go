@@ -3,25 +3,43 @@ package config
 import (
 	"bytes"
 	"fmt"
+	"io"
 	"math/rand"
 	"os"
 	"testing"
 	"time"
 
+	"github.com/screwdriver-cd/sd-local/config"
+
 	"github.com/stretchr/testify/assert"
 )
 
-func TestConfigSetCmd(t *testing.T) {
+func createRandNameConfig(conf io.Reader) (string, error) {
+	rand.Seed(time.Now().UnixNano())
+	cnfPath := fmt.Sprintf("%vconfig", rand.Int())
+	f, err := os.Create(cnfPath)
+	if err != nil {
+		return "", err
+	}
+	defer f.Close()
+	_, err = io.Copy(f, conf)
+	if err != nil {
+		os.Remove(cnfPath)
+		return "", err
+	}
+	return cnfPath, nil
+}
+func TestConfigCreateCmd(t *testing.T) {
 	rand.Seed(time.Now().UnixNano())
 	cnfPath := fmt.Sprintf("%vconfig", rand.Int())
 	defer os.Remove(cnfPath)
 
-	defFilePath := filePath
+	cnew := configNew
 	defer func() {
-		filePath = defFilePath
+		configNew = cnew
 	}()
-	filePath = func() (string, error) {
-		return cnfPath, nil
+	configNew = func(configPath string) (c config.Config, err error) {
+		return config.New(cnfPath)
 	}
 
 	testCase := []struct {
@@ -32,19 +50,25 @@ func TestConfigSetCmd(t *testing.T) {
 	}{
 		{
 			name:     "success",
-			args:     []string{"set", "api-url", "example.com"},
+			args:     []string{"create", "test"},
 			wantOut:  "",
 			checkErr: false,
 		},
 		{
+			name:     "failure by Entry that already exists",
+			args:     []string{"create", "default"},
+			wantOut:  "",
+			checkErr: true,
+		},
+		{
 			name:     "failure by too many args",
-			args:     []string{"set", "api-url", "example.com", "many"},
+			args:     []string{"create", "test", "many"},
 			wantOut:  "",
 			checkErr: true,
 		},
 		{
 			name:     "failure by too little args",
-			args:     []string{"set", "api-url"},
+			args:     []string{"create"},
 			wantOut:  "",
 			checkErr: true,
 		},
@@ -66,4 +90,5 @@ func TestConfigSetCmd(t *testing.T) {
 
 		})
 	}
+
 }

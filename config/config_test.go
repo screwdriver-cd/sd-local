@@ -2,6 +2,7 @@ package config
 
 import (
 	"fmt"
+	"io/ioutil"
 	"math/rand"
 	"os"
 	"path/filepath"
@@ -23,13 +24,18 @@ func TestCreateConfig(t *testing.T) {
 		defer os.Remove(cnfPath)
 
 		expect := Config{
-			APIURL:   "",
-			StoreURL: "",
-			Token:    "",
-			Launcher: Launcher{
-				Version: "stable",
-				Image:   "screwdrivercd/launcher",
+			Entries: map[string]*Entry{
+				"default": {
+					APIURL:   "",
+					StoreURL: "",
+					Token:    "",
+					Launcher: Launcher{
+						Version: "stable",
+						Image:   "screwdrivercd/launcher",
+					},
+				},
 			},
+			Current: "default",
 		}
 
 		err := create(cnfPath)
@@ -46,13 +52,18 @@ func TestCreateConfig(t *testing.T) {
 		defer os.Remove(cnfPath)
 
 		expect := Config{
-			APIURL:   "",
-			StoreURL: "",
-			Token:    "",
-			Launcher: Launcher{
-				Version: "stable",
-				Image:   "screwdrivercd/launcher",
+			Entries: map[string]*Entry{
+				"default": {
+					APIURL:   "",
+					StoreURL: "",
+					Token:    "",
+					Launcher: Launcher{
+						Version: "stable",
+						Image:   "screwdrivercd/launcher",
+					},
+				},
 			},
+			Current: "default",
 		}
 
 		err := create(cnfPath)
@@ -66,12 +77,62 @@ func TestCreateConfig(t *testing.T) {
 		assert.Equal(t, expect, actual)
 	})
 }
-
-func TestNew(t *testing.T) {
+func TestNewConfig(t *testing.T) {
 	t.Run("success", func(t *testing.T) {
 		cnfPath := filepath.Join(testDir, "successConfig")
 
+		actual, err := New(cnfPath)
+		if err != nil {
+			t.Fatal(err)
+		}
+
 		testConfig := Config{
+			Entries: map[string]*Entry{
+				"default": {
+					APIURL:   "api-url",
+					StoreURL: "store-api-url",
+					Token:    "dummy_token",
+					Launcher: Launcher{
+						Version: "latest",
+						Image:   "screwdrivercd/launcher",
+					},
+				},
+			},
+			Current:  "default",
+			filePath: cnfPath,
+		}
+
+		assert.Nil(t, err)
+		assert.Equal(t, testConfig, actual)
+	})
+
+	t.Run("failure by invalid yaml", func(t *testing.T) {
+		cnfPath := filepath.Join(testDir, "failureConfig")
+
+		_, err := New(cnfPath)
+
+		assert.Equal(t, 0, strings.Index(err.Error(), "failed to parse config file: "), fmt.Sprintf("expected error is `failed to parse config file: ...`, actual: `%v`", err))
+	})
+}
+
+func TestConfigEntry(t *testing.T) {
+	t.Run("success", func(t *testing.T) {
+		config := Config{
+			Entries: map[string]*Entry{
+				"default": {
+					APIURL:   "api-url",
+					StoreURL: "store-api-url",
+					Token:    "dummy_token",
+					Launcher: Launcher{
+						Version: "latest",
+						Image:   "screwdrivercd/launcher",
+					},
+				},
+			},
+			Current: "default",
+		}
+
+		testEntry := &Entry{
 			APIURL:   "api-url",
 			StoreURL: "store-api-url",
 			Token:    "dummy_token",
@@ -79,33 +140,289 @@ func TestNew(t *testing.T) {
 				Version: "latest",
 				Image:   "screwdrivercd/launcher",
 			},
-			filePath: cnfPath,
 		}
 
-		actual, err := New(cnfPath)
+		actual, err := config.Entry("default")
+		if err != nil {
+			t.Fatal(err)
+		}
 
 		assert.Nil(t, err)
-		assert.Equal(t, cnfPath, actual.filePath)
-		assert.Equal(t, testConfig, actual)
+		assert.Equal(t, testEntry, actual)
 	})
 
-	t.Run("failure by invalid yaml", func(t *testing.T) {
-		cnfPath := filepath.Join(testDir, "failureConfig")
-		_, err := New(cnfPath)
+	t.Run("failure by invalid current", func(t *testing.T) {
+		config := Config{
+			Entries: map[string]*Entry{
+				"default": {
+					APIURL:   "api-url",
+					StoreURL: "store-api-url",
+					Token:    "dummy_token",
+					Launcher: Launcher{
+						Version: "latest",
+						Image:   "screwdrivercd/launcher",
+					},
+				},
+			},
+			Current: "doesnotexist",
+		}
 
-		assert.Equal(t, 0, strings.Index(err.Error(), "failed to parse config file: "), fmt.Sprintf("expected error is `failed to parse config file: ...`, actual: `%v`", err))
+		_, err := config.Entry(config.Current)
+
+		assert.Equal(t, "config `doesnotexist` does not exist", err.Error())
 	})
 }
 
-func TestSetConfig(t *testing.T) {
-	rand.Seed(time.Now().UnixNano())
-	cnfPath := filepath.Join(testDir, ".sdlocal", fmt.Sprintf("%vconfig", rand.Int()))
-	defer os.RemoveAll(filepath.Join(testDir, ".sdlocal"))
+func TestConfigAddEntry(t *testing.T) {
+	t.Run("success", func(t *testing.T) {
+		config := Config{
+			Current: "default",
+			Entries: map[string]*Entry{
+				"default": {
+					APIURL:   "api-url",
+					StoreURL: "store-api-url",
+					Token:    "dummy_token",
+					Launcher: Launcher{
+						Version: "latest",
+						Image:   "screwdrivercd/launcher",
+					},
+				},
+			},
+		}
 
+		err := config.AddEntry("test")
+		if err != nil {
+			t.Fatal(err)
+		}
+
+		expected := Config{
+			Entries: map[string]*Entry{
+				"default": {
+					APIURL:   "api-url",
+					StoreURL: "store-api-url",
+					Token:    "dummy_token",
+					Launcher: Launcher{
+						Version: "latest",
+						Image:   "screwdrivercd/launcher",
+					},
+				},
+				"test": {
+					APIURL:   "",
+					StoreURL: "",
+					Token:    "",
+					Launcher: Launcher{
+						Version: "stable",
+						Image:   "screwdrivercd/launcher",
+					},
+				},
+			},
+			Current: "default",
+		}
+
+		assert.Equal(t, expected, config)
+	})
+
+	t.Run("failure by the name that exists", func(t *testing.T) {
+		config := Config{
+			Current: "default",
+			Entries: map[string]*Entry{
+				"default": {
+					APIURL:   "api-url",
+					StoreURL: "store-api-url",
+					Token:    "dummy_token",
+					Launcher: Launcher{
+						Version: "latest",
+						Image:   "screwdrivercd/launcher",
+					},
+				},
+			},
+		}
+
+		err := config.AddEntry("default")
+		assert.Equal(t, "config `default` already exists", err.Error())
+	})
+}
+
+func TestConfigDeleteEntry(t *testing.T) {
+	t.Run("success", func(t *testing.T) {
+		config := Config{
+			Current: "default",
+			Entries: map[string]*Entry{
+				"default": {
+					APIURL:   "api-url",
+					StoreURL: "store-api-url",
+					Token:    "dummy_token",
+					Launcher: Launcher{
+						Version: "latest",
+						Image:   "screwdrivercd/launcher",
+					},
+				},
+				"test": {
+					APIURL:   "api-url",
+					StoreURL: "store-api-url",
+					Token:    "dummy_token",
+					Launcher: Launcher{
+						Version: "latest",
+						Image:   "screwdrivercd/launcher",
+					},
+				},
+			},
+		}
+
+		err := config.DeleteEntry("test")
+		if err != nil {
+			t.Fatal(err)
+		}
+
+		expected := Config{
+			Current: "default",
+			Entries: map[string]*Entry{
+				"default": {
+					APIURL:   "api-url",
+					StoreURL: "store-api-url",
+					Token:    "dummy_token",
+					Launcher: Launcher{
+						Version: "latest",
+						Image:   "screwdrivercd/launcher",
+					},
+				},
+			},
+		}
+
+		assert.Equal(t, expected, config)
+	})
+
+	t.Run("failure", func(t *testing.T) {
+		config := Config{
+			Current: "default",
+			Entries: map[string]*Entry{
+				"default": {
+					APIURL:   "api-url",
+					StoreURL: "store-api-url",
+					Token:    "dummy_token",
+					Launcher: Launcher{
+						Version: "latest",
+						Image:   "screwdrivercd/launcher",
+					},
+				},
+			},
+		}
+
+		err := config.DeleteEntry("test")
+		assert.Equal(t, "config `test` does not exist", err.Error())
+	})
+
+	t.Run("failure by trying to delete current entry", func(t *testing.T) {
+		config := Config{
+			Current: "default",
+			Entries: map[string]*Entry{
+				"default": {
+					APIURL:   "api-url",
+					StoreURL: "store-api-url",
+					Token:    "dummy_token",
+					Launcher: Launcher{
+						Version: "latest",
+						Image:   "screwdrivercd/launcher",
+					},
+				},
+			},
+		}
+
+		err := config.DeleteEntry("default")
+		assert.Equal(t, "config `default` is current config", err.Error())
+	})
+}
+
+func TestConfigSetCurrent(t *testing.T) {
+	testConfig := func() Config {
+		return Config{
+			Current: "default",
+			Entries: map[string]*Entry{
+				"default": {
+					APIURL:   "api-url",
+					StoreURL: "store-api-url",
+					Token:    "dummy_token",
+					Launcher: Launcher{},
+				},
+				"test": {
+					APIURL:   "api-url",
+					StoreURL: "store-api-url",
+					Token:    "dummy_token",
+					Launcher: Launcher{},
+				},
+			},
+			filePath: "/home/user/.sdlocal/config",
+		}
+	}
+	t.Run("success", func(t *testing.T) {
+		c := testConfig()
+		c.SetCurrent("test")
+
+		assert.Equal(t, "test", c.Current)
+	})
+	t.Run("failure", func(t *testing.T) {
+		c := testConfig()
+		err := c.SetCurrent("unknownconfig")
+
+		assert.Equal(t, "config `unknownconfig` does not exist", err.Error())
+	})
+}
+
+func TestConfigSave(t *testing.T) {
+	t.Run("success", func(t *testing.T) {
+		rand.Seed(time.Now().UnixNano())
+		cnfPath := filepath.Join(testDir, ".sdlocal", fmt.Sprintf("%vconfig", rand.Int()))
+		err := os.MkdirAll(filepath.Join(testDir, ".sdlocal"), 0777)
+		if err != nil {
+			t.Fatal(err)
+		}
+		defer os.RemoveAll(filepath.Join(testDir, ".sdlocal"))
+
+		file, err := os.Create(cnfPath)
+		if err != nil {
+			t.Fatal(err)
+		}
+		file.Close()
+
+		config := Config{
+			Current: "default",
+			Entries: map[string]*Entry{
+				"default": {
+					APIURL:   "api-url",
+					StoreURL: "store-api-url",
+					Token:    "dummy_token",
+					Launcher: Launcher{
+						Version: "latest",
+						Image:   "screwdrivercd/launcher",
+					},
+				},
+			},
+			filePath: cnfPath,
+		}
+
+		err = config.Save()
+		if err != nil {
+			t.Fatal(err)
+		}
+
+		actual, err := ioutil.ReadFile(cnfPath)
+		if err != nil {
+			t.Fatal(err)
+		}
+		expected, err := yaml.Marshal(config)
+		if err != nil {
+			t.Fatal(err)
+		}
+
+		assert.Equal(t, expected, actual)
+	})
+}
+
+func TestSetEntry(t *testing.T) {
 	testCases := []struct {
-		name       string
-		setting    map[string]string
-		expectConf Config
+		name        string
+		setting     map[string]string
+		expectEntry Entry
 	}{
 		{
 
@@ -118,7 +435,7 @@ func TestSetConfig(t *testing.T) {
 				"launcher-image":   "alpine",
 				"invalidKey":       "invalidValue",
 			},
-			expectConf: Config{
+			expectEntry: Entry{
 				APIURL:   "example-api.com",
 				StoreURL: "example-store.com",
 				Token:    "dummy-token",
@@ -126,7 +443,6 @@ func TestSetConfig(t *testing.T) {
 					Version: "1.0.0",
 					Image:   "alpine",
 				},
-				filePath: cnfPath,
 			},
 		},
 		{
@@ -139,7 +455,7 @@ func TestSetConfig(t *testing.T) {
 				"launcher-image":   "override-alpine",
 				"invalidKey":       "override-invalidValue",
 			},
-			expectConf: Config{
+			expectEntry: Entry{
 				APIURL:   "override-example-api.com",
 				StoreURL: "override-example-store.com",
 				Token:    "override-dummy-token",
@@ -147,7 +463,6 @@ func TestSetConfig(t *testing.T) {
 					Version: "override-1.0.0",
 					Image:   "override-alpine",
 				},
-				filePath: cnfPath,
 			},
 		},
 		{
@@ -160,7 +475,7 @@ func TestSetConfig(t *testing.T) {
 				"launcher-image":   "",
 				"invalidKey":       "override-invalidValue",
 			},
-			expectConf: Config{
+			expectEntry: Entry{
 				APIURL:   "override-example-api.com",
 				StoreURL: "override-example-store.com",
 				Token:    "override-dummy-token",
@@ -168,7 +483,6 @@ func TestSetConfig(t *testing.T) {
 					Version: "stable",
 					Image:   "screwdrivercd/launcher",
 				},
-				filePath: cnfPath,
 			},
 		},
 		{
@@ -181,7 +495,7 @@ func TestSetConfig(t *testing.T) {
 				"launcher-image":   "",
 				"invalidKey":       "invalidValue",
 			},
-			expectConf: Config{
+			expectEntry: Entry{
 				APIURL:   "override-example-api.com",
 				StoreURL: "override-example-store.com",
 				Token:    "override-dummy-token",
@@ -189,29 +503,24 @@ func TestSetConfig(t *testing.T) {
 					Version: "stable",
 					Image:   "screwdrivercd/launcher",
 				},
-				filePath: cnfPath,
 			},
 		},
 	}
 
 	for _, tt := range testCases {
 		t.Run(tt.name, func(t *testing.T) {
-			c, _ := New(cnfPath)
+
+			e := &Entry{}
+
 			for key, val := range tt.setting {
-				err := c.Set(key, val)
+				err := e.Set(key, val)
 				if key == "invalidKey" {
 					assert.NotNil(t, err)
 				} else {
 					assert.Nil(t, err)
 				}
 			}
-			assert.Equal(t, tt.expectConf, c)
-
-			_, err := os.Stat(cnfPath)
-			assert.Nil(t, err)
-
-			actual, _ := New(cnfPath)
-			assert.Equal(t, tt.expectConf, actual)
+			assert.Equal(t, tt.expectEntry, *e)
 		})
 	}
 }
