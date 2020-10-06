@@ -2,9 +2,6 @@ package cmd
 
 import (
 	"bytes"
-	//"io/ioutil"
-	//"os"
-	//"strings"
 	"testing"
 
 	"github.com/rhysd/go-github-selfupdate/selfupdate"
