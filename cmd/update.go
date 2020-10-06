@@ -72,7 +72,7 @@ func selfUpdate() error {
 	if err != nil {
 		return err
 	}
-	logrus.Info("Updateing ...")
+	logrus.Info("Updating ...")
 	if err := selfupdate.UpdateTo(latestVersion.AssetURL, exe); err != nil {
 		return err
 	}
