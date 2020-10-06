@@ -4,11 +4,13 @@ import (
 	"bufio"
 	"errors"
 	"fmt"
+	"os"
+	"strings"
+
 	"github.com/blang/semver"
 	"github.com/rhysd/go-github-selfupdate/selfupdate"
 	"github.com/sirupsen/logrus"
 	"github.com/spf13/cobra"
-	"os"
 )
 
 var (
@@ -20,8 +22,7 @@ var (
 func canUpdate() (*selfupdate.Release, error) {
 
 	if currentVersion == "dev" {
-		err := errors.New("This is a development command and cannot be updated.")
-		return &selfupdate.Release{}, err
+		return &selfupdate.Release{}, errors.New("This is a development command and cannot be updated.")
 	}
 
 	latest, found, err := selfupdate.DetectLatest(githubSlug)
@@ -29,29 +30,28 @@ func canUpdate() (*selfupdate.Release, error) {
 		return &selfupdate.Release{}, err
 	}
 	if !found {
-		err = errors.New("Repositry Not Found")
-		return &selfupdate.Release{}, err
+		return &selfupdate.Release{}, errors.New("Repositry Not Found")
 	}
 	v := semver.MustParse(currentVersion)
+
 	if latest.Version.LTE(v) {
-		err = errors.New("Current version is latest")
-		return &selfupdate.Release{}, err
+		return &selfupdate.Release{}, errors.New("Current version is latest")
 	}
-	return latest, err
+
+	return latest, nil
 }
 
-func askUpdateForUser(latestVersion *selfupdate.Release) bool {
-	fmt.Print("Do you want to update to ", latestVersion.Version.String(), "? (y/n): ")
+func askUpdateForUser(latestVersion *selfupdate.Release) error {
+	fmt.Print("Do you want to update to", latestVersion.Version.String(), "? [y/N]: ")
 	input, err := bufio.NewReader(os.Stdin).ReadString('\n')
-	if err != nil || (input != "y\n" && input != "n\n") {
-		logrus.Error("Invalid input")
-		return false
+	if err != nil {
+		return err
 	}
-	if input == "n\n" {
-		logrus.Warn("Aborted")
-		return false
+	input = strings.TrimSuffix(input, "\n")
+	if input == "y" {
+		return nil
 	}
-	return true
+	return errors.New("Invalid input")
 }
 
 func selfUpdate() error {
@@ -62,9 +62,9 @@ func selfUpdate() error {
 
 	logrus.Info("Current version:", currentVersion)
 	if !updateFlag {
-		ok := askUpdateForUser(latestVersion)
-		if !ok {
-			return nil
+		err := askUpdateForUser(latestVersion)
+		if err != nil {
+			return err
 		}
 	}
 
@@ -85,11 +85,7 @@ func newUpdateCmd() *cobra.Command {
 		Use:   "update",
 		Short: "Update to the latest version",
 		RunE: func(cmd *cobra.Command, args []string) error {
-			err := selfUpdate()
-			if err != nil {
-				return err
-			}
-			return nil
+			return selfUpdate()
 		},
 	}
 	updateCmd.Flags().BoolVarP(&updateFlag, "yes", "y", false, "answer yes for all questions")
