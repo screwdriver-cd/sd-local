@@ -21,7 +21,7 @@ func TestSelfUpdate(t *testing.T) {
 		buf := bytes.NewBuffer(nil)
 		cmd.SetOut(buf)
 		cmd.Execute()
-		want := "Error: This is a development  and cannot be updated.\nUsage:\n  update [flags]\n\nFlags:\n  -h, --help   help for update\n  -y, --yes    answer yes for all questions\n\n"
+		want := "Error: This is a development version and cannot be updated.\nUsage:\n  update [flags]\n\nFlags:\n  -h, --help   help for update\n  -y, --yes    answer yes for all questions\n\n"
 		assert.Equal(t, want, buf.String())
 	})
 
