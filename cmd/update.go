@@ -13,9 +13,10 @@ import (
 	"github.com/spf13/cobra"
 )
 
+const githubSlug = "screwdriver-cd/sd-local"
+
 var (
-	githubSlug     = "screwdriver-cd/sd-local"
-	currentVersion = version
+	currentVersion = "1.0.4"
 	updateFlag     = false
 )
 
@@ -41,15 +42,13 @@ func canUpdate() (*selfupdate.Release, error) {
 	return latest, nil
 }
 
-func askUpdateForUser(latestVersion *selfupdate.Release) error {
-	fmt.Print("Do you want to update to", latestVersion.Version.String(), "? [y/N]: ")
-	input, err := bufio.NewReader(os.Stdin).ReadString('\n')
-	if err != nil {
-		return err
-	}
-	input = strings.TrimSuffix(input, "\n")
-	if input == "y" {
+func checkUserInput(input string) error {
+	if input == "y" || input == "Y" {
 		return nil
+	}
+
+	if input == "n" || input == "N" || input == "" {
+		return errors.New("Aborted")
 	}
 	return errors.New("Invalid input")
 }
@@ -62,12 +61,17 @@ func selfUpdate() error {
 
 	logrus.Info("Current version:", currentVersion)
 	if !updateFlag {
-		err := askUpdateForUser(latestVersion)
+		fmt.Print("Do you want to update to", latestVersion.Version.String(), "? [y/N]: ")
+		input, err := bufio.NewReader(os.Stdin).ReadString('\n')
+		if err != nil {
+			return err
+		}
+		input = strings.TrimSuffix(input, "\n")
+		err = checkUserInput(input)
 		if err != nil {
 			return err
 		}
 	}
-
 	exe, err := os.Executable()
 	if err != nil {
 		return err
