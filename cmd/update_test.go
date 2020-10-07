@@ -14,6 +14,7 @@ func setVersion(v string) {
 }
 
 func TestCheckUserInput(t *testing.T) {
+
 	t.Run("Failed input value is n", func(t *testing.T) {
 		err := checkUserInput("n")
 		want := errors.New("Aborted")
