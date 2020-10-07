@@ -15,29 +15,50 @@ func setVersion(v string) {
 
 func TestCheckUserInput(t *testing.T) {
 
-	t.Run("Failed input value is n", func(t *testing.T) {
-		err := checkUserInput("n")
-		want := errors.New("Aborted")
-		assert.Equal(t, want, err)
-	})
-	t.Run("Failed input value is N", func(t *testing.T) {
-		err := checkUserInput("N")
-		want := errors.New("Aborted")
-		assert.Equal(t, want, err)
-	})
-	t.Run("Failed input value is not n or y", func(t *testing.T) {
-		err := checkUserInput("test")
-		want := errors.New("Invalid input")
-		assert.Equal(t, want, err)
-	})
-	t.Run("Success input value is y", func(t *testing.T) {
-		err := checkUserInput("y")
-		assert.Equal(t, nil, err)
-	})
-	t.Run("Success input value is Y", func(t *testing.T) {
-		err := checkUserInput("Y")
-		assert.Equal(t, nil, err)
-	})
+	cases := []struct {
+		name    string
+		input   string
+		expect1 bool
+		expect2 error
+	}{
+		{
+			name:    "Failed input value is n",
+			input:   "n",
+			expect1: true,
+			expect2: nil,
+		},
+		{
+			name:    "Failed input value is N",
+			input:   "N",
+			expect1: true,
+			expect2: nil,
+		},
+		{
+			name:    "Failed input value is y",
+			input:   "y",
+			expect1: false,
+			expect2: nil,
+		},
+		{
+			name:    "Failed input value is Y",
+			input:   "Y",
+			expect1: false,
+			expect2: nil,
+		},
+		{
+			name:    "Failed input value is not n or y",
+			input:   "test",
+			expect1: false,
+			expect2: errors.New("Invalid input"),
+		},
+	}
+	for _, c := range cases {
+		t.Run(c.name, func(t *testing.T) {
+			aborted, err := checkUserInput(c.input)
+			assert.Equal(t, aborted, c.expect1)
+			assert.Equal(t, err, c.expect2)
+		})
+	}
 }
 
 func TestSelfUpdate(t *testing.T) {

@@ -42,15 +42,15 @@ func canUpdate() (*selfupdate.Release, error) {
 	return latest, nil
 }
 
-func checkUserInput(input string) error {
+func checkUserInput(input string) (bool, error) {
 	if input == "y" || input == "Y" {
-		return nil
+		return false, nil
 	}
-
 	if input == "n" || input == "N" || input == "" {
-		return errors.New("Aborted")
+		logrus.Warn("Aborted the update")
+		return true, nil
 	}
-	return errors.New("Invalid input")
+	return false, errors.New("Invalid input")
 }
 
 func selfUpdate() error {
@@ -61,13 +61,16 @@ func selfUpdate() error {
 
 	logrus.Info("Current version:", currentVersion)
 	if !updateFlag {
-		fmt.Print("Do you want to update to", latestVersion.Version.String(), "? [y/N]: ")
+		fmt.Print("Do you want to update to ", latestVersion.Version.String(), "? [y/N]: ")
 		input, err := bufio.NewReader(os.Stdin).ReadString('\n')
 		if err != nil {
 			return err
 		}
 		input = strings.TrimSuffix(input, "\n")
-		err = checkUserInput(input)
+		aborted, err := checkUserInput(input)
+		if aborted {
+			return nil
+		}
 		if err != nil {
 			return err
 		}
