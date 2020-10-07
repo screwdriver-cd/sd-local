@@ -16,7 +16,7 @@ import (
 const githubSlug = "screwdriver-cd/sd-local"
 
 var (
-	currentVersion = "1.0.4"
+	currentVersion = version
 	updateFlag     = false
 )
 
