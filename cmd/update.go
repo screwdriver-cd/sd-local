@@ -22,7 +22,7 @@ var (
 func canUpdate() (*selfupdate.Release, error) {
 
 	if currentVersion == "dev" {
-		return &selfupdate.Release{}, errors.New("This is a development command and cannot be updated.")
+		return &selfupdate.Release{}, errors.New("This is a development version and cannot be updated")
 	}
 
 	latest, found, err := selfupdate.DetectLatest(githubSlug)
