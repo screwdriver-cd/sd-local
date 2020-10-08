@@ -154,7 +154,7 @@ $ sd-local version
 ##### update
 ```bash
 $ sd-local update
-Do you want to update to 1.0.5? (y/N): y
+Do you want to update to 1.0.5? [y/N]: y
 Successfully updated to version 1.0.5
 ```
 If you get the following error while running the update command,
