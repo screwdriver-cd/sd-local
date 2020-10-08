@@ -78,6 +78,7 @@ func Execute() error {
 		newBuildCmd(),
 		config.NewConfigCmd(),
 		newVersionCmd(),
+		newUpdateCmd(),
 	)
 	return rootCmd.Execute()
 }

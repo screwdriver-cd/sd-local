@@ -151,6 +151,22 @@ $ sd-local version
 0.0.12
 ```
 
+##### update
+```bash
+$ sd-local update
+Do you want to update to 1.0.5? [y/N]: y
+Successfully updated to version 1.0.5
+```
+If you get the following error while running the update command,
+```
+Error occurred while detecting version: GET https://api.github.com/repos/screwdriver-cd/sd-local/releases: 403 API rate limit exceeded.
+```
+Please set the [GitHub personal access token.](https://docs.github.com/en/free-pro-team@latest/github/authenticating-to-github/creating-a-personal-access-token)
+###### bash
+```bash
+export GITHUB_TOKEN=<token>
+```
+
 ## Testing
 ```bash
 $ go get github.com/screwdriver-cd/sd-local
