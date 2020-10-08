@@ -22,7 +22,7 @@ var (
 
 func canUpdate() (*selfupdate.Release, error) {
 	currentVersion = version
-	logrus.Info("Current version:", currentVersion)
+	logrus.Info("Current version: ", currentVersion)
 
 	if currentVersion == "dev" {
 		return &selfupdate.Release{}, errors.New("This is a development version and cannot be updated")
