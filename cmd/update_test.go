@@ -41,7 +41,7 @@ func TestCheckUserInput(t *testing.T) {
 		},
 		{
 			name:    "Failed input value is No",
-			input:   "no",
+			input:   "No",
 			expect1: true,
 			expect2: nil,
 		},
