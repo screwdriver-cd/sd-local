@@ -16,11 +16,13 @@ import (
 const githubSlug = "screwdriver-cd/sd-local"
 
 var (
-	currentVersion = version
+	currentVersion string
 	updateFlag     = false
 )
 
 func canUpdate() (*selfupdate.Release, error) {
+	currentVersion = version
+	logrus.Info("Current version:", currentVersion)
 
 	if currentVersion == "dev" {
 		return &selfupdate.Release{}, errors.New("This is a development version and cannot be updated")
@@ -36,7 +38,8 @@ func canUpdate() (*selfupdate.Release, error) {
 	v := semver.MustParse(currentVersion)
 
 	if latest.Version.LTE(v) {
-		return &selfupdate.Release{}, errors.New("Current version is latest")
+		logrus.Warn("Current version is latest")
+		return &selfupdate.Release{}, nil
 	}
 
 	return latest, nil
@@ -55,11 +58,10 @@ func isAborted(input string) (aborted bool, err error) {
 
 func selfUpdate() error {
 	latestVersion, err := canUpdate()
-	if err != nil {
+	if latestVersion.AssetURL == "" {
 		return err
 	}
 
-	logrus.Info("Current version:", currentVersion)
 	if !updateFlag {
 		fmt.Print("Do you want to update to ", latestVersion.Version.String(), "? [y/N]: ")
 		input, err := bufio.NewReader(os.Stdin).ReadString('\n')

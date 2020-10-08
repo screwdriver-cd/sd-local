@@ -10,7 +10,7 @@ import (
 )
 
 func setVersion(v string) {
-	currentVersion = v
+	version = v
 }
 
 func TestCheckUserInput(t *testing.T) {
@@ -89,7 +89,9 @@ func TestSelfUpdate(t *testing.T) {
 
 	t.Run("Failed current version is dev", func(t *testing.T) {
 		cmd := newUpdateCmd()
+		backupVersion := version
 		setVersion("dev")
+		defer func() { version = backupVersion }()
 		updateFlag = true
 		buf := bytes.NewBuffer(nil)
 		cmd.SetOut(buf)
@@ -101,18 +103,22 @@ func TestSelfUpdate(t *testing.T) {
 	t.Run("Failed current version is latest", func(t *testing.T) {
 		cmd := newUpdateCmd()
 		latest, _, _ := selfupdate.DetectLatest(githubSlug)
+		backupVersion := version
 		setVersion(latest.Version.String())
+		defer func() { version = backupVersion }()
 		updateFlag = true
 		buf := bytes.NewBuffer(nil)
 		cmd.SetOut(buf)
 		cmd.Execute()
-		want := "Error: Current version is latest\nUsage:\n  update [flags]\n\nFlags:\n  -h, --help   help for update\n  -y, --yes    answer yes for all questions\n\n"
+		want := ""
 		assert.Equal(t, want, buf.String())
 	})
 
 	t.Run("Success selfUpdate command", func(t *testing.T) {
 		cmd := newUpdateCmd()
+		backupVersion := version
 		setVersion("1.0.4")
+		defer func() { version = backupVersion }()
 		updateFlag = true
 		buf := bytes.NewBuffer(nil)
 		cmd.SetOut(buf)
