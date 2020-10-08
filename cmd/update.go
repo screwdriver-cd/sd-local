@@ -16,12 +16,11 @@ import (
 const githubSlug = "screwdriver-cd/sd-local"
 
 var (
-	currentVersion string
-	updateFlag     = false
+	updateFlag = false
 )
 
 func canUpdate() (*selfupdate.Release, error) {
-	currentVersion = version
+	currentVersion := version
 	logrus.Info("Current version: ", currentVersion)
 
 	if currentVersion == "dev" {
