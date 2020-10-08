@@ -13,7 +13,7 @@ func setVersion(v string) {
 	version = v
 }
 
-func TestCheckUserInput(t *testing.T) {
+func TestIsAborted(t *testing.T) {
 
 	cases := []struct {
 		name    string

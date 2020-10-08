@@ -19,29 +19,33 @@ var (
 	updateFlag = false
 )
 
-func canUpdate() (*selfupdate.Release, error) {
-	currentVersion := version
-	logrus.Info("Current version: ", currentVersion)
-
-	if currentVersion == "dev" {
-		return &selfupdate.Release{}, errors.New("This is a development version and cannot be updated")
-	}
-
+func getLatestVersion() (*selfupdate.Release, error) {
 	latest, found, err := selfupdate.DetectLatest(githubSlug)
+
 	if err != nil {
 		return &selfupdate.Release{}, err
 	}
 	if !found {
 		return &selfupdate.Release{}, errors.New("Repositry Not Found")
 	}
+
+	return latest, nil
+}
+func canUpdate(latest *selfupdate.Release) (bool, error) {
+	currentVersion := version
+	logrus.Info("Current version: ", currentVersion)
+
+	if currentVersion == "dev" {
+		return true, errors.New("This is a development version and cannot be updated")
+	}
+
 	v := semver.MustParse(currentVersion)
 
 	if latest.Version.LTE(v) {
 		logrus.Warn("Current version is latest")
-		return &selfupdate.Release{}, nil
+		return true, nil
 	}
-
-	return latest, nil
+	return false, nil
 }
 
 func isAborted(input string) (aborted bool, err error) {
@@ -56,8 +60,13 @@ func isAborted(input string) (aborted bool, err error) {
 }
 
 func selfUpdate() error {
-	latestVersion, err := canUpdate()
-	if latestVersion.AssetURL == "" {
+	latestVersion, err := getLatestVersion()
+	if err != nil {
+		return err
+	}
+
+	aborted, err := canUpdate(latestVersion)
+	if err != nil || aborted {
 		return err
 	}
 
