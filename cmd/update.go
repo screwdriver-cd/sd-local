@@ -43,10 +43,10 @@ func canUpdate() (*selfupdate.Release, error) {
 }
 
 func checkUserInput(input string) (bool, error) {
-	if input == "y" || input == "Y" {
+	if input == "y" || input == "Y" || input == "yes" || input == "Yes" {
 		return false, nil
 	}
-	if input == "n" || input == "N" || input == "" {
+	if input == "n" || input == "N" || input == "no" || input == "No" || input == "" {
 		logrus.Warn("Aborted the update")
 		return true, nil
 	}

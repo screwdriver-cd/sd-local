@@ -34,6 +34,18 @@ func TestCheckUserInput(t *testing.T) {
 			expect2: nil,
 		},
 		{
+			name:    "Failed input value is no",
+			input:   "no",
+			expect1: true,
+			expect2: nil,
+		},
+		{
+			name:    "Failed input value is No",
+			input:   "no",
+			expect1: true,
+			expect2: nil,
+		},
+		{
 			name:    "Failed input value is y",
 			input:   "y",
 			expect1: false,
@@ -42,6 +54,18 @@ func TestCheckUserInput(t *testing.T) {
 		{
 			name:    "Failed input value is Y",
 			input:   "Y",
+			expect1: false,
+			expect2: nil,
+		},
+		{
+			name:    "Failed input value is yes",
+			input:   "yes",
+			expect1: false,
+			expect2: nil,
+		},
+		{
+			name:    "Failed input value is Yes",
+			input:   "Yes",
 			expect1: false,
 			expect2: nil,
 		},
