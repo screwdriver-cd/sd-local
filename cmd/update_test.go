@@ -72,13 +72,13 @@ func TestCheckUserInput(t *testing.T) {
 		{
 			name:    "Failed input value is not n or y",
 			input:   "test",
-			expect1: false,
+			expect1: true,
 			expect2: errors.New("Invalid input"),
 		},
 	}
 	for _, c := range cases {
 		t.Run(c.name, func(t *testing.T) {
-			aborted, err := checkUserInput(c.input)
+			aborted, err := isAborted(c.input)
 			assert.Equal(t, aborted, c.expect1)
 			assert.Equal(t, err, c.expect2)
 		})

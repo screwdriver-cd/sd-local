@@ -42,7 +42,7 @@ func canUpdate() (*selfupdate.Release, error) {
 	return latest, nil
 }
 
-func checkUserInput(input string) (bool, error) {
+func isAborted(input string) (aborted bool, err error) {
 	if input == "y" || input == "Y" || input == "yes" || input == "Yes" {
 		return false, nil
 	}
@@ -50,7 +50,7 @@ func checkUserInput(input string) (bool, error) {
 		logrus.Warn("Aborted the update")
 		return true, nil
 	}
-	return false, errors.New("Invalid input")
+	return true, errors.New("Invalid input")
 }
 
 func selfUpdate() error {
@@ -67,11 +67,8 @@ func selfUpdate() error {
 			return err
 		}
 		input = strings.TrimSuffix(input, "\n")
-		aborted, err := checkUserInput(input)
+		aborted, err := isAborted(input)
 		if aborted {
-			return nil
-		}
-		if err != nil {
 			return err
 		}
 	}
