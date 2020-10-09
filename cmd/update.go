@@ -31,6 +31,7 @@ func getLatestVersion() (*selfupdate.Release, error) {
 
 	return latest, nil
 }
+
 func canUpdate(latest *selfupdate.Release) (bool, error) {
 	currentVersion := version
 	logrus.Info("Current version: ", currentVersion)
