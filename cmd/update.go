@@ -16,30 +16,37 @@ import (
 const githubSlug = "screwdriver-cd/sd-local"
 
 var (
-	currentVersion = version
-	updateFlag     = false
+	updateFlag = false
 )
 
-func canUpdate() (*selfupdate.Release, error) {
-
-	if currentVersion == "dev" {
-		return &selfupdate.Release{}, errors.New("This is a development version and cannot be updated")
-	}
-
+func getLatestVersion() (*selfupdate.Release, error) {
 	latest, found, err := selfupdate.DetectLatest(githubSlug)
+
 	if err != nil {
 		return &selfupdate.Release{}, err
 	}
 	if !found {
 		return &selfupdate.Release{}, errors.New("Repositry Not Found")
 	}
+
+	return latest, nil
+}
+
+func canUpdate(latest *selfupdate.Release) (bool, error) {
+	currentVersion := version
+	logrus.Info("Current version: ", currentVersion)
+
+	if currentVersion == "dev" {
+		return true, errors.New("This is a development version and cannot be updated")
+	}
+
 	v := semver.MustParse(currentVersion)
 
 	if latest.Version.LTE(v) {
-		return &selfupdate.Release{}, errors.New("Current version is latest")
+		logrus.Warn("Current version is latest")
+		return true, nil
 	}
-
-	return latest, nil
+	return false, nil
 }
 
 func isAborted(input string) (aborted bool, err error) {
@@ -54,12 +61,16 @@ func isAborted(input string) (aborted bool, err error) {
 }
 
 func selfUpdate() error {
-	latestVersion, err := canUpdate()
+	latestVersion, err := getLatestVersion()
 	if err != nil {
 		return err
 	}
 
-	logrus.Info("Current version:", currentVersion)
+	aborted, err := canUpdate(latestVersion)
+	if err != nil || aborted {
+		return err
+	}
+
 	if !updateFlag {
 		fmt.Print("Do you want to update to ", latestVersion.Version.String(), "? [y/N]: ")
 		input, err := bufio.NewReader(os.Stdin).ReadString('\n')
