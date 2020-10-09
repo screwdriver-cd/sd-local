@@ -16,11 +16,13 @@ import (
 const githubSlug = "screwdriver-cd/sd-local"
 
 var (
-	updateFlag = false
+	updateFlag   = false
+	detectLatest = selfupdate.DetectLatest
+	updateTo     = selfupdate.UpdateTo
 )
 
 func getLatestVersion() (*selfupdate.Release, error) {
-	latest, found, err := selfupdate.DetectLatest(githubSlug)
+	latest, found, err := detectLatest(githubSlug)
 
 	if err != nil {
 		return &selfupdate.Release{}, err
@@ -88,7 +90,7 @@ func selfUpdate() error {
 		return err
 	}
 	logrus.Info("Updating ...")
-	if err := selfupdate.UpdateTo(latestVersion.AssetURL, exe); err != nil {
+	if err := updateTo(latestVersion.AssetURL, exe); err != nil {
 		return err
 	}
 	logrus.Info("Successfully updated to version ", latestVersion.Version)

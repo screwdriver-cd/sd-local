@@ -3,15 +3,14 @@ package cmd
 import (
 	"bytes"
 	"errors"
+	"os"
 	"testing"
 
+	"github.com/blang/semver"
 	"github.com/rhysd/go-github-selfupdate/selfupdate"
+	"github.com/sirupsen/logrus"
 	"github.com/stretchr/testify/assert"
 )
-
-func setVersion(v string) {
-	version = v
-}
 
 func TestIsAborted(t *testing.T) {
 
@@ -86,45 +85,81 @@ func TestIsAborted(t *testing.T) {
 }
 
 func TestSelfUpdate(t *testing.T) {
+	defaultDetectLatest := detectLatest
+	defaultUpdateTo := updateTo
+	defer func() {
+		detectLatest = defaultDetectLatest
+		updateTo = defaultUpdateTo
+	}()
 
-	t.Run("Failed current version is dev", func(t *testing.T) {
-		cmd := newUpdateCmd()
-		backupVersion := version
-		setVersion("dev")
-		defer func() { version = backupVersion }()
-		updateFlag = true
-		buf := bytes.NewBuffer(nil)
-		cmd.SetOut(buf)
-		cmd.Execute()
-		want := "Error: This is a development version and cannot be updated\nUsage:\n  update [flags]\n\nFlags:\n  -h, --help   help for update\n  -y, --yes    answer yes for all questions\n\n"
-		assert.Equal(t, want, buf.String())
-	})
+	detectLatest = func(slug string) (*selfupdate.Release, bool, error) {
+		latest := semver.Version{
+			Major: 1,
+			Minor: 0,
+			Patch: 5,
+		}
+		return &selfupdate.Release{Version: latest}, true, nil
+	}
+	updateTo = func(url, path string) error {
+		return nil
+	}
 
-	t.Run("Failed current version is latest", func(t *testing.T) {
-		cmd := newUpdateCmd()
-		latest, _, _ := selfupdate.DetectLatest(githubSlug)
-		backupVersion := version
-		setVersion(latest.Version.String())
-		defer func() { version = backupVersion }()
-		updateFlag = true
-		buf := bytes.NewBuffer(nil)
-		cmd.SetOut(buf)
-		cmd.Execute()
-		want := ""
-		assert.Equal(t, want, buf.String())
-	})
+	testCases := []struct {
+		name      string
+		current   string
+		errOutput string
+		logOutput []string
+	}{
+		{
+			name:      "Failed current version is dev",
+			current:   "dev",
+			errOutput: "Error: This is a development version and cannot be updated\nUsage:\n  update [flags]\n\nFlags:\n  -h, --help   help for update\n  -y, --yes    answer yes for all questions\n\n",
+			logOutput: []string{
+				"Current version: dev",
+			},
+		},
+		{
+			name:      "Failed current version is latest",
+			current:   "1.0.5",
+			errOutput: "",
+			logOutput: []string{
+				"Current version: 1.0.5",
+				"Current version is latest",
+			},
+		},
+		{
+			name:      "Success selfUpdate command",
+			current:   "1.0.4",
+			errOutput: "",
+			logOutput: []string{
+				"Current version: 1.0.4",
+				"Updating ...",
+				"Successfully updated to version 1.0.5",
+			},
+		},
+	}
 
-	t.Run("Success selfUpdate command", func(t *testing.T) {
-		cmd := newUpdateCmd()
-		backupVersion := version
-		setVersion("1.0.4")
-		defer func() { version = backupVersion }()
-		updateFlag = true
-		buf := bytes.NewBuffer(nil)
-		cmd.SetOut(buf)
-		err := cmd.Execute()
-		want := ""
-		assert.Equal(t, want, buf.String())
-		assert.Nil(t, err)
-	})
+	for _, tt := range testCases {
+		t.Run(tt.name, func(t *testing.T) {
+			backupVersion := version
+			defer func() {
+				version = backupVersion
+				logrus.SetOutput(os.Stderr)
+			}()
+
+			version = tt.current
+			logBuf := bytes.NewBuffer(nil)
+			logrus.SetOutput(logBuf)
+
+			cmd := newUpdateCmd()
+			updateFlag = true
+			errBuf := bytes.NewBuffer(nil)
+			cmd.SetOut(errBuf)
+			cmd.Execute()
+			assert.Equal(t, tt.errOutput, errBuf.String())
+			for _, want := range tt.logOutput {
+				assert.Contains(t, logBuf.String(), want)
+			}
+		})
+	}
 }
