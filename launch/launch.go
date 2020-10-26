@@ -60,6 +60,7 @@ type buildEntry struct {
 	MemoryLimit   string             `json:"-"`
 	SrcPath       string             `json:"-"`
 	UseSudo       bool               `json:"-"`
+	RunMode       bool               `json:"-"`
 	UsePrivileged bool               `json:"-"`
 }
 
@@ -76,6 +77,7 @@ type Option struct {
 	Meta          Meta
 	UseSudo       bool
 	UsePrivileged bool
+	RunMode       bool
 	FlagVerbose   bool
 }
 
@@ -137,6 +139,7 @@ func createBuildEntry(option Option) buildEntry {
 		MemoryLimit:   option.Memory,
 		SrcPath:       option.SrcPath,
 		UseSudo:       option.UseSudo,
+		RunMode:       option.RunMode,
 		UsePrivileged: option.UsePrivileged,
 	}
 }
@@ -145,7 +148,7 @@ func createBuildEntry(option Option) buildEntry {
 func New(option Option) Launcher {
 	l := new(launch)
 
-	l.runner = newDocker(option.Entry.Launcher.Image, option.Entry.Launcher.Version, option.UseSudo, option.FlagVerbose)
+	l.runner = newDocker(option.Entry.Launcher.Image, option.Entry.Launcher.Version, option.UseSudo, option.RunMode, option.FlagVerbose)
 	l.buildEntry = createBuildEntry(option)
 
 	return l

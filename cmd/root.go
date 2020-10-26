@@ -76,6 +76,7 @@ func Execute() error {
 	rootCmd.SilenceErrors = true
 	rootCmd.AddCommand(
 		newBuildCmd(),
+		newRunCmd(),
 		config.NewConfigCmd(),
 		newVersionCmd(),
 		newUpdateCmd(),

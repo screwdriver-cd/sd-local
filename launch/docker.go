@@ -7,6 +7,7 @@ import (
 	"io"
 	"os"
 	"os/exec"
+	"os/signal"
 	"path/filepath"
 	"strconv"
 	"strings"
@@ -14,7 +15,10 @@ import (
 	"syscall"
 	"time"
 
+	"github.com/creack/pty"
+	"github.com/screwdriver-cd/sd-local/screwdriver"
 	"github.com/sirupsen/logrus"
+	"golang.org/x/crypto/ssh/terminal"
 )
 
 type docker struct {
@@ -23,6 +27,7 @@ type docker struct {
 	setupImage        string
 	setupImageVersion string
 	useSudo           bool
+	runMode           bool
 	commands          []*exec.Cmd
 	mutex             *sync.Mutex
 	flagVerbose       bool
@@ -41,13 +46,14 @@ const (
 	orgRepo = "sd-local/local-build"
 )
 
-func newDocker(setupImage, setupImageVer string, useSudo bool, flagVerbose bool) runner {
+func newDocker(setupImage, setupImageVer string, useSudo bool, runMode bool, flagVerbose bool) runner {
 	return &docker{
 		volume:            "SD_LAUNCH_BIN",
 		habVolume:         "SD_LAUNCH_HAB",
 		setupImage:        setupImage,
 		setupImageVersion: setupImageVer,
 		useSudo:           useSudo,
+		runMode:           runMode,
 		commands:          make([]*exec.Cmd, 0, 10),
 		mutex:             &sync.Mutex{},
 		flagVerbose:       flagVerbose,
@@ -55,12 +61,12 @@ func newDocker(setupImage, setupImageVer string, useSudo bool, flagVerbose bool)
 }
 
 func (d *docker) setupBin() error {
-	err := d.execDockerCommand("volume", "create", "--name", d.volume)
+	_, err := d.execDockerCommand("volume", "create", "--name", d.volume)
 	if err != nil {
 		return fmt.Errorf("failed to create docker volume: %v", err)
 	}
 
-	err = d.execDockerCommand("volume", "create", "--name", d.habVolume)
+	_, err = d.execDockerCommand("volume", "create", "--name", d.habVolume)
 	if err != nil {
 		return fmt.Errorf("failed to create docker hab volume: %v", err)
 	}
@@ -68,12 +74,12 @@ func (d *docker) setupBin() error {
 	mount := fmt.Sprintf("%s:/opt/sd/", d.volume)
 	habMount := fmt.Sprintf("%s:/hab", d.habVolume)
 	image := fmt.Sprintf("%s:%s", d.setupImage, d.setupImageVersion)
-	err = d.execDockerCommand("pull", image)
+	_, err = d.execDockerCommand("pull", image)
 	if err != nil {
 		return fmt.Errorf("failed to pull launcher image: %v", err)
 	}
 
-	err = d.execDockerCommand("container", "run", "--rm", "-v", mount, "-v", habMount, image, "--entrypoint", "/bin/echo set up bin")
+	_, err = d.execDockerCommand("container", "run", "--rm", "-v", mount, "-v", habMount, image, "--entrypoint", "/bin/echo set up bin")
 	if err != nil {
 		return fmt.Errorf("failed to prepare build scripts: %v", err)
 	}
@@ -94,19 +100,40 @@ func (d *docker) runBuild(buildEntry buildEntry) error {
 	artVol := fmt.Sprintf("%s/:%s", hostArtDir, containerArtDir)
 	binVol := fmt.Sprintf("%s:%s", d.volume, "/opt/sd")
 	habVol := fmt.Sprintf("%s:%s", d.habVolume, "/opt/sd/hab")
+
+	// Overwrite steps for sd-local run mode. The env will load later.
+	if d.runMode {
+		buildEntry.Steps = []screwdriver.Step{
+			{
+				Name:    "sd-local-init",
+				Command: "env > /tmp/sd-local.env",
+			},
+		}
+	}
+
 	configJSON, err := json.Marshal(buildEntry)
 	if err != nil {
 		return err
 	}
 
 	logrus.Infof("Pulling docker image from %s...", buildImage)
-	err = d.execDockerCommand("pull", buildImage)
+	_, err = d.execDockerCommand("pull", buildImage)
 	if err != nil {
 		return fmt.Errorf("failed to pull user image %v", err)
 	}
 
 	dockerCommandArgs := []string{"container", "run"}
-	dockerCommandOptions := []string{"--rm", "-v", srcVol, "-v", artVol, "-v", binVol, "-v", habVol, buildImage, "/opt/sd/local_run.sh", string(configJSON), buildEntry.JobName, environment["SD_API_URL"], environment["SD_STORE_URL"], logfilePath}
+	dockerCommandOptions := []string{"--rm", "-v", srcVol, "-v", artVol, "-v", binVol, "-v", habVol, buildImage}
+	configJSONArg := string(configJSON)
+	if d.runMode {
+		dockerCommandOptions = append([]string{"-itd"}, dockerCommandOptions...)
+		dockerCommandOptions = append(dockerCommandOptions, "/bin/sh")
+		configJSONArg = fmt.Sprintf("'%s'", configJSONArg)
+	} else {
+		dockerCommandOptions = append(dockerCommandOptions, launchCommands...)
+	}
+
+	launchCommands := []string{"/opt/sd/local_run.sh", configJSONArg, buildEntry.JobName, environment["SD_API_URL"], environment["SD_STORE_URL"], logfilePath}
 
 	if buildEntry.MemoryLimit != "" {
 		dockerCommandOptions = append([]string{fmt.Sprintf("-m%s", buildEntry.MemoryLimit)}, dockerCommandOptions...)
@@ -116,15 +143,103 @@ func (d *docker) runBuild(buildEntry buildEntry) error {
 		dockerCommandOptions = append([]string{"--privileged"}, dockerCommandOptions...)
 	}
 
-	err = d.execDockerCommand(append(dockerCommandArgs, dockerCommandOptions...)...)
-	if err != nil {
-		return fmt.Errorf("failed to run build container: %v", err)
+	if d.runMode {
+		// attach and run for sd-local run mode
+		cid, err := d.execDockerCommand(append(dockerCommandArgs, dockerCommandOptions...)...)
+		if err != nil {
+			return fmt.Errorf("failed to run build container: %v", err)
+		}
+
+		attachCommands := []string{"attach", cid}
+		commands := [][]string{
+			launchCommands,
+			{"set", "-a"},
+			{".", "/tmp/sd-local.env"},
+			{"set", "+a"},
+			{"export", "PS1=#"},
+			{"cd", "$SD_CHECKOUT_DIR"},
+		}
+		err = d.attachDockerCommand(attachCommands, commands)
+		if err != nil {
+			return fmt.Errorf("failed to run build container: %v", err)
+		}
+	} else {
+		// run for sd-local build mode
+		_, err = d.execDockerCommand(append(dockerCommandArgs, dockerCommandOptions...)...)
+		if err != nil {
+			return fmt.Errorf("failed to run build container: %v", err)
+		}
 	}
 
 	return nil
 }
 
-func (d *docker) execDockerCommand(args ...string) error {
+func (d *docker) attachDockerCommand(attachCommands []string, commands [][]string) error {
+	attachCommands = append([]string{"docker"}, attachCommands...)
+	if d.useSudo {
+		attachCommands = append([]string{"sudo"}, attachCommands...)
+	}
+	c := execCommand(attachCommands[0], attachCommands[1:]...)
+
+	if d.flagVerbose {
+		logrus.Infof("$ %s", c.String())
+	}
+
+	ptmx, tty, err := pty.Open()
+	c.Stdin = tty
+	c.Stdout = tty
+	c.Stderr = tty
+	if err != nil {
+		logrus.Warn(fmt.Errorf("failed: %s", err))
+		return err
+	}
+
+	// Make sure to close the pty at the end.
+	defer func() {
+		_ = ptmx.Close()
+		_ = tty.Close()
+	}()
+
+	// Handle pty size.
+	ch := make(chan os.Signal, 1)
+	signal.Notify(ch, syscall.SIGWINCH)
+	go func() {
+		for range ch {
+			if err := pty.InheritSize(os.Stdin, ptmx); err != nil {
+				logrus.Warn(fmt.Errorf("error resizing pty: %s", err))
+			}
+		}
+	}()
+	ch <- syscall.SIGWINCH // Initial resize.
+
+	// Set stdin in raw mode.
+	oldState, err := terminal.MakeRaw(int(os.Stdin.Fd()))
+	if err != nil {
+		panic(err)
+	}
+	defer func() { _ = terminal.Restore(int(os.Stdin.Fd()), oldState) }() // Best effort.
+
+	// Start the command
+	c.Start()
+
+	// Copy stdin to the pty and the pty to stdout.
+	go func() {
+		for _, v := range commands {
+			v = append(v, "\n")
+			_, _ = io.Copy(ptmx, strings.NewReader(strings.Join(v, " ")))
+		}
+		_, _ = io.Copy(ptmx, os.Stdin)
+	}()
+	go func() {
+		_, _ = io.Copy(os.Stdout, ptmx)
+	}()
+
+	c.Wait()
+
+	return nil
+}
+
+func (d *docker) execDockerCommand(args ...string) (string, error) {
 	commands := append([]string{"docker"}, args...)
 	if d.useSudo {
 		commands = append([]string{"sudo"}, commands...)
@@ -132,18 +247,20 @@ func (d *docker) execDockerCommand(args ...string) error {
 	cmd := execCommand(commands[0], commands[1:]...)
 	if d.flagVerbose {
 		logrus.Infof("$ %s", strings.Join(commands, " "))
-		cmd.Stdout = logrus.StandardLogger().WriterLevel(logrus.InfoLevel)
 	}
 	cmd.Stderr = logrus.StandardLogger().WriterLevel(logrus.ErrorLevel)
 	d.commands = append(d.commands, cmd)
 	buf := bytes.NewBuffer(nil)
 	cmd.Stderr = buf
-	err := cmd.Run()
+	out, err := cmd.Output()
+	if d.flagVerbose {
+		logrus.Infof("%s", out)
+	}
 	if err != nil {
 		io.Copy(os.Stderr, buf)
-		return err
+		return strings.TrimRight(string(out), "\n"), err
 	}
-	return nil
+	return strings.TrimRight(string(out), "\n"), nil
 }
 
 func (d *docker) kill(sig os.Signal) {
@@ -178,13 +295,13 @@ func (d *docker) kill(sig os.Signal) {
 }
 
 func (d *docker) clean() {
-	err := d.execDockerCommand("volume", "rm", "--force", d.volume)
+	_, err := d.execDockerCommand("volume", "rm", "--force", d.volume)
 
 	if err != nil {
 		logrus.Warn(fmt.Errorf("failed to remove volume: %v", err))
 	}
 
-	err = d.execDockerCommand("volume", "rm", "--force", d.habVolume)
+	_, err = d.execDockerCommand("volume", "rm", "--force", d.habVolume)
 
 	if err != nil {
 		logrus.Warn(fmt.Errorf("failed to remove hab volume: %v", err))

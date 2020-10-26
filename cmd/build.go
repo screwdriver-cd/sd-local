@@ -53,6 +53,10 @@ func mergeEnvFromFile(optionEnv *map[string]string, envFilePath string) error {
 }
 
 func newBuildCmd() *cobra.Command {
+	return newBuildCmdImpl(false)
+}
+
+func newBuildCmdImpl(runMode bool) *cobra.Command {
 	var srcURL string
 	var optionEnv map[string]string
 	var envFilePath string
@@ -196,6 +200,7 @@ func newBuildCmd() *cobra.Command {
 				Meta:          meta,
 				UseSudo:       useSudo,
 				UsePrivileged: usePrivileged,
+				RunMode:       runMode,
 				FlagVerbose:   flagVerbose,
 			}
 
