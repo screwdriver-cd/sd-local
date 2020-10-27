@@ -126,14 +126,15 @@ func (d *docker) runBuild(buildEntry buildEntry) error {
 	dockerCommandOptions := []string{"--rm", "-v", srcVol, "-v", artVol, "-v", binVol, "-v", habVol, buildImage}
 	configJSONArg := string(configJSON)
 	if d.runMode {
+		configJSONArg = fmt.Sprintf("'%s'", configJSONArg)
+	}
+	launchCommands := []string{"/opt/sd/local_run.sh", configJSONArg, buildEntry.JobName, environment["SD_API_URL"], environment["SD_STORE_URL"], logfilePath}
+	if d.runMode {
 		dockerCommandOptions = append([]string{"-itd"}, dockerCommandOptions...)
 		dockerCommandOptions = append(dockerCommandOptions, "/bin/sh")
-		configJSONArg = fmt.Sprintf("'%s'", configJSONArg)
 	} else {
 		dockerCommandOptions = append(dockerCommandOptions, launchCommands...)
 	}
-
-	launchCommands := []string{"/opt/sd/local_run.sh", configJSONArg, buildEntry.JobName, environment["SD_API_URL"], environment["SD_STORE_URL"], logfilePath}
 
 	if buildEntry.MemoryLimit != "" {
 		dockerCommandOptions = append([]string{fmt.Sprintf("-m%s", buildEntry.MemoryLimit)}, dockerCommandOptions...)
@@ -174,17 +175,7 @@ func (d *docker) runBuild(buildEntry buildEntry) error {
 	return nil
 }
 
-func (d *docker) attachDockerCommand(attachCommands []string, commands [][]string) error {
-	attachCommands = append([]string{"docker"}, attachCommands...)
-	if d.useSudo {
-		attachCommands = append([]string{"sudo"}, attachCommands...)
-	}
-	c := execCommand(attachCommands[0], attachCommands[1:]...)
-
-	if d.flagVerbose {
-		logrus.Infof("$ %s", c.String())
-	}
-
+func interactive(c *exec.Cmd, commands [][]string) error {
 	ptmx, tty, err := pty.Open()
 	c.Stdin = tty
 	c.Stdout = tty
@@ -237,6 +228,20 @@ func (d *docker) attachDockerCommand(attachCommands []string, commands [][]strin
 	c.Wait()
 
 	return nil
+}
+
+func (d *docker) attachDockerCommand(attachCommands []string, commands [][]string) error {
+	attachCommands = append([]string{"docker"}, attachCommands...)
+	if d.useSudo {
+		attachCommands = append([]string{"sudo"}, attachCommands...)
+	}
+	c := execCommand(attachCommands[0], attachCommands[1:]...)
+
+	if d.flagVerbose {
+		logrus.Infof("$ %s", c.String())
+	}
+
+	return interactive(c, commands)
 }
 
 func (d *docker) execDockerCommand(args ...string) (string, error) {
