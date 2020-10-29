@@ -26,8 +26,8 @@ type fakeExecCommand struct {
 	commands []string
 }
 
-type mockInteractImpl struct {
-	Interact
+type mockInteract struct {
+	Interacter
 }
 
 func newFakeExecCommand(id string) *fakeExecCommand {
@@ -45,7 +45,7 @@ func newFakeExecCommand(id string) *fakeExecCommand {
 	return c
 }
 
-func (d *mockInteractImpl) Run(c *exec.Cmd, commands [][]string) error {
+func (d *mockInteract) Run(c *exec.Cmd, commands [][]string) error {
 	return c.Run()
 }
 
@@ -61,7 +61,7 @@ func TestNewDocker(t *testing.T) {
 			commands:          make([]*exec.Cmd, 0, 10),
 			mutex:             &sync.Mutex{},
 			flagVerbose:       false,
-			interact:          &InteractImpl{},
+			interact:          &Interact{},
 		}
 
 		d := newDocker("launcher", "latest", false, false, false)
@@ -251,7 +251,7 @@ func TestRunBuildWithInteractMode(t *testing.T) {
 		setupImageVersion: "latest",
 		useSudo:           true,
 		interactMode:      true,
-		interact:          &mockInteractImpl{},
+		interact:          &mockInteract{},
 	}
 
 	testCase := []struct {

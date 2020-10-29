@@ -14,14 +14,17 @@ import (
 	"golang.org/x/crypto/ssh/terminal"
 )
 
-type Interact interface {
+// Interacter wraps up the interactive process
+type Interacter interface {
 	Run(c *exec.Cmd, commands [][]string) error
 }
 
-type InteractImpl struct {
+// Interact takes interactive processing
+type Interact struct {
 }
 
-func (d *InteractImpl) Run(c *exec.Cmd, commands [][]string) error {
+// Run runs interactive process
+func (d *Interact) Run(c *exec.Cmd, commands [][]string) error {
 	ptmx, tty, err := pty.Open()
 	c.Stdin = tty
 	c.Stdout = tty
