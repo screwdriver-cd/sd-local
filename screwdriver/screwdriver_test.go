@@ -27,75 +27,12 @@ func validateHeader(tb testing.TB, key, value string, r *http.Request) {
 func TestNew(t *testing.T) {
 	t.Run("success", func(t *testing.T) {
 		testToken := "token"
-		testJWT := "jwt"
-		server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-			wantAcceptMIMEType := "application/json"
-			validateHeader(t, "Accept", wantAcceptMIMEType, r)
-			token := r.URL.Query().Get("api_token")
-			assert.Equal(t, token, testToken)
 
-			w.WriteHeader(200)
-			w.Header().Set("Content-Type", "application/json")
-
-			testBody := fmt.Sprintf(`{"token": "%s"}`, testJWT)
-			fmt.Fprintln(w, testBody)
-		}))
-
-		gotAPI, err := New(server.URL, testToken)
+		gotAPI := New("http://example.com:yyy", testToken)
 		api, ok := gotAPI.(*sdAPI)
 		assert.True(t, ok)
-		assert.Nil(t, err)
 		assert.Equal(t, testToken, api.UserToken)
-		assert.Equal(t, server.URL, api.APIURL)
-		assert.Equal(t, testJWT, api.SDJWT)
-		assert.Equal(t, testJWT, api.JWT())
-	})
-
-	t.Run("failure by invalid JSON", func(t *testing.T) {
-		server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-			w.WriteHeader(200)
-			w.Header().Set("Content-Type", "application/json")
-
-			testBody := fmt.Sprint(`{`)
-			fmt.Fprintln(w, testBody)
-		}))
-
-		testToken := "token"
-		_, err := New(server.URL, testToken)
-		assert.NotNil(t, err)
-
-		testMsg := "failed to parse JWT response:"
-		assert.Contains(t, err.Error(), testMsg)
-
-	})
-
-	t.Run("failure by status", func(t *testing.T) {
-		server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-			w.WriteHeader(500)
-		}))
-
-		testToken := "token"
-		_, err := New(server.URL, testToken)
-		assert.NotNil(t, err)
-
-		testMsg := "failed to get JWT: StatusCode 500"
-		assert.Equal(t, testMsg, err.Error())
-	})
-
-	t.Run("failure by makeURL", func(t *testing.T) {
-		testURL := "http://example.com:yyy"
-		testToken := "token"
-		_, err := New(testURL, testToken)
-		msg := err.Error()
-		assert.Equal(t, 0, strings.Index(msg, "failed to make request url: "), fmt.Sprintf("expected error is `failed to make request url: ...`, actual: `%v`", msg))
-	})
-
-	t.Run("failure by sd.request", func(t *testing.T) {
-		testURL := "http://localhost"
-		testToken := "testToken"
-		_, err := New(testURL, testToken)
-		msg := err.Error()
-		assert.Equal(t, 0, strings.Index(msg, "failed to send request: "), fmt.Sprintf("expected error is `failed to send request: ...`, actual: `%v`", msg))
+		assert.Equal(t, "http://example.com:yyy", api.APIURL)
 	})
 }
 
@@ -284,5 +221,103 @@ func TestJob(t *testing.T) {
 		assert.NotNil(t, err)
 		msg := err.Error()
 		assert.Equal(t, "not found 'nyancat' in parsed screwdriver.yaml", msg)
+	})
+}
+
+func TestInitJWT(t *testing.T) {
+	t.Run("success", func(t *testing.T) {
+		testJWT := "jwt"
+		testToken := "token"
+		server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+			wantAcceptMIMEType := "application/json"
+			validateHeader(t, "Accept", wantAcceptMIMEType, r)
+			token := r.URL.Query().Get("api_token")
+			assert.Equal(t, token, testToken)
+
+			w.WriteHeader(200)
+			w.Header().Set("Content-Type", "application/json")
+
+			testBody := fmt.Sprintf(`{"token": "%s"}`, testJWT)
+			fmt.Fprintln(w, testBody)
+		}))
+
+		s := &sdAPI{
+			HTTPClient: http.DefaultClient,
+			APIURL:     server.URL,
+			UserToken:  testToken,
+		}
+
+		err := s.InitJWT()
+		assert.Nil(t, err)
+		assert.Equal(t, testJWT, s.SDJWT)
+		assert.Equal(t, testJWT, s.JWT())
+	})
+
+	t.Run("failure by invalid JSON", func(t *testing.T) {
+		testToken := "token"
+		server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+			w.WriteHeader(200)
+			w.Header().Set("Content-Type", "application/json")
+
+			testBody := fmt.Sprint(`{`)
+			fmt.Fprintln(w, testBody)
+		}))
+
+		s := &sdAPI{
+			HTTPClient: http.DefaultClient,
+			APIURL:     server.URL,
+			UserToken:  testToken,
+		}
+
+		err := s.InitJWT()
+		assert.NotNil(t, err)
+
+		testMsg := "failed to parse JWT response:"
+		assert.Contains(t, err.Error(), testMsg)
+	})
+
+	t.Run("failure by status", func(t *testing.T) {
+		testToken := "token"
+		server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+			w.WriteHeader(500)
+		}))
+
+		s := &sdAPI{
+			HTTPClient: http.DefaultClient,
+			APIURL:     server.URL,
+			UserToken:  testToken,
+		}
+
+		err := s.InitJWT()
+		assert.NotNil(t, err)
+
+		testMsg := "failed to get JWT: StatusCode 500"
+		assert.Equal(t, testMsg, err.Error())
+	})
+
+	t.Run("failure by makeURL", func(t *testing.T) {
+		testToken := "token"
+		s := &sdAPI{
+			HTTPClient: http.DefaultClient,
+			APIURL:     "http://example.com:yyy",
+			UserToken:  testToken,
+		}
+
+		err := s.InitJWT()
+		msg := err.Error()
+		assert.Equal(t, 0, strings.Index(msg, "failed to make request url: "), fmt.Sprintf("expected error is `failed to make request url: ...`, actual: `%v`", msg))
+	})
+
+	t.Run("failure by sd.request", func(t *testing.T) {
+		testToken := "token"
+		s := &sdAPI{
+			HTTPClient: http.DefaultClient,
+			APIURL:     "http://localhost",
+			UserToken:  testToken,
+		}
+
+		err := s.InitJWT()
+		msg := err.Error()
+		assert.Equal(t, 0, strings.Index(msg, "failed to send request: "), fmt.Sprintf("expected error is `failed to send request: ...`, actual: `%v`", msg))
 	})
 }

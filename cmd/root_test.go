@@ -25,6 +25,8 @@ func (mock mockAPI) Job(jobName, filePath string) (screwdriver.Job, error) {
 
 func (mock mockAPI) JWT() string { return "" }
 
+func (mock mockAPI) InitJWT() error { return nil }
+
 func (mock mockLogger) Run() {}
 
 func (mock mockLogger) Stop() { close(loggerDone) }
@@ -51,7 +53,7 @@ func setup() {
 			Current: "default",
 		}, nil
 	}
-	apiNew = func(url, token string) (screwdriver.API, error) { return mockAPI{}, nil }
+	apiNew = func(url, token string) screwdriver.API { return mockAPI{} }
 	buildLogNew = func(filepath string, writer io.Writer, done chan<- struct{}) (logger buildlog.Logger, err error) {
 		return mockLogger{}, nil
 	}
