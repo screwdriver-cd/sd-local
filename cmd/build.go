@@ -30,6 +30,7 @@ var (
 	osMkdirAll    = os.MkdirAll
 	useSudo       = false
 	usePrivileged = false
+	interactMode  = false
 	loggerDone    chan struct{}
 )
 
@@ -53,10 +54,6 @@ func mergeEnvFromFile(optionEnv *map[string]string, envFilePath string) error {
 }
 
 func newBuildCmd() *cobra.Command {
-	return newBuildCmdImpl(false)
-}
-
-func newBuildCmdImpl(runMode bool) *cobra.Command {
 	var srcURL string
 	var optionEnv map[string]string
 	var envFilePath string
@@ -200,7 +197,7 @@ func newBuildCmdImpl(runMode bool) *cobra.Command {
 				Meta:          meta,
 				UseSudo:       useSudo,
 				UsePrivileged: usePrivileged,
-				RunMode:       runMode,
+				InteractMode:  interactMode,
 				FlagVerbose:   flagVerbose,
 			}
 
@@ -282,6 +279,13 @@ ex) git@github.com:<org>/<repo>.git[#<branch>]
 		"privileged",
 		false,
 		"Use privileged mode for container runtime.")
+
+	buildCmd.Flags().BoolVarP(
+		&interactMode,
+		"interact",
+		"i",
+		false,
+		"Attach the build container in interactive mode.")
 
 	return buildCmd
 }

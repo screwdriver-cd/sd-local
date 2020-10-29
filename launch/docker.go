@@ -7,7 +7,6 @@ import (
 	"io"
 	"os"
 	"os/exec"
-	"os/signal"
 	"path/filepath"
 	"strconv"
 	"strings"
@@ -15,10 +14,8 @@ import (
 	"syscall"
 	"time"
 
-	"github.com/creack/pty"
 	"github.com/screwdriver-cd/sd-local/screwdriver"
 	"github.com/sirupsen/logrus"
-	"golang.org/x/crypto/ssh/terminal"
 )
 
 type docker struct {
@@ -27,10 +24,11 @@ type docker struct {
 	setupImage        string
 	setupImageVersion string
 	useSudo           bool
-	runMode           bool
+	interactMode      bool
 	commands          []*exec.Cmd
 	mutex             *sync.Mutex
 	flagVerbose       bool
+	interact          Interact
 }
 
 var _ runner = (*docker)(nil)
@@ -46,17 +44,18 @@ const (
 	orgRepo = "sd-local/local-build"
 )
 
-func newDocker(setupImage, setupImageVer string, useSudo bool, runMode bool, flagVerbose bool) runner {
+func newDocker(setupImage, setupImageVer string, useSudo bool, interactMode bool, flagVerbose bool) runner {
 	return &docker{
 		volume:            "SD_LAUNCH_BIN",
 		habVolume:         "SD_LAUNCH_HAB",
 		setupImage:        setupImage,
 		setupImageVersion: setupImageVer,
 		useSudo:           useSudo,
-		runMode:           runMode,
+		interactMode:      interactMode,
 		commands:          make([]*exec.Cmd, 0, 10),
 		mutex:             &sync.Mutex{},
 		flagVerbose:       flagVerbose,
+		interact:          &InteractImpl{},
 	}
 }
 
@@ -101,8 +100,8 @@ func (d *docker) runBuild(buildEntry buildEntry) error {
 	binVol := fmt.Sprintf("%s:%s", d.volume, "/opt/sd")
 	habVol := fmt.Sprintf("%s:%s", d.habVolume, "/opt/sd/hab")
 
-	// Overwrite steps for sd-local run mode. The env will load later.
-	if d.runMode {
+	// Overwrite steps for sd-local interact mode. The env will load later.
+	if d.interactMode {
 		buildEntry.Steps = []screwdriver.Step{
 			{
 				Name:    "sd-local-init",
@@ -125,11 +124,11 @@ func (d *docker) runBuild(buildEntry buildEntry) error {
 	dockerCommandArgs := []string{"container", "run"}
 	dockerCommandOptions := []string{"--rm", "-v", srcVol, "-v", artVol, "-v", binVol, "-v", habVol, buildImage}
 	configJSONArg := string(configJSON)
-	if d.runMode {
+	if d.interactMode {
 		configJSONArg = fmt.Sprintf("'%s'", configJSONArg)
 	}
 	launchCommands := []string{"/opt/sd/local_run.sh", configJSONArg, buildEntry.JobName, environment["SD_API_URL"], environment["SD_STORE_URL"], logfilePath}
-	if d.runMode {
+	if d.interactMode {
 		dockerCommandOptions = append([]string{"-itd"}, dockerCommandOptions...)
 		dockerCommandOptions = append(dockerCommandOptions, "/bin/sh")
 	} else {
@@ -144,8 +143,8 @@ func (d *docker) runBuild(buildEntry buildEntry) error {
 		dockerCommandOptions = append([]string{"--privileged"}, dockerCommandOptions...)
 	}
 
-	if d.runMode {
-		// attach and run for sd-local run mode
+	if d.interactMode {
+		// attach build container for sd-local interact mode
 		cid, err := d.execDockerCommand(append(dockerCommandArgs, dockerCommandOptions...)...)
 		if err != nil {
 			return fmt.Errorf("failed to run build container: %v", err)
@@ -162,7 +161,7 @@ func (d *docker) runBuild(buildEntry buildEntry) error {
 		}
 		err = d.attachDockerCommand(attachCommands, commands)
 		if err != nil {
-			return fmt.Errorf("failed to run build container: %v", err)
+			return fmt.Errorf("failed to attach build container: %v", err)
 		}
 	} else {
 		// run for sd-local build mode
@@ -171,61 +170,6 @@ func (d *docker) runBuild(buildEntry buildEntry) error {
 			return fmt.Errorf("failed to run build container: %v", err)
 		}
 	}
-
-	return nil
-}
-
-func interactive(c *exec.Cmd, commands [][]string) error {
-	ptmx, tty, err := pty.Open()
-	c.Stdin = tty
-	c.Stdout = tty
-	c.Stderr = tty
-	if err != nil {
-		logrus.Warn(fmt.Errorf("failed: %s", err))
-		return err
-	}
-
-	// Make sure to close the pty at the end.
-	defer func() {
-		_ = ptmx.Close()
-		_ = tty.Close()
-	}()
-
-	// Handle pty size.
-	ch := make(chan os.Signal, 1)
-	signal.Notify(ch, syscall.SIGWINCH)
-	go func() {
-		for range ch {
-			if err := pty.InheritSize(os.Stdin, ptmx); err != nil {
-				logrus.Warn(fmt.Errorf("error resizing pty: %s", err))
-			}
-		}
-	}()
-	ch <- syscall.SIGWINCH // Initial resize.
-
-	// Set stdin in raw mode.
-	oldState, err := terminal.MakeRaw(int(os.Stdin.Fd()))
-	if err != nil {
-		panic(err)
-	}
-	defer func() { _ = terminal.Restore(int(os.Stdin.Fd()), oldState) }() // Best effort.
-
-	// Start the command
-	c.Start()
-
-	// Copy stdin to the pty and the pty to stdout.
-	go func() {
-		for _, v := range commands {
-			v = append(v, "\n")
-			_, _ = io.Copy(ptmx, strings.NewReader(strings.Join(v, " ")))
-		}
-		_, _ = io.Copy(ptmx, os.Stdin)
-	}()
-	go func() {
-		_, _ = io.Copy(os.Stdout, ptmx)
-	}()
-
-	c.Wait()
 
 	return nil
 }
@@ -241,7 +185,7 @@ func (d *docker) attachDockerCommand(attachCommands []string, commands [][]strin
 		logrus.Infof("$ %s", c.String())
 	}
 
-	return interactive(c, commands)
+	return d.interact.Run(c, commands)
 }
 
 func (d *docker) execDockerCommand(args ...string) (string, error) {
