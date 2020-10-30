@@ -12,7 +12,7 @@ BINARY_NAME=sd-local
 COVERPROFILE?=cover.out
 
 all: test build
-test: format vet lint
+test: format vet lint clean_mod_file
 	$(GOTEST) -race -cover -coverprofile=$(COVERPROFILE) -covermode=atomic ./...
 vet:
 	$(GOCMD) vet -v ./...
@@ -20,6 +20,8 @@ lint:
 	$(GOLINT) $$($(GOLIST_PKG))
 format:
 	find . -name '*.go' | xargs gofmt -s -w
+clean_mod_file:
+	$(GOCMD) mod tidy
 mod_download:
 	$(GOCMD) mod download
 build: mod_download

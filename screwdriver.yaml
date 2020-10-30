@@ -8,6 +8,11 @@ jobs:
         requires: [~pr, ~commit]
         steps:
             - gover: go version
+            - tidy: |
+                go mod tidy
+                echo 'If failure by this step, reason is including not used module in go.mod file.'
+                echo 'Retry to after the using "go mod tidy" command.'
+                git diff --exit-code --quiet HEAD ./go.mod ./go.sum
             - install: go mod download
             - gofmt: (! gofmt -d -s . | grep '^')
             - install-golint: go get golang.org/x/lint/golint
