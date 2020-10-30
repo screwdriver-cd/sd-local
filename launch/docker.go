@@ -28,7 +28,7 @@ type docker struct {
 	commands          []*exec.Cmd
 	mutex             *sync.Mutex
 	flagVerbose       bool
-	interact          Interact
+	interact          Interacter
 }
 
 var _ runner = (*docker)(nil)
@@ -125,7 +125,7 @@ func (d *docker) runBuild(buildEntry buildEntry) error {
 	dockerCommandOptions := []string{"--rm", "-v", srcVol, "-v", artVol, "-v", binVol, "-v", habVol, buildImage}
 	configJSONArg := string(configJSON)
 	if d.interactMode {
-		configJSONArg = fmt.Sprintf("'%s'", configJSONArg)
+		configJSONArg = fmt.Sprintf("%q", configJSONArg)
 	}
 	launchCommands := []string{"/opt/sd/local_run.sh", configJSONArg, buildEntry.JobName, environment["SD_API_URL"], environment["SD_STORE_URL"], logfilePath}
 	if d.interactMode {
@@ -156,7 +156,7 @@ func (d *docker) runBuild(buildEntry buildEntry) error {
 			{"set", "-a"},
 			{".", "/tmp/sd-local.env"},
 			{"set", "+a"},
-			{"export", "PS1=#"},
+			{"export", "PS1='sd-local# '"},
 			{"cd", "$SD_CHECKOUT_DIR"},
 		}
 		err = d.attachDockerCommand(attachCommands, commands)

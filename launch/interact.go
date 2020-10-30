@@ -8,6 +8,7 @@ import (
 	"os/signal"
 	"strings"
 	"syscall"
+	"time"
 
 	"github.com/creack/pty"
 	"github.com/sirupsen/logrus"
@@ -68,6 +69,11 @@ func (d *Interact) Run(c *exec.Cmd, commands [][]string) error {
 			v = append(v, "\n")
 			_, _ = io.Copy(ptmx, strings.NewReader(strings.Join(v, " ")))
 		}
+
+		// wait Launcher setup
+		time.Sleep(time.Second * 1)
+		_, _ = io.Copy(os.Stdout, strings.NewReader("\r\nWelcome to sd-local interactive mode. If you exit type 'exit'\n"))
+		_, _ = io.Copy(ptmx, strings.NewReader("\n"))
 		_, _ = io.Copy(ptmx, os.Stdin)
 	}()
 	go func() {
