@@ -17,7 +17,7 @@ test: format vet lint
 vet:
 	$(GOCMD) vet -v ./...
 lint:
-	$(GOLINT) $$($(GOLIST_PKG))
+	$(GOLIST_PKG) | xargs -n 1 $(GOLINT) -set_exit_status
 format:
 	find . -name '*.go' | xargs gofmt -s -w
 mod_download:

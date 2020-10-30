@@ -109,9 +109,9 @@ func (l *log) readln(prefix []byte, r *bufio.Reader) ([]byte, error) {
 
 	if isPrefix {
 		return l.readln(append(prefix, line...), r)
-	} else {
-		l.currentLineNum++
 	}
+
+	l.currentLineNum++
 
 	return append(prefix, line...), err
 }
