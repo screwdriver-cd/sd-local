@@ -22,6 +22,7 @@ const (
 type API interface {
 	Job(jobName, filePath string) (Job, error)
 	JWT() string
+	InitJWT() error
 }
 
 type sdAPI struct {
@@ -58,21 +59,14 @@ type tokenResponse struct {
 }
 
 // New creates a API
-func New(apiURL, token string) (API, error) {
+func New(apiURL, token string) API {
 	s := &sdAPI{
 		HTTPClient: http.DefaultClient,
 		APIURL:     apiURL,
 		UserToken:  token,
 	}
 
-	jwt, err := s.jwt()
-	if err != nil {
-		return s, err
-	}
-
-	s.SDJWT = jwt
-
-	return s, nil
+	return s
 }
 
 func (sd *sdAPI) makeURL(endpoint string) (*url.URL, error) {
@@ -192,6 +186,17 @@ func (sd *sdAPI) Job(jobName, filepath string) (Job, error) {
 	}
 
 	return job[0], nil
+}
+
+func (sd *sdAPI) InitJWT() error {
+	jwt, err := sd.jwt()
+	if err != nil {
+		return err
+	}
+
+	sd.SDJWT = jwt
+
+	return nil
 }
 
 // JWT returns JWT token for screwdriver API

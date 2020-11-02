@@ -154,7 +154,9 @@ func newBuildCmd() *cobra.Command {
 				return err
 			}
 
-			api, err := apiNew(entry.APIURL, entry.Token)
+			api := apiNew(entry.APIURL, entry.Token)
+
+			err = api.InitJWT()
 			if err != nil {
 				return err
 			}
