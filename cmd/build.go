@@ -282,7 +282,7 @@ ex) git@github.com:<org>/<repo>.git[#<branch>]
 
 	buildCmd.Flags().BoolVarP(
 		&interactMode,
-		"interact",
+		"interactive",
 		"i",
 		false,
 		"Attach the build container in interactive mode.")
