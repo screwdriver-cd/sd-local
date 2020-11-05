@@ -57,7 +57,7 @@ func TestNewDocker(t *testing.T) {
 			setupImage:        "launcher",
 			setupImageVersion: "latest",
 			useSudo:           false,
-			interactMode:      false,
+			interactiveMode:   false,
 			commands:          make([]*exec.Cmd, 0, 10),
 			mutex:             &sync.Mutex{},
 			flagVerbose:       false,
@@ -240,7 +240,7 @@ func TestRunBuildWithSudo(t *testing.T) {
 	}
 }
 
-func TestRunBuildWithInteractMode(t *testing.T) {
+func TestRunBuildWithInteractiveMode(t *testing.T) {
 	defer func() {
 		execCommand = exec.Command
 	}()
@@ -250,7 +250,7 @@ func TestRunBuildWithInteractMode(t *testing.T) {
 		setupImage:        "launcher",
 		setupImageVersion: "latest",
 		useSudo:           true,
-		interactMode:      true,
+		interactiveMode:   true,
 		interact:          &mockInteract{},
 	}
 

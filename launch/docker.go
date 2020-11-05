@@ -24,7 +24,7 @@ type docker struct {
 	setupImage        string
 	setupImageVersion string
 	useSudo           bool
-	interactMode      bool
+	interactiveMode   bool
 	commands          []*exec.Cmd
 	mutex             *sync.Mutex
 	flagVerbose       bool
@@ -44,14 +44,14 @@ const (
 	orgRepo = "sd-local/local-build"
 )
 
-func newDocker(setupImage, setupImageVer string, useSudo bool, interactMode bool, flagVerbose bool) runner {
+func newDocker(setupImage, setupImageVer string, useSudo bool, interactiveMode bool, flagVerbose bool) runner {
 	return &docker{
 		volume:            "SD_LAUNCH_BIN",
 		habVolume:         "SD_LAUNCH_HAB",
 		setupImage:        setupImage,
 		setupImageVersion: setupImageVer,
 		useSudo:           useSudo,
-		interactMode:      interactMode,
+		interactiveMode:   interactiveMode,
 		commands:          make([]*exec.Cmd, 0, 10),
 		mutex:             &sync.Mutex{},
 		flagVerbose:       flagVerbose,
@@ -101,7 +101,7 @@ func (d *docker) runBuild(buildEntry buildEntry) error {
 	habVol := fmt.Sprintf("%s:%s", d.habVolume, "/opt/sd/hab")
 
 	// Overwrite steps for sd-local interact mode. The env will load later.
-	if d.interactMode {
+	if d.interactiveMode {
 		buildEntry.Steps = []screwdriver.Step{
 			{
 				Name:    "sd-local-init",
@@ -124,11 +124,11 @@ func (d *docker) runBuild(buildEntry buildEntry) error {
 	dockerCommandArgs := []string{"container", "run"}
 	dockerCommandOptions := []string{"--rm", "-v", srcVol, "-v", artVol, "-v", binVol, "-v", habVol, buildImage}
 	configJSONArg := string(configJSON)
-	if d.interactMode {
+	if d.interactiveMode {
 		configJSONArg = fmt.Sprintf("%q", configJSONArg)
 	}
 	launchCommands := []string{"/opt/sd/local_run.sh", configJSONArg, buildEntry.JobName, environment["SD_API_URL"], environment["SD_STORE_URL"], logfilePath}
-	if d.interactMode {
+	if d.interactiveMode {
 		dockerCommandOptions = append([]string{"-itd"}, dockerCommandOptions...)
 		dockerCommandOptions = append(dockerCommandOptions, "/bin/sh")
 	} else {
@@ -143,7 +143,7 @@ func (d *docker) runBuild(buildEntry buildEntry) error {
 		dockerCommandOptions = append([]string{"--privileged"}, dockerCommandOptions...)
 	}
 
-	if d.interactMode {
+	if d.interactiveMode {
 		// attach build container for sd-local interact mode
 		cid, err := d.execDockerCommand(append(dockerCommandArgs, dockerCommandOptions...)...)
 		if err != nil {

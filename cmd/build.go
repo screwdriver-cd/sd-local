@@ -20,18 +20,18 @@ import (
 )
 
 var (
-	configNew     = config.New
-	apiNew        = screwdriver.New
-	buildLogNew   = buildlog.New
-	launchNew     = launch.New
-	artifactsDir  = launch.ArtifactsDir
-	memory        = ""
-	scmNew        = scm.New
-	osMkdirAll    = os.MkdirAll
-	useSudo       = false
-	usePrivileged = false
-	interactMode  = false
-	loggerDone    chan struct{}
+	configNew       = config.New
+	apiNew          = screwdriver.New
+	buildLogNew     = buildlog.New
+	launchNew       = launch.New
+	artifactsDir    = launch.ArtifactsDir
+	memory          = ""
+	scmNew          = scm.New
+	osMkdirAll      = os.MkdirAll
+	useSudo         = false
+	usePrivileged   = false
+	interactiveMode = false
+	loggerDone      chan struct{}
 )
 
 func mergeEnvFromFile(optionEnv *map[string]string, envFilePath string) error {
@@ -186,19 +186,19 @@ func newBuildCmd() *cobra.Command {
 			go logger.Run()
 
 			option := launch.Option{
-				Job:           job,
-				Entry:         *entry,
-				JobName:       jobName,
-				JWT:           api.JWT(),
-				ArtifactsPath: artifactsPath,
-				Memory:        memory,
-				SrcPath:       srcPath,
-				OptionEnv:     optionEnv,
-				Meta:          meta,
-				UseSudo:       useSudo,
-				UsePrivileged: usePrivileged,
-				InteractMode:  interactMode,
-				FlagVerbose:   flagVerbose,
+				Job:             job,
+				Entry:           *entry,
+				JobName:         jobName,
+				JWT:             api.JWT(),
+				ArtifactsPath:   artifactsPath,
+				Memory:          memory,
+				SrcPath:         srcPath,
+				OptionEnv:       optionEnv,
+				Meta:            meta,
+				UseSudo:         useSudo,
+				UsePrivileged:   usePrivileged,
+				InteractiveMode: interactiveMode,
+				FlagVerbose:     flagVerbose,
 			}
 
 			launch := launchNew(option)
@@ -281,7 +281,7 @@ ex) git@github.com:<org>/<repo>.git[#<branch>]
 		"Use privileged mode for container runtime.")
 
 	buildCmd.Flags().BoolVarP(
-		&interactMode,
+		&interactiveMode,
 		"interactive",
 		"i",
 		false,
