@@ -26,6 +26,10 @@ type fakeExecCommand struct {
 	commands []string
 }
 
+type mockInteract struct {
+	Interacter
+}
+
 func newFakeExecCommand(id string) *fakeExecCommand {
 	c := &fakeExecCommand{}
 	c.id = id
@@ -41,6 +45,10 @@ func newFakeExecCommand(id string) *fakeExecCommand {
 	return c
 }
 
+func (d *mockInteract) Run(c *exec.Cmd, commands [][]string) error {
+	return c.Run()
+}
+
 func TestNewDocker(t *testing.T) {
 	t.Run("success", func(t *testing.T) {
 		expected := &docker{
@@ -49,12 +57,14 @@ func TestNewDocker(t *testing.T) {
 			setupImage:        "launcher",
 			setupImageVersion: "latest",
 			useSudo:           false,
+			interactiveMode:   false,
 			commands:          make([]*exec.Cmd, 0, 10),
 			mutex:             &sync.Mutex{},
 			flagVerbose:       false,
+			interact:          &Interact{},
 		}
 
-		d := newDocker("launcher", "latest", false, false)
+		d := newDocker("launcher", "latest", false, false, false)
 
 		assert.Equal(t, expected, d)
 	})
@@ -211,6 +221,63 @@ func TestRunBuildWithSudo(t *testing.T) {
 			})},
 		{"failure build run", "FAIL_BUILD_CONTAINER_RUN_SUDO", fmt.Errorf("failed to run build container: exit status 1"), []string{}, newBuildEntry()},
 		{"failure build image pull", "FAIL_BUILD_IMAGE_PULL_SUDO", fmt.Errorf("failed to pull user image exit status 1"), []string{}, newBuildEntry()},
+	}
+
+	for _, tt := range testCase {
+		t.Run(tt.name, func(t *testing.T) {
+			c := newFakeExecCommand(tt.id)
+			execCommand = c.execCmd
+			err := d.runBuild(tt.buildEntry)
+			for i, expectedCommand := range tt.expectedCommands {
+				assert.True(t, strings.Contains(c.commands[i], expectedCommand), "expect %q \nbut got \n%q", expectedCommand, c.commands[i])
+			}
+			if tt.expectError != nil {
+				assert.Equal(t, tt.expectError.Error(), err.Error())
+			} else {
+				assert.Nil(t, err)
+			}
+		})
+	}
+}
+
+func TestRunBuildWithInteractiveMode(t *testing.T) {
+	defer func() {
+		execCommand = exec.Command
+	}()
+
+	d := &docker{
+		volume:            "SD_LAUNCH_BIN",
+		setupImage:        "launcher",
+		setupImageVersion: "latest",
+		useSudo:           true,
+		interactiveMode:   true,
+		interact:          &mockInteract{},
+	}
+
+	testCase := []struct {
+		name             string
+		id               string
+		expectError      error
+		expectedCommands []string
+		buildEntry       buildEntry
+	}{
+		{"success", "SUCCESS_RUN_BUILD_INTERACT", nil,
+			[]string{
+				"sudo docker pull node:12",
+				fmt.Sprintf("sudo docker container run -itd --rm -v /:/sd/workspace/src/screwdriver.cd/sd-local/local-build -v sd-artifacts/:/test/artifacts -v %s:/opt/sd -v %s:/opt/sd/hab node:12 /bin/sh", d.volume, d.habVolume),
+				"sudo docker attach "},
+			newBuildEntry()},
+		{"success with memory limit", "SUCCESS_RUN_BUILD_INTERACT", nil,
+			[]string{
+				"sudo docker pull node:12",
+				fmt.Sprintf("sudo docker container run -m2GB -itd --rm -v /:/sd/workspace/src/screwdriver.cd/sd-local/local-build -v sd-artifacts/:/test/artifacts -v %s:/opt/sd -v %s:/opt/sd/hab node:12 /bin/sh", d.volume, d.habVolume),
+				"sudo docker attach SUCCESS_RUN_BUILD_INTERACT"},
+			newBuildEntry(func(b *buildEntry) {
+				b.MemoryLimit = "2GB"
+			})},
+		{"failure build run", "FAIL_BUILD_CONTAINER_RUN_INTERACT", fmt.Errorf("failed to run build container: exit status 1"), []string{}, newBuildEntry()},
+		{"failure attach build container", "FAIL_BUILD_CONTAINER_ATTACH_INTERACT", fmt.Errorf("failed to attach build container: exit status 1"), []string{}, newBuildEntry()},
+		{"failure build image pull", "FAIL_BUILD_IMAGE_PULL_INTERACT", fmt.Errorf("failed to pull user image exit status 1"), []string{}, newBuildEntry()},
 	}
 
 	for _, tt := range testCase {
@@ -432,9 +499,11 @@ func TestHelperProcess(t *testing.T) {
 	cmd, subcmd, args := args[0], args[1], args[2:]
 	_, _ = cmd, args
 	testCase := os.Getenv("GO_TEST_MODE")
-	if strings.Index(testCase, "SUDO") > 0 {
+	if strings.Index(testCase, "SUDO") > 0 || strings.Index(testCase, "INTERACT") > 0 {
 		subcmd = args[0]
 	}
+
+	fmt.Print(testCase)
 
 	switch testCase {
 	case "":
@@ -442,6 +511,8 @@ func TestHelperProcess(t *testing.T) {
 	case "SUCCESS_SETUP_BIN":
 		os.Exit(0)
 	case "SUCCESS_SETUP_BIN_SUDO":
+		os.Exit(0)
+	case "SUCCESS_SETUP_BIN_INTERACT":
 		os.Exit(0)
 	case "FAIL_CREATING_VOLUME":
 		os.Exit(1)
@@ -467,6 +538,8 @@ func TestHelperProcess(t *testing.T) {
 		os.Exit(0)
 	case "SUCCESS_RUN_BUILD_SUDO":
 		os.Exit(0)
+	case "SUCCESS_RUN_BUILD_INTERACT":
+		os.Exit(0)
 	case "FAIL_BUILD_CONTAINER_RUN":
 		if subcmd == "pull" {
 			os.Exit(0)
@@ -477,6 +550,16 @@ func TestHelperProcess(t *testing.T) {
 			os.Exit(0)
 		}
 		os.Exit(1)
+	case "FAIL_BUILD_CONTAINER_RUN_INTERACT":
+		if subcmd == "pull" {
+			os.Exit(0)
+		}
+		os.Exit(1)
+	case "FAIL_BUILD_CONTAINER_ATTACH_INTERACT":
+		if subcmd == "attach" {
+			os.Exit(1)
+		}
+		os.Exit(0)
 	case "FAIL_LAUNCHER_PULL":
 		if subcmd == "pull" {
 			os.Exit(1)
@@ -493,6 +576,11 @@ func TestHelperProcess(t *testing.T) {
 		}
 		os.Exit(0)
 	case "FAIL_BUILD_IMAGE_PULL_SUDO":
+		if subcmd == "pull" {
+			os.Exit(1)
+		}
+		os.Exit(0)
+	case "FAIL_BUILD_IMAGE_PULL_INTERACT":
 		if subcmd == "pull" {
 			os.Exit(1)
 		}

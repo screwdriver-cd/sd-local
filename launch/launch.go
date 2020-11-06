@@ -46,37 +46,39 @@ type EnvVar map[string]string
 type Meta map[string]interface{}
 
 type buildEntry struct {
-	ID            int                `json:"id"`
-	Environment   []EnvVar           `json:"environment"`
-	EventID       int                `json:"eventId"`
-	JobID         int                `json:"jobId"`
-	ParentBuildID []int              `json:"parentBuildId"`
-	Sha           string             `json:"sha"`
-	Meta          Meta               `json:"meta"`
-	Steps         []screwdriver.Step `json:"steps"`
-	Image         string             `json:"-"`
-	JobName       string             `json:"-"`
-	ArtifactsPath string             `json:"-"`
-	MemoryLimit   string             `json:"-"`
-	SrcPath       string             `json:"-"`
-	UseSudo       bool               `json:"-"`
-	UsePrivileged bool               `json:"-"`
+	ID              int                `json:"id"`
+	Environment     []EnvVar           `json:"environment"`
+	EventID         int                `json:"eventId"`
+	JobID           int                `json:"jobId"`
+	ParentBuildID   []int              `json:"parentBuildId"`
+	Sha             string             `json:"sha"`
+	Meta            Meta               `json:"meta"`
+	Steps           []screwdriver.Step `json:"steps"`
+	Image           string             `json:"-"`
+	JobName         string             `json:"-"`
+	ArtifactsPath   string             `json:"-"`
+	MemoryLimit     string             `json:"-"`
+	SrcPath         string             `json:"-"`
+	UseSudo         bool               `json:"-"`
+	InteractiveMode bool               `json:"-"`
+	UsePrivileged   bool               `json:"-"`
 }
 
 // Option is option for launch New
 type Option struct {
-	Job           screwdriver.Job
-	Entry         config.Entry
-	JobName       string
-	JWT           string
-	ArtifactsPath string
-	Memory        string
-	SrcPath       string
-	OptionEnv     EnvVar
-	Meta          Meta
-	UseSudo       bool
-	UsePrivileged bool
-	FlagVerbose   bool
+	Job             screwdriver.Job
+	Entry           config.Entry
+	JobName         string
+	JWT             string
+	ArtifactsPath   string
+	Memory          string
+	SrcPath         string
+	OptionEnv       EnvVar
+	Meta            Meta
+	UseSudo         bool
+	UsePrivileged   bool
+	InteractiveMode bool
+	FlagVerbose     bool
 }
 
 const (
@@ -123,21 +125,22 @@ func createBuildEntry(option Option) buildEntry {
 	env := mergeEnv(defaultEnv, option.Job.Environment, option.OptionEnv)
 
 	return buildEntry{
-		ID:            0,
-		Environment:   env,
-		EventID:       0,
-		JobID:         0,
-		ParentBuildID: []int{0},
-		Sha:           "dummy",
-		Meta:          option.Meta,
-		Steps:         option.Job.Steps,
-		Image:         option.Job.Image,
-		JobName:       option.JobName,
-		ArtifactsPath: option.ArtifactsPath,
-		MemoryLimit:   option.Memory,
-		SrcPath:       option.SrcPath,
-		UseSudo:       option.UseSudo,
-		UsePrivileged: option.UsePrivileged,
+		ID:              0,
+		Environment:     env,
+		EventID:         0,
+		JobID:           0,
+		ParentBuildID:   []int{0},
+		Sha:             "dummy",
+		Meta:            option.Meta,
+		Steps:           option.Job.Steps,
+		Image:           option.Job.Image,
+		JobName:         option.JobName,
+		ArtifactsPath:   option.ArtifactsPath,
+		MemoryLimit:     option.Memory,
+		SrcPath:         option.SrcPath,
+		UseSudo:         option.UseSudo,
+		InteractiveMode: option.InteractiveMode,
+		UsePrivileged:   option.UsePrivileged,
 	}
 }
 
@@ -145,7 +148,7 @@ func createBuildEntry(option Option) buildEntry {
 func New(option Option) Launcher {
 	l := new(launch)
 
-	l.runner = newDocker(option.Entry.Launcher.Image, option.Entry.Launcher.Version, option.UseSudo, option.FlagVerbose)
+	l.runner = newDocker(option.Entry.Launcher.Image, option.Entry.Launcher.Version, option.UseSudo, option.InteractiveMode, option.FlagVerbose)
 	l.buildEntry = createBuildEntry(option)
 
 	return l
