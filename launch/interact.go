@@ -73,22 +73,18 @@ func (d *Interact) Run(c *exec.Cmd, commands [][]string) error {
 
 			v := append(v, "\n")
 			command := strings.Join(v, " ")
-			if len(command) > maxByte {
-				for {
-					if len(command) <= maxByte {
-						io.Copy(ptmx, strings.NewReader(command[:]))
-						// Wait send the command.
-						time.Sleep(time.Second * 1)
-						break
-					} else {
-						io.Copy(ptmx, strings.NewReader(command[:maxByte]))
-						// Wait send the command.
-						time.Sleep(time.Second * 1)
-						command = command[maxByte:]
-					}
+			for {
+				if len(command) <= maxByte {
+					io.Copy(ptmx, strings.NewReader(command[:]))
+					// Wait send the command.
+					time.Sleep(time.Millisecond * 300)
+					break
+				} else {
+					io.Copy(ptmx, strings.NewReader(command[:maxByte]))
+					// Wait send the command.
+					time.Sleep(time.Millisecond * 300)
+					command = command[maxByte:]
 				}
-			} else {
-				_, _ = io.Copy(ptmx, strings.NewReader(command))
 			}
 		}
 		// wait Launcher setup
