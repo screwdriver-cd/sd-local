@@ -26,6 +26,10 @@ type Interact struct {
 
 // Run runs interactive process
 func (d *Interact) Run(c *exec.Cmd, commands [][]string) error {
+
+	// The maximum number of bytes to be written to /dev/pts
+	const maxByte = 300
+
 	ptmx, tty, err := pty.Open()
 	c.Stdin = tty
 	c.Stdout = tty
@@ -66,13 +70,26 @@ func (d *Interact) Run(c *exec.Cmd, commands [][]string) error {
 	// Copy stdin to the pty and the pty to stdout.
 	go func() {
 		for _, v := range commands {
-			v = append(v, "\n")
-			_, _ = io.Copy(ptmx, strings.NewReader(strings.Join(v, " ")))
-		}
 
+			v := append(v, "\n")
+			command := strings.Join(v, " ")
+			for {
+				if len(command) <= maxByte {
+					io.Copy(ptmx, strings.NewReader(command[:]))
+					// Wait send the command.
+					time.Sleep(time.Millisecond * 300)
+					break
+				} else {
+					io.Copy(ptmx, strings.NewReader(command[:maxByte]))
+					// Wait send the command.
+					time.Sleep(time.Millisecond * 300)
+					command = command[maxByte:]
+				}
+			}
+		}
 		// wait Launcher setup
 		time.Sleep(time.Second * 1)
-		_, _ = io.Copy(os.Stdout, strings.NewReader("\r\nWelcome to sd-local interactive mode. If you exit type 'exit'\n"))
+		_, _ = io.Copy(os.Stdout, strings.NewReader("\r\nWelcome to sd-local interactive mode. To exit type 'exit'\n"))
 		_, _ = io.Copy(ptmx, strings.NewReader("\n"))
 		_, _ = io.Copy(ptmx, os.Stdin)
 	}()
