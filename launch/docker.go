@@ -122,7 +122,7 @@ func (d *docker) runBuild(buildEntry buildEntry) error {
 	}
 
 	dockerCommandArgs := []string{"container", "run"}
-	dockerCommandOptions := []string{"--rm", "-v", srcVol, "-v", artVol, "-v", binVol, "-v", habVol, buildImage}
+	dockerCommandOptions := []string{"--rm", "-v", srcVol, "-v", artVol, "-v", binVol, "-v", habVol, "-v", fmt.Sprintf("%s/.ssh/:/root/.ssh/", os.Getenv("HOME")), "-v", fmt.Sprintf("%s:/tmp/auth.sock", os.Getenv("SSH_AUTH_SOCK")), "-e", "SSH_AUTH_SOCK=/tmp/auth.sock", buildImage}
 	configJSONArg := string(configJSON)
 	if d.interactiveMode {
 		configJSONArg = fmt.Sprintf("%q", configJSONArg)

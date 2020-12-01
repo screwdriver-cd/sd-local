@@ -158,12 +158,12 @@ func TestRunBuild(t *testing.T) {
 		{"success", "SUCCESS_RUN_BUILD", nil,
 			[]string{
 				"docker pull node:12",
-				fmt.Sprintf("docker container run --rm -v /:/sd/workspace/src/screwdriver.cd/sd-local/local-build -v sd-artifacts/:/test/artifacts -v %s:/opt/sd -v %s:/opt/sd/hab node:12 /opt/sd/local_run.sh ", d.volume, d.habVolume)},
+				fmt.Sprintf("docker container run --rm -v /:/sd/workspace/src/screwdriver.cd/sd-local/local-build -v sd-artifacts/:/test/artifacts -v %s:/opt/sd -v %s:/opt/sd/hab -v %s/.ssh/:/root/.ssh/ -v %s:/tmp/auth.sock -e SSH_AUTH_SOCK=/tmp/auth.sock node:12 /opt/sd/local_run.sh ", d.volume, d.habVolume, os.Getenv("HOME"), os.Getenv("SSH_AUTH_SOCK"))},
 			newBuildEntry()},
 		{"success with memory limit", "SUCCESS_RUN_BUILD", nil,
 			[]string{
 				"docker pull node:12",
-				fmt.Sprintf("docker container run -m2GB --rm -v /:/sd/workspace/src/screwdriver.cd/sd-local/local-build -v sd-artifacts/:/test/artifacts -v %s:/opt/sd -v %s:/opt/sd/hab node:12 /opt/sd/local_run.sh ", d.volume, d.habVolume)},
+				fmt.Sprintf("docker container run -m2GB --rm -v /:/sd/workspace/src/screwdriver.cd/sd-local/local-build -v sd-artifacts/:/test/artifacts -v %s:/opt/sd -v %s:/opt/sd/hab -v %s/.ssh/:/root/.ssh/ -v %s:/tmp/auth.sock -e SSH_AUTH_SOCK=/tmp/auth.sock node:12 /opt/sd/local_run.sh ", d.volume, d.habVolume, os.Getenv("HOME"), os.Getenv("SSH_AUTH_SOCK"))},
 			newBuildEntry(func(b *buildEntry) {
 				b.MemoryLimit = "2GB"
 			})},
@@ -210,12 +210,12 @@ func TestRunBuildWithSudo(t *testing.T) {
 		{"success", "SUCCESS_RUN_BUILD_SUDO", nil,
 			[]string{
 				"sudo docker pull node:12",
-				fmt.Sprintf("sudo docker container run --rm -v /:/sd/workspace/src/screwdriver.cd/sd-local/local-build -v sd-artifacts/:/test/artifacts -v %s:/opt/sd -v %s:/opt/sd/hab node:12 /opt/sd/local_run.sh ", d.volume, d.habVolume)},
+				fmt.Sprintf("sudo docker container run --rm -v /:/sd/workspace/src/screwdriver.cd/sd-local/local-build -v sd-artifacts/:/test/artifacts -v %s:/opt/sd -v %s:/opt/sd/hab -v %s/.ssh/:/root/.ssh/ -v %s:/tmp/auth.sock -e SSH_AUTH_SOCK=/tmp/auth.sock node:12 /opt/sd/local_run.sh ", d.volume, d.habVolume, os.Getenv("HOME"), os.Getenv("SSH_AUTH_SOCK"))},
 			newBuildEntry()},
 		{"success with memory limit", "SUCCESS_RUN_BUILD_SUDO", nil,
 			[]string{
 				"sudo docker pull node:12",
-				fmt.Sprintf("sudo docker container run -m2GB --rm -v /:/sd/workspace/src/screwdriver.cd/sd-local/local-build -v sd-artifacts/:/test/artifacts -v %s:/opt/sd -v %s:/opt/sd/hab node:12 /opt/sd/local_run.sh ", d.volume, d.habVolume)},
+				fmt.Sprintf("sudo docker container run -m2GB --rm -v /:/sd/workspace/src/screwdriver.cd/sd-local/local-build -v sd-artifacts/:/test/artifacts -v %s:/opt/sd -v %s:/opt/sd/hab -v %s/.ssh/:/root/.ssh/ -v %s:/tmp/auth.sock -e SSH_AUTH_SOCK=/tmp/auth.sock node:12 /opt/sd/local_run.sh ", d.volume, d.habVolume, os.Getenv("HOME"), os.Getenv("SSH_AUTH_SOCK"))},
 			newBuildEntry(func(b *buildEntry) {
 				b.MemoryLimit = "2GB"
 			})},
@@ -264,13 +264,13 @@ func TestRunBuildWithInteractiveMode(t *testing.T) {
 		{"success", "SUCCESS_RUN_BUILD_INTERACT", nil,
 			[]string{
 				"sudo docker pull node:12",
-				fmt.Sprintf("sudo docker container run -itd --rm -v /:/sd/workspace/src/screwdriver.cd/sd-local/local-build -v sd-artifacts/:/test/artifacts -v %s:/opt/sd -v %s:/opt/sd/hab node:12 /bin/sh", d.volume, d.habVolume),
+				fmt.Sprintf("sudo docker container run -itd --rm -v /:/sd/workspace/src/screwdriver.cd/sd-local/local-build -v sd-artifacts/:/test/artifacts -v %s:/opt/sd -v %s:/opt/sd/hab -v %s/.ssh/:/root/.ssh/ -v %s:/tmp/auth.sock -e SSH_AUTH_SOCK=/tmp/auth.sock node:12 /bin/sh", d.volume, d.habVolume, os.Getenv("HOME"), os.Getenv("SSH_AUTH_SOCK")),
 				"sudo docker attach "},
 			newBuildEntry()},
 		{"success with memory limit", "SUCCESS_RUN_BUILD_INTERACT", nil,
 			[]string{
 				"sudo docker pull node:12",
-				fmt.Sprintf("sudo docker container run -m2GB -itd --rm -v /:/sd/workspace/src/screwdriver.cd/sd-local/local-build -v sd-artifacts/:/test/artifacts -v %s:/opt/sd -v %s:/opt/sd/hab node:12 /bin/sh", d.volume, d.habVolume),
+				fmt.Sprintf("sudo docker container run -m2GB -itd --rm -v /:/sd/workspace/src/screwdriver.cd/sd-local/local-build -v sd-artifacts/:/test/artifacts -v %s:/opt/sd -v %s:/opt/sd/hab -v %s/.ssh/:/root/.ssh/ -v %s:/tmp/auth.sock -e SSH_AUTH_SOCK=/tmp/auth.sock node:12 /bin/sh", d.volume, d.habVolume, os.Getenv("HOME"), os.Getenv("SSH_AUTH_SOCK")),
 				"sudo docker attach SUCCESS_RUN_BUILD_INTERACT"},
 			newBuildEntry(func(b *buildEntry) {
 				b.MemoryLimit = "2GB"
