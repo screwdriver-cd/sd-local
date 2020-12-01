@@ -6,6 +6,7 @@ import (
 	"os"
 	"os/exec"
 	"path"
+	"runtime"
 
 	"github.com/screwdriver-cd/sd-local/config"
 	"github.com/screwdriver-cd/sd-local/screwdriver"
@@ -61,6 +62,7 @@ type buildEntry struct {
 	SrcPath         string             `json:"-"`
 	UseSudo         bool               `json:"-"`
 	InteractiveMode bool               `json:"-"`
+	SocketPath      string             `json:"-"`
 	UsePrivileged   bool               `json:"-"`
 }
 
@@ -78,12 +80,25 @@ type Option struct {
 	UseSudo         bool
 	UsePrivileged   bool
 	InteractiveMode bool
+	SocketPath      string
 	FlagVerbose     bool
 }
 
 const (
 	defaultArtDir = "/sd/workspace/artifacts"
 )
+
+// DefaultSocketPath is a socket path on the localhost to bring in the build container.
+func DefaultSocketPath() string {
+	socketPath := os.Getenv("SSH_AUTH_SOCK")
+
+	if runtime.GOOS == "darwin" {
+		// for Docker Desktop VM on MacOS
+		socketPath = "/run/host-services/ssh-auth.sock"
+	}
+
+	return socketPath
+}
 
 func mergeEnv(env, jobEnv, optionEnv EnvVar) []EnvVar {
 	for k, v := range jobEnv {
@@ -140,6 +155,7 @@ func createBuildEntry(option Option) buildEntry {
 		SrcPath:         option.SrcPath,
 		UseSudo:         option.UseSudo,
 		InteractiveMode: option.InteractiveMode,
+		SocketPath:      option.SocketPath,
 		UsePrivileged:   option.UsePrivileged,
 	}
 }
@@ -148,7 +164,7 @@ func createBuildEntry(option Option) buildEntry {
 func New(option Option) Launcher {
 	l := new(launch)
 
-	l.runner = newDocker(option.Entry.Launcher.Image, option.Entry.Launcher.Version, option.UseSudo, option.InteractiveMode, option.FlagVerbose)
+	l.runner = newDocker(option.Entry.Launcher.Image, option.Entry.Launcher.Version, option.UseSudo, option.InteractiveMode, option.SocketPath, option.FlagVerbose)
 	l.buildEntry = createBuildEntry(option)
 
 	return l

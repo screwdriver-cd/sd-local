@@ -62,9 +62,10 @@ func TestNewDocker(t *testing.T) {
 			mutex:             &sync.Mutex{},
 			flagVerbose:       false,
 			interact:          &Interact{},
+			socketPath:        "/auth.sock",
 		}
 
-		d := newDocker("launcher", "latest", false, false, false)
+		d := newDocker("launcher", "latest", false, false, "/auth.sock", false)
 
 		assert.Equal(t, expected, d)
 	})

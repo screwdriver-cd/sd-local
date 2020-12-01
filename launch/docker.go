@@ -29,6 +29,7 @@ type docker struct {
 	mutex             *sync.Mutex
 	flagVerbose       bool
 	interact          Interacter
+	socketPath        string
 }
 
 var _ runner = (*docker)(nil)
@@ -44,7 +45,7 @@ const (
 	orgRepo = "sd-local/local-build"
 )
 
-func newDocker(setupImage, setupImageVer string, useSudo bool, interactiveMode bool, flagVerbose bool) runner {
+func newDocker(setupImage, setupImageVer string, useSudo bool, interactiveMode bool, socketPath string, flagVerbose bool) runner {
 	return &docker{
 		volume:            "SD_LAUNCH_BIN",
 		habVolume:         "SD_LAUNCH_HAB",
@@ -56,6 +57,7 @@ func newDocker(setupImage, setupImageVer string, useSudo bool, interactiveMode b
 		mutex:             &sync.Mutex{},
 		flagVerbose:       flagVerbose,
 		interact:          &Interact{},
+		socketPath:        socketPath,
 	}
 }
 
@@ -122,13 +124,7 @@ func (d *docker) runBuild(buildEntry buildEntry) error {
 	}
 
 	dockerCommandArgs := []string{"container", "run"}
-	sockFile := os.Getenv("SSH_AUTH_SOCK")
-	_, err = os.Stat("/run/host-services/ssh-auth.sock")
-	if err != nil {
-		// for MacOS
-		sockFile = "/run/host-services/ssh-auth.sock"
-	}
-	dockerCommandOptions := []string{"--rm", "-v", srcVol, "-v", artVol, "-v", binVol, "-v", habVol, "-v", fmt.Sprintf("%s:/tmp/auth.sock", sockFile), "-e", "SSH_AUTH_SOCK=/tmp/auth.sock", buildImage}
+	dockerCommandOptions := []string{"--rm", "-v", srcVol, "-v", artVol, "-v", binVol, "-v", habVol, "-v", fmt.Sprintf("%s:/tmp/auth.sock", d.socketPath), "-e", "SSH_AUTH_SOCK=/tmp/auth.sock", buildImage}
 	configJSONArg := string(configJSON)
 	if d.interactiveMode {
 		configJSONArg = fmt.Sprintf("%q", configJSONArg)
