@@ -122,7 +122,13 @@ func (d *docker) runBuild(buildEntry buildEntry) error {
 	}
 
 	dockerCommandArgs := []string{"container", "run"}
-	dockerCommandOptions := []string{"--rm", "-v", srcVol, "-v", artVol, "-v", binVol, "-v", habVol, "-v", fmt.Sprintf("%s/.ssh/:/root/.ssh/", os.Getenv("HOME")), "-v", fmt.Sprintf("%s:/tmp/auth.sock", os.Getenv("SSH_AUTH_SOCK")), "-e", "SSH_AUTH_SOCK=/tmp/auth.sock", buildImage}
+	sockFile := os.Getenv("SSH_AUTH_SOCK")
+	_, err = os.Stat("/run/host-services/ssh-auth.sock")
+	if err != nil {
+		// for MacOS
+		sockFile = "/run/host-services/ssh-auth.sock"
+	}
+	dockerCommandOptions := []string{"--rm", "-v", srcVol, "-v", artVol, "-v", binVol, "-v", habVol, "-v", fmt.Sprintf("%s:/tmp/auth.sock", sockFile), "-e", "SSH_AUTH_SOCK=/tmp/auth.sock", buildImage}
 	configJSONArg := string(configJSON)
 	if d.interactiveMode {
 		configJSONArg = fmt.Sprintf("%q", configJSONArg)
