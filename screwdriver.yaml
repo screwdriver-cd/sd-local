@@ -5,6 +5,8 @@ shared:
 
 jobs:
     test:
+        environment:
+            SD_SONAR_OPTS:  "-Dsonar.sources=./ -Dsonar.exclusions=**/*_test.go,**/vendor/** -Dsonar.tests=./ -Dsonar.test.inclusions=**/*_test.go -Dsonar.test.exclusions=**/vendor/** -Dsonar.go.coverage.reportPaths=${SD_ARTIFACTS_DIR}/coverage.out -Dsonar.go.tests.reportPaths=${SD_ARTIFACTS_DIR}/report.json"
         requires: [~pr, ~commit]
         steps:
             - gover: go version
@@ -15,8 +17,8 @@ jobs:
                 git diff --exit-code --quiet HEAD ./go.mod ./go.sum
             - install: go mod download
             - gofmt: (! gofmt -d -s . | grep '^')
-            - install-golint: go get golang.org/x/lint/golint
-            - test: make test COVERPROFILE=${SD_ARTIFACTS_DIR}/coverage.out
+            - test-setup: go get golang.org/x/lint/golint && go get gotest.tools/gotestsum@v0.6.0
+            - test: make test JSONFILE=$(SD_ARTIFACTS_DIR)/report.json COVERPROFILE=${SD_ARTIFACTS_DIR}/coverage.out
             - build: go build -a -o /dev/null
             - test-release: "curl -sL https://git.io/goreleaser | bash -s -- --snapshot"
 
