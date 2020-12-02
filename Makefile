@@ -1,7 +1,7 @@
 GOCMD=go
 GOBUILD=$(GOCMD) build
 GOCLEAN=$(GOCMD) clean
-GOTEST=$(GOCMD) test
+GOTEST=$(GOPATH)/bin/gotestsum
 GOGET=$(GOCMD) get
 GOLIST=$(GOCMD) list
 GOTOOL=$(GOCMD) tool
@@ -10,10 +10,11 @@ GOLINT=$(GOPATH)/bin/golint
 GORELEASER=goreleaser
 BINARY_NAME=sd-local
 COVERPROFILE?=cover.out
+JSONFILE?=report.json
 
 all: test build
 test: format vet lint clean_mod_file
-	$(GOTEST) -race -cover -coverprofile=$(COVERPROFILE) -covermode=atomic ./...
+	$(GOTEST) --format testname --jsonfile $(JSONFILE) -- -coverprofile=$(COVERPROFILE) ./...
 vet:
 	$(GOCMD) vet -v ./...
 lint:
