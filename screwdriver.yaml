@@ -18,7 +18,7 @@ jobs:
             - install: go mod download
             - gofmt: (! gofmt -d -s . | grep '^')
             - test-setup: go get golang.org/x/lint/golint && go get gotest.tools/gotestsum@v0.6.0
-            - test: make test JSONFILE=$(SD_ARTIFACTS_DIR)/report.json COVERPROFILE=${SD_ARTIFACTS_DIR}/coverage.out
+            - test: make test JSONFILE=${SD_ARTIFACTS_DIR}/report.json COVERPROFILE=${SD_ARTIFACTS_DIR}/coverage.out
             - build: go build -a -o /dev/null
             - test-release: "curl -sL https://git.io/goreleaser | bash -s -- --snapshot"
 
