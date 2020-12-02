@@ -80,7 +80,7 @@ func (d *docker) setupBin() error {
 		return fmt.Errorf("failed to pull launcher image: %v", err)
 	}
 
-	_, err = d.execDockerCommand("container", "run", "--rm", "-v", mount, "-v", habMount, "--entrypoint", "/bin/echo set up bin", image)
+	_, err = d.execDockerCommand("container", "run", "--rm", "-v", mount, "-v", habMount, "--entrypoint", "/bin/echo", image, "set up bin")
 	if err != nil {
 		return fmt.Errorf("failed to prepare build scripts: %v", err)
 	}
