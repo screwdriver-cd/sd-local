@@ -59,6 +59,7 @@ func newBuildCmd() *cobra.Command {
 	var envFilePath string
 	var optionMeta string
 	var metaFilePath string
+	var socketPath string
 
 	buildCmd := &cobra.Command{
 		Use:   "build [job name]",
@@ -200,6 +201,7 @@ func newBuildCmd() *cobra.Command {
 				UseSudo:         useSudo,
 				UsePrivileged:   usePrivileged,
 				InteractiveMode: interactiveMode,
+				SocketPath:      socketPath,
 				FlagVerbose:     flagVerbose,
 			}
 
@@ -288,6 +290,13 @@ ex) git@github.com:<org>/<repo>.git[#<branch>]
 		"i",
 		false,
 		"Attach the build container in interactive mode.")
+
+	buildCmd.Flags().StringVarP(
+		&socketPath,
+		"socket",
+		"S",
+		launch.DefaultSocketPath(),
+		"Path to the socket. It will used in build container.")
 
 	return buildCmd
 }

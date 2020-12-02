@@ -49,6 +49,8 @@ Flags:
   -m, --memory string          Memory limit for build container, which take a positive integer, followed by a suffix of b, k, m, g.
       --meta string            Metadata to pass into the build environment, which is represented with JSON format
       --meta-file string       Path to the meta file. meta file is represented with JSON format.
+      --privileged             Use privileged mode for container runtime.
+  -S, --socket string          Path to the socket. It will used in build container.
       --src-url string         Specify the source url to build.
                                ex) git@github.com:<org>/<repo>.git[#<branch>]
                                    https://github.com/<org>/<repo>.git[#<branch>]
