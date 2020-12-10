@@ -107,7 +107,7 @@ func (d *docker) runBuild(buildEntry buildEntry) error {
 		buildEntry.Steps = []screwdriver.Step{
 			{
 				Name:    "sd-local-init",
-				Command: "env > /tmp/sd-local.env",
+				Command: "export > /tmp/sd-local.env",
 			},
 		}
 	}
