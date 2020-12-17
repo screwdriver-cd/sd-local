@@ -55,7 +55,7 @@ Flags:
                                ex) git@github.com:<org>/<repo>.git[#<branch>]
                                    https://github.com/<org>/<repo>.git[#<branch>]
       --sudo                   Use sudo command for container runtime.
-      --vol string             Mount local volumes into build container. (<src>:<destination) (default [])
+      --vol string             Mount local volumes into build container. (<src>:<destination>) (default [])
 
 Global Flags:
   -v, --verbose   verbose output.
@@ -186,4 +186,3 @@ Code licensed under the BSD 3-Clause license. See [LICENSE](https://github.com/s
 [build-url]: https://cd.screwdriver.cd/pipelines/4014
 [goreport-image]: https://goreportcard.com/badge/github.com/Screwdriver-cd/sd-local
 [goreport-url]: https://goreportcard.com/report/github.com/Screwdriver-cd/sd-local
-
