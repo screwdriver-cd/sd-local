@@ -30,6 +30,7 @@ type docker struct {
 	flagVerbose       bool
 	interact          Interacter
 	socketPath        string
+	localVolumes      []string
 }
 
 var _ runner = (*docker)(nil)
@@ -45,7 +46,7 @@ const (
 	orgRepo = "sd-local/local-build"
 )
 
-func newDocker(setupImage, setupImageVer string, useSudo bool, interactiveMode bool, socketPath string, flagVerbose bool) runner {
+func newDocker(setupImage, setupImageVer string, useSudo bool, interactiveMode bool, socketPath string, flagVerbose bool, localVolumes []string) runner {
 	return &docker{
 		volume:            "SD_LAUNCH_BIN",
 		habVolume:         "SD_LAUNCH_HAB",
@@ -58,6 +59,7 @@ func newDocker(setupImage, setupImageVer string, useSudo bool, interactiveMode b
 		flagVerbose:       flagVerbose,
 		interact:          &Interact{},
 		socketPath:        socketPath,
+		localVolumes:      localVolumes,
 	}
 }
 
@@ -102,6 +104,8 @@ func (d *docker) runBuild(buildEntry buildEntry) error {
 	binVol := fmt.Sprintf("%s:%s", d.volume, "/opt/sd")
 	habVol := fmt.Sprintf("%s:%s", d.habVolume, "/opt/sd/hab")
 
+	dockerVolumes := append(d.localVolumes, srcVol, artVol, binVol, habVol, fmt.Sprintf("%s:/tmp/auth.sock", d.socketPath))
+
 	// Overwrite steps for sd-local interact mode. The env will load later.
 	if d.interactiveMode {
 		buildEntry.Steps = []screwdriver.Step{
@@ -124,7 +128,11 @@ func (d *docker) runBuild(buildEntry buildEntry) error {
 	}
 
 	dockerCommandArgs := []string{"container", "run"}
-	dockerCommandOptions := []string{"--rm", "-v", srcVol, "-v", artVol, "-v", binVol, "-v", habVol, "-v", fmt.Sprintf("%s:/tmp/auth.sock", d.socketPath), "-e", "SSH_AUTH_SOCK=/tmp/auth.sock", buildImage}
+	dockerCommandOptions := []string{"--rm"}
+	for _, v := range dockerVolumes {
+		dockerCommandOptions = append(dockerCommandOptions, "-v", v)
+	}
+	dockerCommandOptions = append(dockerCommandOptions, "-e", "SSH_AUTH_SOCK=/tmp/auth.sock", buildImage)
 	configJSONArg := string(configJSON)
 	if d.interactiveMode {
 		configJSONArg = fmt.Sprintf("%q", configJSONArg)
