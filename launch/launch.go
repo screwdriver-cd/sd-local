@@ -64,6 +64,7 @@ type buildEntry struct {
 	InteractiveMode bool               `json:"-"`
 	SocketPath      string             `json:"-"`
 	UsePrivileged   bool               `json:"-"`
+	LocalVolumes    []string           `json:"-"`
 }
 
 // Option is option for launch New
@@ -82,6 +83,7 @@ type Option struct {
 	InteractiveMode bool
 	SocketPath      string
 	FlagVerbose     bool
+	LocalVolumes    []string
 }
 
 const (
@@ -131,10 +133,11 @@ func createBuildEntry(option Option) buildEntry {
 	}
 
 	defaultEnv := EnvVar{
-		"SD_TOKEN":         option.JWT,
-		"SD_ARTIFACTS_DIR": defaultArtDir,
-		"SD_API_URL":       apiURL,
-		"SD_STORE_URL":     storeURL,
+		"SD_TOKEN":             option.JWT,
+		"SD_ARTIFACTS_DIR":     defaultArtDir,
+		"SD_API_URL":           apiURL,
+		"SD_STORE_URL":         storeURL,
+		"SD_BASE_COMMAND_PATH": "/sd/commands/",
 	}
 
 	env := mergeEnv(defaultEnv, option.Job.Environment, option.OptionEnv)
@@ -157,6 +160,7 @@ func createBuildEntry(option Option) buildEntry {
 		InteractiveMode: option.InteractiveMode,
 		SocketPath:      option.SocketPath,
 		UsePrivileged:   option.UsePrivileged,
+		LocalVolumes:    option.LocalVolumes,
 	}
 }
 
@@ -164,7 +168,7 @@ func createBuildEntry(option Option) buildEntry {
 func New(option Option) Launcher {
 	l := new(launch)
 
-	l.runner = newDocker(option.Entry.Launcher.Image, option.Entry.Launcher.Version, option.UseSudo, option.InteractiveMode, option.SocketPath, option.FlagVerbose)
+	l.runner = newDocker(option.Entry.Launcher.Image, option.Entry.Launcher.Version, option.UseSudo, option.InteractiveMode, option.SocketPath, option.FlagVerbose, option.LocalVolumes)
 	l.buildEntry = createBuildEntry(option)
 
 	return l

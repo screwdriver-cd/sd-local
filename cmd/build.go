@@ -60,6 +60,7 @@ func newBuildCmd() *cobra.Command {
 	var optionMeta string
 	var metaFilePath string
 	var socketPath string
+	var localVolumes []string
 
 	buildCmd := &cobra.Command{
 		Use:   "build [job name]",
@@ -203,6 +204,7 @@ func newBuildCmd() *cobra.Command {
 				InteractiveMode: interactiveMode,
 				SocketPath:      socketPath,
 				FlagVerbose:     flagVerbose,
+				LocalVolumes:    localVolumes,
 			}
 
 			launch := launchNew(option)
@@ -297,6 +299,12 @@ ex) git@github.com:<org>/<repo>.git[#<branch>]
 		"S",
 		launch.DefaultSocketPath(),
 		"Path to the socket. It will used in build container.")
+
+	buildCmd.Flags().StringSliceVar(
+		&localVolumes,
+		"vol",
+		[]string{},
+		"Volumes to mount into build container.")
 
 	return buildCmd
 }
