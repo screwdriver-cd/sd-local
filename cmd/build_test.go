@@ -30,6 +30,7 @@ Flags:
                                ex) git@github.com:<org>/<repo>.git[#<branch>]
                                    https://github.com/<org>/<repo>.git[#<branch>]
       --sudo                   Use sudo command for container runtime.
+      --vol strings            Volumes to mount into build container.
 
 `
 

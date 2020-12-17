@@ -55,6 +55,7 @@ Flags:
                                ex) git@github.com:<org>/<repo>.git[#<branch>]
                                    https://github.com/<org>/<repo>.git[#<branch>]
       --sudo                   Use sudo command for container runtime.
+      --vol string             Mount local volumes into build container. (<src>:<destination) (default [])
 
 Global Flags:
   -v, --verbose   verbose output.

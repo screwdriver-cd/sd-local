@@ -25,11 +25,12 @@ func newBuildEntry(options ...func(b *buildEntry)) buildEntry {
 	b := buildEntry{
 		ID: 0,
 		Environment: []EnvVar{{
-			"SD_ARTIFACTS_DIR": "/test/artifacts",
-			"SD_API_URL":       "http://api-test.screwdriver.cd/v4",
-			"SD_STORE_URL":     "http://store-test.screwdriver.cd/v1",
-			"SD_TOKEN":         "testjwt",
-			"FOO":              "foo",
+			"SD_ARTIFACTS_DIR":     "/test/artifacts",
+			"SD_API_URL":           "http://api-test.screwdriver.cd/v4",
+			"SD_STORE_URL":         "http://store-test.screwdriver.cd/v1",
+			"SD_TOKEN":             "testjwt",
+			"SD_BASE_COMMAND_PATH": "/sd/commands/",
+			"FOO":                  "foo",
 		}},
 		EventID:       0,
 		JobID:         0,
