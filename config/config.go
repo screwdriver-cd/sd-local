@@ -19,6 +19,7 @@ type Entry struct {
 	APIURL   string   `yaml:"api-url"`
 	StoreURL string   `yaml:"store-url"`
 	Token    string   `yaml:"token"`
+	UA       string   `yaml:"UA"`
 	Launcher Launcher `yaml:"launcher"`
 }
 
@@ -179,6 +180,11 @@ func (e *Entry) Set(key, value string) error {
 			value = "screwdrivercd/launcher"
 		}
 		e.Launcher.Image = value
+	case "ua":
+		if value == "" {
+			value = "-"
+		}
+		e.UA = value
 	default:
 		return fmt.Errorf("invalid key %s", key)
 	}

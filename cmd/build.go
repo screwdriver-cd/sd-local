@@ -1,13 +1,17 @@
 package cmd
 
 import (
+	"bufio"
 	"encoding/json"
 	"errors"
 	"fmt"
 	"io/ioutil"
 	"os"
 	"path/filepath"
+	"runtime"
+	"strings"
 
+	"github.com/google/uuid"
 	"github.com/joho/godotenv"
 	"github.com/mitchellh/go-homedir"
 	"github.com/screwdriver-cd/sd-local/buildlog"
@@ -51,6 +55,24 @@ func mergeEnvFromFile(optionEnv *map[string]string, envFilePath string) error {
 		}
 	}
 	return nil
+}
+
+func generateUserAgent() (string, error) {
+	// User-Agent format sample
+	// "User-Agent": "sd-local/<sd-local version> (darwin or linux; <UUID>)"
+	uuidObj, err := uuid.NewUUID()
+	if err != nil {
+		return "", err
+	}
+	uuidStr := uuidObj.String()
+
+	ua := "sd-local/"
+	ua += version
+	ua += " (" + runtime.GOOS
+	ua += "; " + uuidStr
+	ua += ")"
+
+	return ua, nil
 }
 
 func newBuildCmd() *cobra.Command {
@@ -157,7 +179,39 @@ func newBuildCmd() *cobra.Command {
 				return err
 			}
 
-			api := apiNew(entry.APIURL, entry.Token)
+			if entry.UA == "" {
+				fmt.Println("sd-local collects unique UUIDs for statistical surveys.")
+				fmt.Println("You can reset it later by removing the UA key from config.")
+				fmt.Print("Would you please cooperate with the survey? [y/N]: ")
+
+				input, err := bufio.NewReader(os.Stdin).ReadString('\n')
+				if err != nil {
+					return err
+				}
+				input = strings.TrimSuffix(input, "\n")
+				if input == "y" || input == "Y" || input == "yes" || input == "Yes" {
+
+					ua, err := generateUserAgent()
+					if err != nil {
+						return err
+					}
+
+					err = entry.Set("ua", ua)
+					if err != nil {
+						return err
+					}
+
+					err = config.Save()
+					if err != nil {
+						return err
+					}
+				} else {
+					err = entry.Set("ua", "-")
+					err = config.Save()
+				}
+			}
+
+			api := apiNew(entry.APIURL, entry.Token, entry.UA)
 
 			err = api.InitJWT()
 			if err != nil {

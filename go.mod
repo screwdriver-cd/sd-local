@@ -7,6 +7,7 @@ require (
 	github.com/creack/pty v1.1.11
 	github.com/fsnotify/fsnotify v1.4.9 // indirect
 	github.com/go-yaml/yaml v2.1.0+incompatible
+	github.com/google/uuid v1.2.0
 	github.com/joho/godotenv v1.3.0
 	github.com/konsorten/go-windows-terminal-sequences v1.0.2 // indirect
 	github.com/kr/pretty v0.2.0 // indirect
@@ -16,9 +17,9 @@ require (
 	github.com/spf13/cobra v0.0.7
 	github.com/spf13/pflag v1.0.5 // indirect
 	github.com/stretchr/testify v1.5.0
-	golang.org/x/crypto v0.0.0-20191011191535-87dc89f01550
-	golang.org/x/net v0.0.0-20200226121028-0de0cce0169b // indirect
-	golang.org/x/sys v0.0.0-20201009025420-dfb3f7c4e634 // indirect
+	golang.org/x/crypto v0.0.0-20200622213623-75b288015ac9
+	golang.org/x/net v0.0.0-20201021035429-f5854403a974 // indirect
+	golang.org/x/sys v0.0.0-20210119212857-b64e53b001e4 // indirect
 	gopkg.in/check.v1 v1.0.0-20190902080502-41f04d3bba15 // indirect
 	gopkg.in/yaml.v2 v2.2.8 // indirect
 )

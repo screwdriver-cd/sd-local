@@ -28,7 +28,8 @@ func TestNew(t *testing.T) {
 	t.Run("success", func(t *testing.T) {
 		testToken := "token"
 
-		gotAPI := New("http://example.com:yyy", testToken)
+		ua := "sd-local/dev (linux; eb004dc1-614c-11eb-bab9-0242ac120002)"
+		gotAPI := New("http://example.com:yyy", testToken, ua)
 		api, ok := gotAPI.(*sdAPI)
 		assert.True(t, ok)
 		assert.Equal(t, testToken, api.UserToken)
