@@ -20,6 +20,7 @@ Can set the below settings:
 * Screwdriver.cd Store URL as "store-url"
 * Screwdriver.cd Token as "token"
 * Screwdriver.cd launcher version as "launcher-version"
+* Screwdriver.cd UUID as "UUID"
 * Screwdriver.cd launcher image as "launcher-image"`,
 		Args: cobra.ExactArgs(2),
 		RunE: func(cmd *cobra.Command, args []string) error {
