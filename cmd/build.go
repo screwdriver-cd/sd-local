@@ -57,12 +57,12 @@ func mergeEnvFromFile(optionEnv *map[string]string, envFilePath string) error {
 	return nil
 }
 
-func generateUserAgent(uuid string) (string, error) {
+func generateUserAgent(uuid string) string {
 	// User-Agent format sample
 	// "User-Agent": "sd-local/<sd-local version> (darwin or linux; <UUID>)"
 	ua := fmt.Sprintf("sd-local/%s (%s; %s)", version, runtime.GOOS, uuid)
 
-	return ua, nil
+	return ua
 }
 
 func newBuildCmd() *cobra.Command {
@@ -94,7 +94,6 @@ func newBuildCmd() *cobra.Command {
 		RunE: func(cmd *cobra.Command, args []string) error {
 			var err error
 			cmd.SilenceUsage = true
-			var uuidStr string
 
 			if envFilePath != "" {
 				err = mergeEnvFromFile(&optionEnv, envFilePath)
@@ -171,7 +170,8 @@ func newBuildCmd() *cobra.Command {
 				return err
 			}
 
-			if entry.UUID == "" {
+			uuidStr := entry.UUID
+			if uuidStr == "" {
 				fmt.Println("sd-local collects UUIDs for statistical surveys.")
 				fmt.Println("You can reset it later by removing the UUID key from config.")
 				fmt.Print("Would you please cooperate with the survey? [y/N]: ")
@@ -205,11 +205,9 @@ func newBuildCmd() *cobra.Command {
 					}
 					fmt.Println("UUID key is not set.")
 				}
-			} else {
-				uuidStr = entry.UUID
 			}
 
-			ua, err := generateUserAgent(uuidStr)
+			ua := generateUserAgent(uuidStr)
 			if err != nil {
 				return err
 			}
