@@ -182,11 +182,7 @@ func newBuildCmd() *cobra.Command {
 				}
 				input = strings.TrimSuffix(input, "\n")
 				if input == "y" || input == "Y" || input == "yes" || input == "Yes" {
-					uuidObj, err := uuid.NewUUID()
-					if err != nil {
-						return err
-					}
-					uuidStr = uuidObj.String()
+					uuidStr := uuid.NewString()
 
 					err = entry.Set("uuid", uuidStr)
 					if err != nil {
