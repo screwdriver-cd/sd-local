@@ -71,7 +71,7 @@ func generateUserAgent(uuid string) (string, error) {
 	// ua += " (" + runtime.GOOS
 	// ua += "; " + uuid
 	// ua += ")"
-	ua := fmt.Sprintf("sd-local/%s (%s;%s", version, runtime.GOOS, uuid)
+	ua := fmt.Sprintf("sd-local/%s (%s; %s)", version, runtime.GOOS, uuid)
 
 	return ua, nil
 }
@@ -171,7 +171,8 @@ func newBuildCmd() *cobra.Command {
 				srcPath = scm.LocalPath()
 			}
 
-			config, err := configNew(filepath.Join(sdlocalDir, "config"))
+			configPath := filepath.Join(sdlocalDir, "config")
+			config, err := configNew(configPath)
 			if err != nil {
 				return err
 			}
@@ -192,6 +193,9 @@ func newBuildCmd() *cobra.Command {
 				}
 				input = strings.TrimSuffix(input, "\n")
 				if input == "y" || input == "Y" || input == "yes" || input == "Yes" {
+
+					// fmt.Println(sdlocalDir)
+					fmt.Printf("UUID key has been added to %s\n", sdlocalDir)
 
 					uuidObj, err := uuid.NewUUID()
 					if err != nil {
@@ -214,6 +218,7 @@ func newBuildCmd() *cobra.Command {
 						return err
 					}
 				} else {
+					fmt.Println("UUID key is not set.")
 					err = entry.Set("uuid", "-")
 					err = config.Save()
 				}
