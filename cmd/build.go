@@ -220,7 +220,13 @@ func newBuildCmd() *cobra.Command {
 				} else {
 					fmt.Println("UUID key is not set.")
 					err = entry.Set("uuid", "-")
+					if err != nil {
+						return err
+					}
 					err = config.Save()
+					if err != nil {
+						return err
+					}
 				}
 			}
 
