@@ -186,7 +186,7 @@ func newBuildCmd() *cobra.Command {
 					if err != nil {
 						return err
 					}
-					uuidStr := uuidObj.String()
+					uuidStr = uuidObj.String()
 
 					err = entry.Set("uuid", uuidStr)
 					if err != nil {
@@ -209,6 +209,8 @@ func newBuildCmd() *cobra.Command {
 					}
 					fmt.Println("UUID key is not set.")
 				}
+			} else {
+				uuidStr = entry.UUID
 			}
 
 			ua, err := generateUserAgent(uuidStr)
