@@ -44,7 +44,7 @@ func setup() {
 				Version: "stable",
 				Image:   "screwdrivercd/launcher",
 			},
-			UA: "foo",
+			UUID: "eb004dc1-614c-11eb-bab9-0242ac120002",
 		}
 
 		return config.Config{

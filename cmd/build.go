@@ -182,9 +182,6 @@ func newBuildCmd() *cobra.Command {
 				}
 				input = strings.TrimSuffix(input, "\n")
 				if input == "y" || input == "Y" || input == "yes" || input == "Yes" {
-
-					fmt.Printf("UUID key has been added to %s\n", sdlocalDir)
-
 					uuidObj, err := uuid.NewUUID()
 					if err != nil {
 						return err
@@ -200,8 +197,8 @@ func newBuildCmd() *cobra.Command {
 					if err != nil {
 						return err
 					}
+					fmt.Printf("UUID key has been added to %s\n", configPath)
 				} else {
-					fmt.Println("UUID key is not set.")
 					err = entry.Set("uuid", "-")
 					if err != nil {
 						return err
@@ -210,6 +207,7 @@ func newBuildCmd() *cobra.Command {
 					if err != nil {
 						return err
 					}
+					fmt.Println("UUID key is not set.")
 				}
 			}
 
