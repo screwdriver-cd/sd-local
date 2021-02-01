@@ -57,20 +57,21 @@ func mergeEnvFromFile(optionEnv *map[string]string, envFilePath string) error {
 	return nil
 }
 
-func generateUserAgent() (string, error) {
+func generateUserAgent(uuid string) (string, error) {
 	// User-Agent format sample
 	// "User-Agent": "sd-local/<sd-local version> (darwin or linux; <UUID>)"
-	uuidObj, err := uuid.NewUUID()
-	if err != nil {
-		return "", err
-	}
-	uuidStr := uuidObj.String()
+	// uuidObj, err := uuid.NewUUID()
+	// if err != nil {
+	// 	return "", err
+	// }
+	// uuidStr := uuidObj.String()
 
-	ua := "sd-local/"
-	ua += version
-	ua += " (" + runtime.GOOS
-	ua += "; " + uuidStr
-	ua += ")"
+	// ua := "sd-local/"
+	// ua += version
+	// ua += " (" + runtime.GOOS
+	// ua += "; " + uuid
+	// ua += ")"
+	ua := fmt.Sprintf("sd-local/%s (%s;%s", version, runtime.GOOS, uuid)
 
 	return ua, nil
 }
@@ -104,6 +105,7 @@ func newBuildCmd() *cobra.Command {
 		RunE: func(cmd *cobra.Command, args []string) error {
 			var err error
 			cmd.SilenceUsage = true
+			var uuidStr string
 
 			if envFilePath != "" {
 				err = mergeEnvFromFile(&optionEnv, envFilePath)
@@ -179,7 +181,7 @@ func newBuildCmd() *cobra.Command {
 				return err
 			}
 
-			if entry.UA == "" {
+			if entry.UUID == "" {
 				fmt.Println("sd-local collects unique UUIDs for statistical surveys.")
 				fmt.Println("You can reset it later by removing the UA key from config.")
 				fmt.Print("Would you please cooperate with the survey? [y/N]: ")
@@ -191,12 +193,18 @@ func newBuildCmd() *cobra.Command {
 				input = strings.TrimSuffix(input, "\n")
 				if input == "y" || input == "Y" || input == "yes" || input == "Yes" {
 
-					ua, err := generateUserAgent()
+					uuidObj, err := uuid.NewUUID()
 					if err != nil {
 						return err
 					}
+					uuidStr := uuidObj.String()
 
-					err = entry.Set("ua", ua)
+					// ua, err := generateUserAgent(uuidStr)
+					// if err != nil {
+					// 	return err
+					// }
+
+					err = entry.Set("uuid", uuidStr)
 					if err != nil {
 						return err
 					}
@@ -206,12 +214,16 @@ func newBuildCmd() *cobra.Command {
 						return err
 					}
 				} else {
-					err = entry.Set("ua", "-")
+					err = entry.Set("uuid", "-")
 					err = config.Save()
 				}
 			}
 
-			api := apiNew(entry.APIURL, entry.Token, entry.UA)
+			ua, err := generateUserAgent(uuidStr)
+			if err != nil {
+				return err
+			}
+			api := apiNew(entry.APIURL, entry.Token, ua)
 
 			err = api.InitJWT()
 			if err != nil {
