@@ -60,17 +60,6 @@ func mergeEnvFromFile(optionEnv *map[string]string, envFilePath string) error {
 func generateUserAgent(uuid string) (string, error) {
 	// User-Agent format sample
 	// "User-Agent": "sd-local/<sd-local version> (darwin or linux; <UUID>)"
-	// uuidObj, err := uuid.NewUUID()
-	// if err != nil {
-	// 	return "", err
-	// }
-	// uuidStr := uuidObj.String()
-
-	// ua := "sd-local/"
-	// ua += version
-	// ua += " (" + runtime.GOOS
-	// ua += "; " + uuid
-	// ua += ")"
 	ua := fmt.Sprintf("sd-local/%s (%s; %s)", version, runtime.GOOS, uuid)
 
 	return ua, nil
@@ -194,7 +183,6 @@ func newBuildCmd() *cobra.Command {
 				input = strings.TrimSuffix(input, "\n")
 				if input == "y" || input == "Y" || input == "yes" || input == "Yes" {
 
-					// fmt.Println(sdlocalDir)
 					fmt.Printf("UUID key has been added to %s\n", sdlocalDir)
 
 					uuidObj, err := uuid.NewUUID()
@@ -202,11 +190,6 @@ func newBuildCmd() *cobra.Command {
 						return err
 					}
 					uuidStr := uuidObj.String()
-
-					// ua, err := generateUserAgent(uuidStr)
-					// if err != nil {
-					// 	return err
-					// }
 
 					err = entry.Set("uuid", uuidStr)
 					if err != nil {
