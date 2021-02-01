@@ -172,7 +172,7 @@ func newBuildCmd() *cobra.Command {
 			}
 
 			if entry.UUID == "" {
-				fmt.Println("sd-local collects unique UUIDs for statistical surveys.")
+				fmt.Println("sd-local collects UUIDs for statistical surveys.")
 				fmt.Println("You can reset it later by removing the UA key from config.")
 				fmt.Print("Would you please cooperate with the survey? [y/N]: ")
 
