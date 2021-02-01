@@ -60,7 +60,7 @@ type tokenResponse struct {
 }
 
 // New creates a API
-func New(apiURL, token string, ua string) API {
+func New(apiURL, token, ua string) API {
 	s := &sdAPI{
 		HTTPClient: http.DefaultClient,
 		APIURL:     apiURL,
