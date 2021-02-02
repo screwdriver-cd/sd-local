@@ -180,29 +180,23 @@ func newBuildCmd() *cobra.Command {
 				if err != nil {
 					return err
 				}
+				uuidStr = "-"
 				input = strings.TrimSuffix(input, "\n")
 				if input == "y" || input == "Y" || input == "yes" || input == "Yes" {
-					uuidStr := uuid.NewString()
+					uuidStr = uuid.NewString()
+				}
+				err = entry.Set("uuid", uuidStr)
+				if err != nil {
+					return err
+				}
+				err = config.Save()
+				if err != nil {
+					return err
+				}
 
-					err = entry.Set("uuid", uuidStr)
-					if err != nil {
-						return err
-					}
-
-					err = config.Save()
-					if err != nil {
-						return err
-					}
+				if uuidStr != "-" {
 					fmt.Printf("UUID key has been added to %s\n", configPath)
 				} else {
-					err = entry.Set("uuid", "-")
-					if err != nil {
-						return err
-					}
-					err = config.Save()
-					if err != nil {
-						return err
-					}
 					fmt.Println("UUID key is not set.")
 				}
 			}
