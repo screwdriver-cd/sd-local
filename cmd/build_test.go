@@ -2,12 +2,15 @@ package cmd
 
 import (
 	"bytes"
+	"io"
 	"io/ioutil"
 	"os"
 	"path/filepath"
 	"testing"
 
+	"github.com/screwdriver-cd/sd-local/config"
 	"github.com/screwdriver-cd/sd-local/launch"
+	"github.com/sirupsen/logrus"
 	"github.com/stretchr/testify/assert"
 )
 
@@ -236,4 +239,96 @@ func TestBuildCmd(t *testing.T) {
 		assert.Equal(t, want, buf.String())
 		assert.NotNil(t, err)
 	})
+
+	t.Run("Output y/n message on build cmd without User-Agent", func(t *testing.T) {
+		root := newBuildCmd()
+
+		root.SetArgs([]string{"test"})
+		buf := bytes.NewBuffer(nil)
+		root.SetOut(buf)
+
+		logBuf := bytes.NewBuffer(nil)
+		logrus.SetOutput(logBuf)
+
+		configNew = func(confPath string) (config.Config, error) {
+			defaultEntry := &config.Entry{
+				Launcher: config.Launcher{
+					Version: "stable",
+					Image:   "screwdrivercd/launcher",
+				},
+				UUID: "",
+			}
+
+			return config.Config{
+				Entries: map[string]*config.Entry{
+					"default": defaultEntry,
+				},
+				Current: "default",
+			}, nil
+		}
+
+		actualOutput := captureStdout(func() {
+			root.Execute()
+		})
+
+		expectOutput := `sd-local collects UUIDs for statistical surveys.
+You can reset it later by removing the UUID key from config.
+Would you please cooperate with the survey? [y/N]: `
+		assert.Equal(t, expectOutput, actualOutput)
+	})
+
+	t.Run("Not output y/n message on build cmd with User-Agent", func(t *testing.T) {
+		root := newBuildCmd()
+
+		root.SetArgs([]string{"test"})
+		buf := bytes.NewBuffer(nil)
+		root.SetOut(buf)
+
+		logBuf := bytes.NewBuffer(nil)
+		logrus.SetOutput(logBuf)
+
+		configNew = func(confPath string) (config.Config, error) {
+			defaultEntry := &config.Entry{
+				Launcher: config.Launcher{
+					Version: "stable",
+					Image:   "screwdrivercd/launcher",
+				},
+				UUID: "foo",
+			}
+
+			return config.Config{
+				Entries: map[string]*config.Entry{
+					"default": defaultEntry,
+				},
+				Current: "default",
+			}, nil
+		}
+
+		actualOutput := captureStdout(func() {
+			root.Execute()
+		})
+
+		expectOutput := ""
+		assert.Equal(t, expectOutput, actualOutput)
+	})
+}
+
+func captureStdout(f func()) string {
+	r, w, err := os.Pipe()
+	if err != nil {
+		panic(err)
+	}
+
+	stdout := os.Stdout
+	os.Stdout = w
+
+	f()
+
+	os.Stdout = stdout
+	w.Close()
+
+	var buf bytes.Buffer
+	io.Copy(&buf, r)
+
+	return buf.String()
 }

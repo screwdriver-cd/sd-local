@@ -18,6 +18,7 @@ Can see the below settings:
 * Screwdriver.cd Store URL
 * Screwdriver.cd Token
 * Screwdriver.cd launcher version
+* Screwdriver.cd UUID
 * Screwdriver.cd launcher image`,
 		RunE: func(cmd *cobra.Command, args []string) error {
 			cmd.SilenceUsage = true

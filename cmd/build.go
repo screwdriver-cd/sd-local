@@ -1,13 +1,17 @@
 package cmd
 
 import (
+	"bufio"
 	"encoding/json"
 	"errors"
 	"fmt"
 	"io/ioutil"
 	"os"
 	"path/filepath"
+	"runtime"
+	"strings"
 
+	"github.com/google/uuid"
 	"github.com/joho/godotenv"
 	"github.com/mitchellh/go-homedir"
 	"github.com/screwdriver-cd/sd-local/buildlog"
@@ -51,6 +55,14 @@ func mergeEnvFromFile(optionEnv *map[string]string, envFilePath string) error {
 		}
 	}
 	return nil
+}
+
+func generateUserAgent(uuid string) string {
+	// User-Agent format sample
+	// "User-Agent": "sd-local/<sd-local version> (darwin or linux; <UUID>)"
+	ua := fmt.Sprintf("sd-local/%s (%s; %s)", version, runtime.GOOS, uuid)
+
+	return ua
 }
 
 func newBuildCmd() *cobra.Command {
@@ -147,7 +159,8 @@ func newBuildCmd() *cobra.Command {
 				srcPath = scm.LocalPath()
 			}
 
-			config, err := configNew(filepath.Join(sdlocalDir, "config"))
+			configPath := filepath.Join(sdlocalDir, "config")
+			config, err := configNew(configPath)
 			if err != nil {
 				return err
 			}
@@ -157,7 +170,39 @@ func newBuildCmd() *cobra.Command {
 				return err
 			}
 
-			api := apiNew(entry.APIURL, entry.Token)
+			uuidStr := entry.UUID
+			if uuidStr == "" {
+				fmt.Println("sd-local collects UUIDs for statistical surveys.")
+				fmt.Println("You can reset it later by removing the UUID key from config.")
+				fmt.Print("Would you please cooperate with the survey? [y/N]: ")
+
+				input, err := bufio.NewReader(os.Stdin).ReadString('\n')
+				if err != nil {
+					return err
+				}
+				uuidStr = "-"
+				input = strings.TrimSuffix(input, "\n")
+				if input == "y" || input == "Y" || input == "yes" || input == "Yes" {
+					uuidStr = uuid.NewString()
+				}
+				err = entry.Set("uuid", uuidStr)
+				if err != nil {
+					return err
+				}
+				err = config.Save()
+				if err != nil {
+					return err
+				}
+
+				if uuidStr != "-" {
+					fmt.Printf("UUID key has been added to %s\n", configPath)
+				} else {
+					fmt.Println("UUID key is not set.")
+				}
+			}
+
+			ua := generateUserAgent(uuidStr)
+			api := apiNew(entry.APIURL, entry.Token, ua)
 
 			err = api.InitJWT()
 			if err != nil {

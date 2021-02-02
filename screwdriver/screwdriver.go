@@ -30,6 +30,7 @@ type sdAPI struct {
 	UserToken  string
 	APIURL     string
 	SDJWT      string
+	UA         string
 }
 
 var _ API = (*sdAPI)(nil)
@@ -59,11 +60,12 @@ type tokenResponse struct {
 }
 
 // New creates a API
-func New(apiURL, token string) API {
+func New(apiURL, token, ua string) API {
 	s := &sdAPI{
 		HTTPClient: http.DefaultClient,
 		APIURL:     apiURL,
 		UserToken:  token,
+		UA:         ua,
 	}
 
 	return s
@@ -84,6 +86,8 @@ func (sd *sdAPI) request(method, path string, body io.Reader) (*http.Response, e
 	if err != nil {
 		return nil, err
 	}
+
+	req.Header.Add("User-Agent", sd.UA)
 
 	switch method {
 	case http.MethodGet:

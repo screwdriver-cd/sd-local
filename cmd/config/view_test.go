@@ -33,6 +33,7 @@ func TestViewCmd(t *testing.T) {
     api-url: api.screwdriver.com
     store-url: store.screwdriver.com
     token: sd-token
+    UUID: '-'
     launcher:
       version: 1.0.0
       image: screwdrivercd/launcher`,
@@ -40,6 +41,7 @@ func TestViewCmd(t *testing.T) {
     api-url: api-test.screwdriver.com
     store-url: store-test.screwdriver.com
     token: sd-token-test
+    UUID: eb004dc1-614c-11eb-bab9-0242ac120002
     launcher:
       version: 1.0.0-test
       image: screwdrivercd/launcher
@@ -53,6 +55,7 @@ func TestViewCmd(t *testing.T) {
     api-url: api.screwdriver.com
     store-url: store.screwdriver.com
     token: sd-token
+    UUID: '-'
     launcher:
       version: 1.0.0
       image: screwdrivercd/launcher`,
@@ -60,6 +63,7 @@ func TestViewCmd(t *testing.T) {
     api-url: api-test.screwdriver.com
     store-url: store-test.screwdriver.com
     token: sd-token-test
+    UUID: eb004dc1-614c-11eb-bab9-0242ac120002
     launcher:
       version: 1.0.0-test
       image: screwdrivercd/launcher

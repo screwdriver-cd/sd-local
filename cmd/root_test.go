@@ -44,6 +44,7 @@ func setup() {
 				Version: "stable",
 				Image:   "screwdrivercd/launcher",
 			},
+			UUID: "eb004dc1-614c-11eb-bab9-0242ac120002",
 		}
 
 		return config.Config{
@@ -53,7 +54,7 @@ func setup() {
 			Current: "default",
 		}, nil
 	}
-	apiNew = func(url, token string) screwdriver.API { return mockAPI{} }
+	apiNew = func(url, token, ua string) screwdriver.API { return mockAPI{} }
 	buildLogNew = func(filepath string, writer io.Writer, done chan<- struct{}) (logger buildlog.Logger, err error) {
 		return mockLogger{}, nil
 	}

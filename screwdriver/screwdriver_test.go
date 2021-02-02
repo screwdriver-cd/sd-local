@@ -28,7 +28,8 @@ func TestNew(t *testing.T) {
 	t.Run("success", func(t *testing.T) {
 		testToken := "token"
 
-		gotAPI := New("http://example.com:yyy", testToken)
+		ua := "sd-local/dev (linux; eb004dc1-614c-11eb-bab9-0242ac120002)"
+		gotAPI := New("http://example.com:yyy", testToken, ua)
 		api, ok := gotAPI.(*sdAPI)
 		assert.True(t, ok)
 		assert.Equal(t, testToken, api.UserToken)
@@ -43,6 +44,8 @@ func TestJob(t *testing.T) {
 			validateHeader(t, "Content-Type", wantContentType, r)
 			wantAuthBearer := "Bearer jwt"
 			validateHeader(t, "Authorization", wantAuthBearer, r)
+			wantUserAgent := "sd-local/dev (linux; eb004dc1-614c-11eb-bab9-0242ac120002)"
+			validateHeader(t, "User-Agent", wantUserAgent, r)
 
 			w.WriteHeader(200)
 			w.Header().Set("Content-Type", "application/json")
@@ -57,6 +60,7 @@ func TestJob(t *testing.T) {
 			UserToken:  "dummy",
 			APIURL:     server.URL,
 			SDJWT:      "jwt",
+			UA:         "sd-local/dev (linux; eb004dc1-614c-11eb-bab9-0242ac120002)",
 		}
 
 		testJob := Job{
