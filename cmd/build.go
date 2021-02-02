@@ -208,9 +208,6 @@ func newBuildCmd() *cobra.Command {
 			}
 
 			ua := generateUserAgent(uuidStr)
-			if err != nil {
-				return err
-			}
 			api := apiNew(entry.APIURL, entry.Token, ua)
 
 			err = api.InitJWT()
