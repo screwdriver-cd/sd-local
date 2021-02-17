@@ -84,6 +84,7 @@ type Option struct {
 	SocketPath      string
 	FlagVerbose     bool
 	LocalVolumes    []string
+	DockerIsPodman  bool
 }
 
 const (
@@ -168,7 +169,7 @@ func createBuildEntry(option Option) buildEntry {
 func New(option Option) Launcher {
 	l := new(launch)
 
-	l.runner = newDocker(option.Entry.Launcher.Image, option.Entry.Launcher.Version, option.UseSudo, option.InteractiveMode, option.SocketPath, option.FlagVerbose, option.LocalVolumes)
+	l.runner = newDocker(option.Entry.Launcher.Image, option.Entry.Launcher.Version, option.UseSudo, option.InteractiveMode, option.SocketPath, option.FlagVerbose, option.LocalVolumes, option.DockerIsPodman)
 	l.buildEntry = createBuildEntry(option)
 
 	return l

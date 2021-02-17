@@ -47,7 +47,7 @@ const (
 	orgRepo = "sd-local/local-build"
 )
 
-func dockerIsPodman() (bool, error) {
+func DockerIsPodman() (bool, error) {
 	c := exec.Command("docker", "--version")
 	sb := new(strings.Builder)
 	c.Stdout = sb
@@ -57,11 +57,7 @@ func dockerIsPodman() (bool, error) {
 	return strings.HasPrefix(sb.String(), "podman"), nil
 }
 
-func newDocker(setupImage, setupImageVer string, useSudo bool, interactiveMode bool, socketPath string, flagVerbose bool, localVolumes []string) runner {
-	dockerIsPodman, err := dockerIsPodman()
-	if err != nil {
-		logrus.Panic(err)
-	}
+func newDocker(setupImage, setupImageVer string, useSudo bool, interactiveMode bool, socketPath string, flagVerbose bool, localVolumes []string, dockerIsPodman bool) runner {
 	return &docker{
 		volume:            "SD_LAUNCH_BIN",
 		habVolume:         "SD_LAUNCH_HAB",
