@@ -47,14 +47,14 @@ const (
 	orgRepo = "sd-local/local-build"
 )
 
+// DockerIsPodman determines whether docker is podman by asking its version and looking for "podman".
 func DockerIsPodman() (bool, error) {
 	c := exec.Command("docker", "--version")
-	sb := new(strings.Builder)
-	c.Stdout = sb
-	if err := c.Run(); err != nil {
+	data, err := c.Output()
+	if err != nil {
 		return false, fmt.Errorf("cannot determine whether docker is podman: %w", err)
 	}
-	return strings.HasPrefix(sb.String(), "podman"), nil
+	return strings.HasPrefix(string(data), "podman"), nil
 }
 
 func newDocker(setupImage, setupImageVer string, useSudo bool, interactiveMode bool, socketPath string, flagVerbose bool, localVolumes []string, dockerIsPodman bool) runner {
