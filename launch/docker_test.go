@@ -66,7 +66,7 @@ func TestNewDocker(t *testing.T) {
 			localVolumes:      []string{"path:path"},
 		}
 
-		d := newDocker("launcher", "latest", false, false, "/auth.sock", false, []string{"path:path"})
+		d := newDocker("launcher", "latest", false, false, "/auth.sock", false, []string{"path:path"}, false)
 
 		assert.Equal(t, expected, d)
 	})
