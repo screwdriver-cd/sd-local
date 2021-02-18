@@ -20,7 +20,6 @@ Usage:
 
 Flags:
       --artifacts-dir string   Path to the host side directory which is mounted into $SD_ARTIFACTS_DIR. (default "sd-artifacts")
-      --dockerIsPodman         Whether docker is podman
   -e, --env stringToString     Set key and value relationship which is set as environment variables of Build Container. (<key>=<value>) (default [])
       --env-file string        Path to config file of environment variables. '.env' format file can be used.
   -h, --help                   help for build
