@@ -99,7 +99,7 @@ func (d *docker) runBuild(buildEntry buildEntry) error {
 	binVol := fmt.Sprintf("%s:%s", d.volume, "/opt/sd")
 	habVol := fmt.Sprintf("%s:%s", d.habVolume, "/opt/sd/hab")
 
-	dockerVolumes := append(d.localVolumes, srcVol, artVol, binVol, habVol, fmt.Sprintf("%s:/tmp/auth.sock", d.socketPath))
+	dockerVolumes := append(d.localVolumes, srcVol, artVol, binVol, habVol, fmt.Sprintf("%s:/tmp/auth.sock:rw", d.socketPath))
 
 	// Overwrite steps for sd-local interact mode. The env will load later.
 	if d.interactiveMode {
