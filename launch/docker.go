@@ -69,7 +69,7 @@ func (d *docker) setupBin() error {
 	image := fmt.Sprintf("%s:%s", d.setupImage, d.setupImageVersion)
 	_, err := d.execDockerCommand("pull", image)
 	if err != nil {
-		return fmt.Errorf("failed to pull launcher image: %w", err)
+		return fmt.Errorf("failed to pull launcher image: %v", err)
 	}
 
 	// The mechanism for population is that VOLUMEs were declared in the image, so they copy what was in their layer to
@@ -79,7 +79,7 @@ func (d *docker) setupBin() error {
 	//       and then used by subsequent images that then use their content.
 	_, err = d.execDockerCommand("container", "run", "--rm", "-v", mount, "-v", habMount, "--entrypoint", "/bin/echo", image, "set up bin")
 	if err != nil {
-		return fmt.Errorf("failed to prepare build scripts: %w", err)
+		return fmt.Errorf("failed to prepare build scripts: %v", err)
 	}
 
 	return nil
