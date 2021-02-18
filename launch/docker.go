@@ -76,27 +76,22 @@ func newDocker(setupImage, setupImageVer string, useSudo bool, interactiveMode b
 }
 
 func (d *docker) setupBin() error {
-	args := []string{"volume", "create"}
 	if !d.dockerIsPodman {
-		args = append(args, "--name")
-	}
-	args = append(args, d.volume)
+		_, err := d.execDockerCommand("volume", "create", "--name", d.volume)
+		if err != nil {
+			return fmt.Errorf("failed to create docker volume: %v", err)
+		}
 
-	_, err := d.execDockerCommand(args...)
-	if err != nil {
-		return fmt.Errorf("failed to create docker volume: %v", err)
-	}
-
-	args[len(args)-1] = d.habVolume
-	_, err = d.execDockerCommand(args...)
-	if err != nil {
-		return fmt.Errorf("failed to create docker hab volume: %v", err)
+		_, err = d.execDockerCommand("volume", "create", "--name", d.habVolume)
+		if err != nil {
+			return fmt.Errorf("failed to create docker hab volume: %v", err)
+		}
 	}
 
 	mount := fmt.Sprintf("%s:/opt/sd/", d.volume)
 	habMount := fmt.Sprintf("%s:/hab", d.habVolume)
 	image := fmt.Sprintf("%s:%s", d.setupImage, d.setupImageVersion)
-	_, err = d.execDockerCommand("pull", image)
+	_, err := d.execDockerCommand("pull", image)
 	if err != nil {
 		return fmt.Errorf("failed to pull launcher image: %v", err)
 	}
