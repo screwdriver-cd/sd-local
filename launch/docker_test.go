@@ -15,10 +15,11 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
+var sshSocket = os.Getenv("SSH_AUTH_SOCK") + ":rw"
+
 const (
 	fakeProcessLifeTime = 100 * time.Second
 	waitForKillTime     = 100 * time.Millisecond
-	sshSocket           = os.Getenv("SSH_AUTH_SOCK") + ":rw"
 )
 
 type fakeExecCommand struct {
