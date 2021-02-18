@@ -452,8 +452,8 @@ func TestDockerClean(t *testing.T) {
 		}
 
 		d.clean()
-		assert.Equal(t, fmt.Sprintf("docker volume rm --force %v", d.habVolume), c.commands[0])
-		assert.Equal(t, fmt.Sprintf("docker volume rm --force %v", d.volume), c.commands[1])
+		assert.Equal(t, fmt.Sprintf("sudo docker volume rm --force %v", d.habVolume), c.commands[0])
+		assert.Equal(t, fmt.Sprintf("sudo docker volume rm --force %v", d.volume), c.commands[1])
 	})
 
 	t.Run("failure", func(t *testing.T) {
