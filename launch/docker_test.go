@@ -66,7 +66,7 @@ func TestNewDocker(t *testing.T) {
 			localVolumes:      []string{"path:path"},
 		}
 
-		d := newDocker("launcher", "latest", false, false, "/auth.sock", false, []string{"path:path"}, false)
+		d := newDocker("launcher", "latest", false, false, "/auth.sock", false, []string{"path:path"})
 
 		assert.Equal(t, expected, d)
 	})
@@ -89,7 +89,6 @@ func TestSetupBin(t *testing.T) {
 		expectError error
 	}{
 		{"success", "SUCCESS_SETUP_BIN", nil},
-		{"failure volume create", "FAIL_CREATING_VOLUME", fmt.Errorf("failed to create docker volume: exit status 1")},
 		{"failure container run", "FAIL_CONTAINER_RUN", fmt.Errorf("failed to prepare build scripts: exit status 1")},
 		{"failure launcher image pull", "FAIL_LAUNCHER_PULL", fmt.Errorf("failed to pull launcher image: exit status 1")},
 	}
@@ -123,7 +122,6 @@ func TestSetupBinWithSudo(t *testing.T) {
 		expectError error
 	}{
 		{"success", "SUCCESS_SETUP_BIN_SUDO", nil},
-		{"failure volume create", "FAIL_CREATING_VOLUME_SUDO", fmt.Errorf("failed to create docker volume: exit status 1")},
 		{"failure container run", "FAIL_CONTAINER_RUN_SUDO", fmt.Errorf("failed to prepare build scripts: exit status 1")},
 		{"failure launcher image pull", "FAIL_LAUNCHER_PULL_SUDO", fmt.Errorf("failed to pull launcher image: exit status 1")},
 	}
@@ -425,6 +423,7 @@ func TestDockerClean(t *testing.T) {
 		c := newFakeExecCommand("SUCCESS_TO_CLEAN")
 		execCommand = c.execCmd
 		d := &docker{
+			habVolume:         "SD_LAUNCH_HAB",
 			volume:            "SD_LAUNCH_BIN",
 			setupImage:        "launcher",
 			setupImageVersion: "latest",
@@ -433,7 +432,8 @@ func TestDockerClean(t *testing.T) {
 		}
 
 		d.clean()
-		assert.Equal(t, fmt.Sprintf("docker volume rm --force %v", d.volume), c.commands[0])
+		assert.Equal(t, fmt.Sprintf("docker volume rm --force %v", d.habVolume), c.commands[0])
+		assert.Equal(t, fmt.Sprintf("docker volume rm --force %v", d.volume), c.commands[1])
 	})
 
 	t.Run("success with sudo", func(t *testing.T) {
@@ -443,6 +443,7 @@ func TestDockerClean(t *testing.T) {
 		c := newFakeExecCommand("SUCCESS_TO_CLEAN")
 		execCommand = c.execCmd
 		d := &docker{
+			habVolume:         "SD_LAUNCH_HAB",
 			volume:            "SD_LAUNCH_BIN",
 			setupImage:        "launcher",
 			setupImageVersion: "latest",
@@ -451,7 +452,8 @@ func TestDockerClean(t *testing.T) {
 		}
 
 		d.clean()
-		assert.Equal(t, fmt.Sprintf("sudo docker volume rm --force %v", d.volume), c.commands[0])
+		assert.Equal(t, fmt.Sprintf("sudo docker volume rm --force %v", d.habVolume), c.commands[0])
+		assert.Equal(t, fmt.Sprintf("sudo docker volume rm --force %v", d.volume), c.commands[1])
 	})
 
 	t.Run("failure", func(t *testing.T) {

@@ -31,7 +31,6 @@ type docker struct {
 	interact          Interacter
 	socketPath        string
 	localVolumes      []string
-	dockerIsPodman    bool
 }
 
 var _ runner = (*docker)(nil)
@@ -47,17 +46,7 @@ const (
 	orgRepo = "sd-local/local-build"
 )
 
-// DockerIsPodman determines whether docker is podman by asking its version and looking for "podman".
-func DockerIsPodman() (bool, error) {
-	c := exec.Command("docker", "--version")
-	data, err := c.Output()
-	if err != nil {
-		return false, fmt.Errorf("cannot determine whether docker is podman: %w", err)
-	}
-	return strings.HasPrefix(string(data), "podman"), nil
-}
-
-func newDocker(setupImage, setupImageVer string, useSudo bool, interactiveMode bool, socketPath string, flagVerbose bool, localVolumes []string, dockerIsPodman bool) runner {
+func newDocker(setupImage, setupImageVer string, useSudo bool, interactiveMode bool, socketPath string, flagVerbose bool, localVolumes []string) runner {
 	return &docker{
 		volume:            "SD_LAUNCH_BIN",
 		habVolume:         "SD_LAUNCH_HAB",
@@ -71,36 +60,23 @@ func newDocker(setupImage, setupImageVer string, useSudo bool, interactiveMode b
 		interact:          &Interact{},
 		socketPath:        socketPath,
 		localVolumes:      localVolumes,
-		dockerIsPodman:    dockerIsPodman,
 	}
 }
 
 func (d *docker) setupBin() error {
-	args := []string{"volume", "create"}
-	if !d.dockerIsPodman {
-		args = append(args, "--name")
-	}
-	args = append(args, d.volume)
-
-	_, err := d.execDockerCommand(args...)
-	if err != nil {
-		return fmt.Errorf("failed to create docker volume: %v", err)
-	}
-
-	args[len(args)-1] = d.habVolume
-	_, err = d.execDockerCommand(args...)
-	if err != nil {
-		return fmt.Errorf("failed to create docker hab volume: %v", err)
-	}
-
 	mount := fmt.Sprintf("%s:/opt/sd/", d.volume)
 	habMount := fmt.Sprintf("%s:/hab", d.habVolume)
 	image := fmt.Sprintf("%s:%s", d.setupImage, d.setupImageVersion)
-	_, err = d.execDockerCommand("pull", image)
+	_, err := d.execDockerCommand("pull", image)
 	if err != nil {
 		return fmt.Errorf("failed to pull launcher image: %v", err)
 	}
 
+	// The mechanism for population is that VOLUMEs were declared in the image, so they copy what was in their layer to
+	// the mounted location on first mount of non-existing volumes
+	// NOTE: docker allows copying to first-time mounted as well, but both docker and podman copy to non-existing ones.
+	//       therefore, volumes are not pre-created, but created on first mention by the image that populates them
+	//       and then used by subsequent images that then use their content.
 	_, err = d.execDockerCommand("container", "run", "--rm", "-v", mount, "-v", habMount, "--entrypoint", "/bin/echo", image, "set up bin")
 	if err != nil {
 		return fmt.Errorf("failed to prepare build scripts: %v", err)
@@ -273,13 +249,14 @@ func (d *docker) kill(sig os.Signal) {
 }
 
 func (d *docker) clean() {
-	_, err := d.execDockerCommand("volume", "rm", "--force", d.volume)
+	// Since the habVolume is mounted inside the mountpoint for volume, it must be removed first.
+	_, err := d.execDockerCommand("volume", "rm", "--force", d.habVolume)
 
 	if err != nil {
 		logrus.Warn(fmt.Errorf("failed to remove volume: %v", err))
 	}
 
-	_, err = d.execDockerCommand("volume", "rm", "--force", d.habVolume)
+	_, err = d.execDockerCommand("volume", "rm", "--force", d.volume)
 
 	if err != nil {
 		logrus.Warn(fmt.Errorf("failed to remove hab volume: %v", err))
