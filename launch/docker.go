@@ -31,7 +31,6 @@ type docker struct {
 	interact          Interacter
 	socketPath        string
 	localVolumes      []string
-	dockerIsPodman    bool
 }
 
 var _ runner = (*docker)(nil)
@@ -47,17 +46,7 @@ const (
 	orgRepo = "sd-local/local-build"
 )
 
-// DockerIsPodman determines whether docker is podman by asking its version and looking for "podman".
-func DockerIsPodman() (bool, error) {
-	c := exec.Command("docker", "--version")
-	data, err := c.Output()
-	if err != nil {
-		return false, fmt.Errorf("cannot determine whether docker is podman: %w", err)
-	}
-	return strings.HasPrefix(string(data), "podman"), nil
-}
-
-func newDocker(setupImage, setupImageVer string, useSudo bool, interactiveMode bool, socketPath string, flagVerbose bool, localVolumes []string, dockerIsPodman bool) runner {
+func newDocker(setupImage, setupImageVer string, useSudo bool, interactiveMode bool, socketPath string, flagVerbose bool, localVolumes []string) runner {
 	return &docker{
 		volume:            "SD_LAUNCH_BIN",
 		habVolume:         "SD_LAUNCH_HAB",
@@ -71,24 +60,16 @@ func newDocker(setupImage, setupImageVer string, useSudo bool, interactiveMode b
 		interact:          &Interact{},
 		socketPath:        socketPath,
 		localVolumes:      localVolumes,
-		dockerIsPodman:    dockerIsPodman,
 	}
 }
 
 func (d *docker) setupBin() error {
-	args := []string{"volume", "create"}
-	if !d.dockerIsPodman {
-		args = append(args, "--name")
-	}
-	args = append(args, d.volume)
-
-	_, err := d.execDockerCommand(args...)
+	_, err := d.execDockerCommand("volume", "create", "--name", d.volume)
 	if err != nil {
 		return fmt.Errorf("failed to create docker volume: %v", err)
 	}
 
-	args[len(args)-1] = d.habVolume
-	_, err = d.execDockerCommand(args...)
+	_, err = d.execDockerCommand("volume", "create", "--name", d.habVolume)
 	if err != nil {
 		return fmt.Errorf("failed to create docker hab volume: %v", err)
 	}
