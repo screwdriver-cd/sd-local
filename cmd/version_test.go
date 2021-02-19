@@ -3,6 +3,7 @@ package cmd
 import (
 	"bytes"
 	"fmt"
+	"runtime"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -17,16 +18,16 @@ func TestVersionCmd(t *testing.T) {
 		{
 			name:    "0.0.1 is embedded as version",
 			version: "0.0.1",
-			expect:  "0.0.1",
+			expect:  detailVersion("0.0.1"),
 		},
 		{
 			name:    "0.1.0 is embedded as version",
 			version: "0.1.0",
-			expect:  "0.1.0",
+			expect:  detailVersion("0.1.0"),
 		},
 		{
 			name:   "version is not embedded",
-			expect: "dev",
+			expect: detailVersion("dev"),
 		},
 	}
 	for _, c := range cases {
@@ -43,4 +44,8 @@ func TestVersionCmd(t *testing.T) {
 			assert.Equal(t, fmt.Sprintf("%s\n", c.expect), buf.String())
 		})
 	}
+}
+
+func detailVersion(version string) string {
+	return fmt.Sprintf("%s\nplatform: %s/%s\ngo: %s\ncompiler: %s", version, runtime.GOOS, runtime.GOARCH, runtime.Version(), runtime.Compiler)
 }
