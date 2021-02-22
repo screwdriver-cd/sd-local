@@ -2,6 +2,7 @@ package cmd
 
 import (
 	"fmt"
+	"runtime"
 
 	"github.com/spf13/cobra"
 )
@@ -17,7 +18,8 @@ func newVersionCmd() *cobra.Command {
 		Use:   "version",
 		Short: "Display command's version.",
 		Run: func(cmd *cobra.Command, args []string) {
-			fmt.Fprintln(cmd.OutOrStdout(), version)
+			ver := fmt.Sprintf("%s\nplatform: %s/%s\ngo: %s\ncompiler: %s", version, runtime.GOOS, runtime.GOARCH, runtime.Version(), runtime.Compiler)
+			fmt.Fprintln(cmd.OutOrStdout(), ver)
 		},
 	}
 }

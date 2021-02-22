@@ -153,7 +153,10 @@ $ sd-local config view
 ##### version
 ```bash
 $ sd-local version
-0.0.12
+1.0.23
+platform: darwin/amd64
+go: go1.15.7
+compiler: gc
 ```
 
 ##### update
