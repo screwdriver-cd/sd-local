@@ -148,6 +148,7 @@ func TestRunBuild(t *testing.T) {
 		volume:            "SD_LAUNCH_BIN",
 		setupImage:        "launcher",
 		setupImageVersion: "latest",
+		socketPath:        os.Getenv("SSH_AUTH_SOCK"),
 	}
 
 	testCase := []struct {
@@ -200,6 +201,7 @@ func TestRunBuildWithSudo(t *testing.T) {
 		setupImage:        "launcher",
 		setupImageVersion: "latest",
 		useSudo:           true,
+		socketPath:        os.Getenv("SSH_AUTH_SOCK"),
 	}
 
 	testCase := []struct {
@@ -254,6 +256,7 @@ func TestRunBuildWithInteractiveMode(t *testing.T) {
 		useSudo:           true,
 		interactiveMode:   true,
 		interact:          &mockInteract{},
+		socketPath:        os.Getenv("SSH_AUTH_SOCK"),
 	}
 
 	testCase := []struct {
