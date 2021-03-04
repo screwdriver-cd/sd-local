@@ -2,6 +2,7 @@ package cmd
 
 import (
 	"bytes"
+	"fmt"
 	"io"
 	"os"
 	"testing"
@@ -102,7 +103,33 @@ func TestRootCmd(t *testing.T) {
 		buf := bytes.NewBuffer(nil)
 		root.SetOut(buf)
 		err := root.Execute()
-		want := `Error: accepts 1 arg(s), received 0
+		want := `Error: accepts 1 arg(s), received 0` + fmt.Sprintf(`
+Usage:
+  sd-local build [job name] [flags]
+
+Flags:
+      --artifacts-dir string   Path to the host side directory which is mounted into $SD_ARTIFACTS_DIR. (default "sd-artifacts")
+  -e, --env stringToString     Set key and value relationship which is set as environment variables of Build Container. (<key>=<value>) (default [])
+      --env-file string        Path to config file of environment variables. '.env' format file can be used.
+  -h, --help                   help for build
+  -i, --interactive            Attach the build container in interactive mode.
+  -m, --memory string          Memory limit for build container, which take a positive integer, followed by a suffix of b, k, m, g.
+      --meta string            Metadata to pass into the build environment, which is represented with JSON format
+      --meta-file string       Path to the meta file. meta file is represented with JSON format.
+      --privileged             Use privileged mode for container runtime.
+  -S, --socket string          Path to the socket. It will used in build container. (default "%s")
+      --src-url string         Specify the source url to build.
+                               ex) git@github.com:<org>/<repo>.git[#<branch>]
+                                   https://github.com/<org>/<repo>.git[#<branch>]
+      --sudo                   Use sudo command for container runtime.
+      --vol strings            Volumes to mount into build container.
+
+Global Flags:
+  -v, --verbose   verbose output.
+
+`, launch.DefaultSocketPath())
+		if len(launch.DefaultSocketPath()) == 0 {
+			want = `Error: accepts 1 arg(s), received 0
 Usage:
   sd-local build [job name] [flags]
 
@@ -127,6 +154,7 @@ Global Flags:
   -v, --verbose   verbose output.
 
 `
+		}
 		assert.Equal(t, want, buf.String())
 		assert.NotNil(t, err)
 	})
