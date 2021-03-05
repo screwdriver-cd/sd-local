@@ -2,7 +2,6 @@ package cmd
 
 import (
 	"bytes"
-	"fmt"
 	"io"
 	"io/ioutil"
 	"os"
@@ -14,58 +13,6 @@ import (
 	"github.com/sirupsen/logrus"
 	"github.com/stretchr/testify/assert"
 )
-
-func BuildUsage() string {
-
-	buildUsage := fmt.Sprintf(`
-Usage:
-  build [job name] [flags]
-
-Flags:
-      --artifacts-dir string   Path to the host side directory which is mounted into $SD_ARTIFACTS_DIR. (default "sd-artifacts")
-  -e, --env stringToString     Set key and value relationship which is set as environment variables of Build Container. (<key>=<value>) (default [])
-      --env-file string        Path to config file of environment variables. '.env' format file can be used.
-  -h, --help                   help for build
-  -i, --interactive            Attach the build container in interactive mode.
-  -m, --memory string          Memory limit for build container, which take a positive integer, followed by a suffix of b, k, m, g.
-      --meta string            Metadata to pass into the build environment, which is represented with JSON format
-      --meta-file string       Path to the meta file. meta file is represented with JSON format.
-      --privileged             Use privileged mode for container runtime.
-  -S, --socket string          Path to the socket. It will used in build container. (default "%s")
-      --src-url string         Specify the source url to build.
-                               ex) git@github.com:<org>/<repo>.git[#<branch>]
-                                   https://github.com/<org>/<repo>.git[#<branch>]
-      --sudo                   Use sudo command for container runtime.
-      --vol strings            Volumes to mount into build container.
-
-`, launch.DefaultSocketPath())
-	if len(launch.DefaultSocketPath()) == 0 {
-		buildUsage = `
-Usage:
-  build [job name] [flags]
-
-Flags:
-      --artifacts-dir string   Path to the host side directory which is mounted into $SD_ARTIFACTS_DIR. (default "sd-artifacts")
-  -e, --env stringToString     Set key and value relationship which is set as environment variables of Build Container. (<key>=<value>) (default [])
-      --env-file string        Path to config file of environment variables. '.env' format file can be used.
-  -h, --help                   help for build
-  -i, --interactive            Attach the build container in interactive mode.
-  -m, --memory string          Memory limit for build container, which take a positive integer, followed by a suffix of b, k, m, g.
-      --meta string            Metadata to pass into the build environment, which is represented with JSON format
-      --meta-file string       Path to the meta file. meta file is represented with JSON format.
-      --privileged             Use privileged mode for container runtime.
-  -S, --socket string          Path to the socket. It will used in build container.
-      --src-url string         Specify the source url to build.
-                               ex) git@github.com:<org>/<repo>.git[#<branch>]
-                                   https://github.com/<org>/<repo>.git[#<branch>]
-      --sudo                   Use sudo command for container runtime.
-      --vol strings            Volumes to mount into build container.
-
-`
-	}
-
-	return buildUsage
-}
 
 func TestBuildCmd(t *testing.T) {
 	t.Run("Success build cmd", func(t *testing.T) {
@@ -242,7 +189,9 @@ func TestBuildCmd(t *testing.T) {
 		}
 
 		err := root.Execute()
-		want := "Error: can't pass the both options `meta` and `meta-file`, please specify only one of them" + BuildUsage()
+		want := "Error: can't pass the both options `meta` and `meta-file`, please specify only one of them\n" +
+			"Usage:\n  build [job name] [flags]\n" +
+			buildLocalFlags()
 		assert.Equal(t, want, buf.String())
 		assert.NotNil(t, err)
 	})
@@ -253,7 +202,9 @@ func TestBuildCmd(t *testing.T) {
 		buf := bytes.NewBuffer(nil)
 		root.SetOut(buf)
 		err := root.Execute()
-		want := "Error: accepts 1 arg(s), received 2" + BuildUsage()
+		want := "Error: accepts 1 arg(s), received 2\n" +
+			"Usage:\n  build [job name] [flags]\n" +
+			buildLocalFlags()
 		assert.Equal(t, want, buf.String())
 		assert.NotNil(t, err)
 	})
@@ -265,7 +216,9 @@ func TestBuildCmd(t *testing.T) {
 		buf := bytes.NewBuffer(nil)
 		root.SetOut(buf)
 		err := root.Execute()
-		want := "Error: accepts 1 arg(s), received 0" + BuildUsage()
+		want := "Error: accepts 1 arg(s), received 0\n" +
+			"Usage:\n  build [job name] [flags]\n" +
+			buildLocalFlags()
 		assert.Equal(t, want, buf.String())
 		assert.NotNil(t, err)
 	})
