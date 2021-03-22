@@ -131,7 +131,7 @@ func (l *log) output(reader *bufio.Reader) (bool, error) {
 		return false, &parseError{}
 	}
 
-	fmt.Fprintln(l.writer, parsedLog)
+	fmt.Fprintf(l.writer, "%s\r\n", parsedLog)
 	return false, nil
 }
 

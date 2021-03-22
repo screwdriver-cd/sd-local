@@ -75,7 +75,7 @@ func TestRun(t *testing.T) {
 
 		select {
 		case <-done:
-			expected := "main: test 1\nmain: test 2\n"
+			expected := "main: test 1\r\nmain: test 2\r\n"
 			assert.Equal(t, expected, writer.String())
 		case <-timeout:
 			assert.Fail(t, "timeout stop buildlog")
@@ -121,7 +121,7 @@ func TestRun(t *testing.T) {
 
 		select {
 		case <-done:
-			expected := "main: test 1\nmain: long input " + string(longBuffer) + "\nmain: test 3\n"
+			expected := "main: test 1\r\nmain: long input " + string(longBuffer) + "\r\nmain: test 3\r\n"
 			assert.Equal(t, expected, writer.String())
 		case <-timeout:
 			assert.Fail(t, "timeout stop buildlog")
