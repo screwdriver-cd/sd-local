@@ -30,10 +30,6 @@ type Config struct {
 	filePath string            `yaml:"-"`
 }
 
-func New1(e Entry) *Config {
-	return nil
-}
-
 func DefaultEntry() *Entry {
 	return &Entry{
 		APIURL:   "",

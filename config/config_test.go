@@ -17,8 +17,29 @@ import (
 
 var testDir string = "./testdata"
 
+func dummyEntry() *Entry {
+	return &Entry{
+		APIURL:   "api-url",
+		StoreURL: "store-api-url",
+		Token:    "dummy_token",
+		Launcher: Launcher{
+			Version: "latest",
+			Image:   "screwdrivercd/launcher",
+		},
+	}
+}
+
+func dummyConfig() Config{
+	return Config{
+		Entries: map[string]*Entry{
+			"default": dummyEntry(),
+		},
+		Current: "default",
+	}
+}
+
 func TestCreateConfig(t *testing.T) {
-	t.Run("success", func(t *testing.T) {
+	t.Run("success to init config", func(t *testing.T) {
 		rand.Seed(time.Now().UnixNano())
 		cnfPath := filepath.Join(testDir, fmt.Sprintf("%vconfig", rand.Int()))
 		defer os.Remove(cnfPath)
@@ -70,21 +91,8 @@ func TestNewConfig(t *testing.T) {
 			t.Fatal(err)
 		}
 
-		testConfig := Config{
-			Entries: map[string]*Entry{
-				"default": {
-					APIURL:   "api-url",
-					StoreURL: "store-api-url",
-					Token:    "dummy_token",
-					Launcher: Launcher{
-						Version: "latest",
-						Image:   "screwdrivercd/launcher",
-					},
-				},
-			},
-			Current:  "default",
-			filePath: cnfPath,
-		}
+		testConfig := dummyConfig()
+		testConfig.filePath = cnfPath
 
 		assert.Nil(t, err)
 		assert.Equal(t, testConfig, actual)
@@ -99,17 +107,6 @@ func TestNewConfig(t *testing.T) {
 	})
 }
 
-func dummyEntry() *Entry {
-	return &Entry{
-		APIURL:   "api-url",
-		StoreURL: "store-api-url",
-		Token:    "dummy_token",
-		Launcher: Launcher{
-			Version: "latest",
-			Image:   "screwdrivercd/launcher",
-		},
-	}
-}
 
 func TestConfigEntry(t *testing.T) {
 	cases := map[string]struct {
@@ -138,10 +135,7 @@ func TestConfigEntry(t *testing.T) {
 				},
 				Current: "default",
 			}
-			actual, err := config.Entry("default")
-			if err != nil {
-				t.Fatal(err)
-			}
+			actual, err := config.Entry(test.current)
 
 			assert.Equal(t, test.expectErr, err)
 			assert.Equal(t, test.expectEntry, actual)
