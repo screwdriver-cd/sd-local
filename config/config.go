@@ -30,6 +30,23 @@ type Config struct {
 	filePath string            `yaml:"-"`
 }
 
+func New1(e Entry) *Config {
+	return nil
+}
+
+func DefaultEntry() *Entry {
+	return &Entry{
+		APIURL:   "",
+		StoreURL: "",
+		Token:    "",
+		UUID:     "",
+		Launcher: Launcher{
+			Version: "stable",
+			Image:   "screwdrivercd/launcher",
+		},
+	}
+}
+
 func create(configPath string) error {
 	_, err := os.Stat(configPath)
 	// if file exists return nil
@@ -50,7 +67,7 @@ func create(configPath string) error {
 
 	err = yaml.NewEncoder(file).Encode(Config{
 		Entries: map[string]*Entry{
-			"default": newEntry(),
+			"default": DefaultEntry(),
 		},
 		Current: "default",
 	})
@@ -59,15 +76,6 @@ func create(configPath string) error {
 	}
 
 	return nil
-}
-
-func newEntry() *Entry {
-	return &Entry{
-		Launcher: Launcher{
-			Version: "stable",
-			Image:   "screwdrivercd/launcher",
-		},
-	}
 }
 
 // New returns parsed config
@@ -93,20 +101,20 @@ func New(configPath string) (Config, error) {
 	}
 
 	if c.Entries == nil {
-		c.Entries = make(map[string]*Entry, 0)
+		c.Entries = make(map[string]*Entry)
 	}
 
 	return c, nil
 }
 
 // AddEntry create new Entry and add it to Config
-func (c *Config) AddEntry(name string) error {
+func (c *Config) AddEntry(name string, entry *Entry) error {
 	_, exist := c.Entries[name]
 	if exist {
 		return fmt.Errorf("config `%s` already exists", name)
 	}
 
-	c.Entries[name] = newEntry()
+	c.Entries[name] = entry
 	return nil
 }
 

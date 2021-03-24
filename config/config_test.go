@@ -25,15 +25,7 @@ func TestCreateConfig(t *testing.T) {
 
 		expect := Config{
 			Entries: map[string]*Entry{
-				"default": {
-					APIURL:   "",
-					StoreURL: "",
-					Token:    "",
-					Launcher: Launcher{
-						Version: "stable",
-						Image:   "screwdrivercd/launcher",
-					},
-				},
+				"default": DefaultEntry(),
 			},
 			Current: "default",
 		}
@@ -53,15 +45,7 @@ func TestCreateConfig(t *testing.T) {
 
 		expect := Config{
 			Entries: map[string]*Entry{
-				"default": {
-					APIURL:   "",
-					StoreURL: "",
-					Token:    "",
-					Launcher: Launcher{
-						Version: "stable",
-						Image:   "screwdrivercd/launcher",
-					},
-				},
+				"default": DefaultEntry(),
 			},
 			Current: "default",
 		}
@@ -115,62 +99,54 @@ func TestNewConfig(t *testing.T) {
 	})
 }
 
+func dummyEntry() *Entry {
+	return &Entry{
+		APIURL:   "api-url",
+		StoreURL: "store-api-url",
+		Token:    "dummy_token",
+		Launcher: Launcher{
+			Version: "latest",
+			Image:   "screwdrivercd/launcher",
+		},
+	}
+}
+
 func TestConfigEntry(t *testing.T) {
-	t.Run("success", func(t *testing.T) {
-		config := Config{
-			Entries: map[string]*Entry{
-				"default": {
-					APIURL:   "api-url",
-					StoreURL: "store-api-url",
-					Token:    "dummy_token",
-					Launcher: Launcher{
-						Version: "latest",
-						Image:   "screwdrivercd/launcher",
-					},
+	cases := map[string]struct {
+		current     string
+		expectEntry *Entry
+		expectErr   error
+	}{
+		"success": {
+			current:     "default",
+			expectEntry: dummyEntry(),
+			expectErr:   nil,
+		},
+		"failed": {
+			current:     "doesnotexist",
+			expectEntry: &Entry{},
+			expectErr:   fmt.Errorf("config `doesnotexist` does not exist"),
+		},
+	}
+
+	for name, test := range cases {
+		t.Run(name, func(t *testing.T) {
+			t.Parallel()
+			config := Config{
+				Entries: map[string]*Entry{
+					"default": dummyEntry(),
 				},
-			},
-			Current: "default",
-		}
+				Current: "default",
+			}
+			actual, err := config.Entry("default")
+			if err != nil {
+				t.Fatal(err)
+			}
 
-		testEntry := &Entry{
-			APIURL:   "api-url",
-			StoreURL: "store-api-url",
-			Token:    "dummy_token",
-			Launcher: Launcher{
-				Version: "latest",
-				Image:   "screwdrivercd/launcher",
-			},
-		}
-
-		actual, err := config.Entry("default")
-		if err != nil {
-			t.Fatal(err)
-		}
-
-		assert.Nil(t, err)
-		assert.Equal(t, testEntry, actual)
-	})
-
-	t.Run("failure by invalid current", func(t *testing.T) {
-		config := Config{
-			Entries: map[string]*Entry{
-				"default": {
-					APIURL:   "api-url",
-					StoreURL: "store-api-url",
-					Token:    "dummy_token",
-					Launcher: Launcher{
-						Version: "latest",
-						Image:   "screwdrivercd/launcher",
-					},
-				},
-			},
-			Current: "doesnotexist",
-		}
-
-		_, err := config.Entry(config.Current)
-
-		assert.Equal(t, "config `doesnotexist` does not exist", err.Error())
-	})
+			assert.Equal(t, test.expectErr, err)
+			assert.Equal(t, test.expectEntry, actual)
+		})
+	}
 }
 
 func TestConfigAddEntry(t *testing.T) {
@@ -190,7 +166,7 @@ func TestConfigAddEntry(t *testing.T) {
 			},
 		}
 
-		err := config.AddEntry("test")
+		err := config.AddEntry("test", DefaultEntry())
 		if err != nil {
 			t.Fatal(err)
 		}
@@ -238,7 +214,7 @@ func TestConfigAddEntry(t *testing.T) {
 			},
 		}
 
-		err := config.AddEntry("default")
+		err := config.AddEntry("default", DefaultEntry())
 		assert.Equal(t, "config `default` already exists", err.Error())
 	})
 }
