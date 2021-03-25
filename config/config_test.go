@@ -29,7 +29,8 @@ func dummyEntry() *Entry {
 	}
 }
 
-func dummyConfig() Config{
+// dummyConfig is eqeual to ./testdata/successConfig
+func dummyConfig() Config {
 	return Config{
 		Entries: map[string]*Entry{
 			"default": dummyEntry(),
@@ -107,7 +108,6 @@ func TestNewConfig(t *testing.T) {
 	})
 }
 
-
 func TestConfigEntry(t *testing.T) {
 	cases := map[string]struct {
 		current     string
@@ -144,73 +144,43 @@ func TestConfigEntry(t *testing.T) {
 }
 
 func TestConfigAddEntry(t *testing.T) {
-	t.Run("success", func(t *testing.T) {
-		config := Config{
-			Current: "default",
-			Entries: map[string]*Entry{
-				"default": {
-					APIURL:   "api-url",
-					StoreURL: "store-api-url",
-					Token:    "dummy_token",
-					Launcher: Launcher{
-						Version: "latest",
-						Image:   "screwdrivercd/launcher",
-					},
+	cases := map[string]struct {
+		addedEntryName string
+		expectConfig   Config
+		expectErr      error
+	}{
+		"successfully added a test entry": {
+			addedEntryName: "test",
+			expectConfig: Config{
+				Entries: map[string]*Entry{
+					"default": dummyEntry(),
+					"test":    DefaultEntry(),
 				},
+				Current: "default",
 			},
-		}
-
-		err := config.AddEntry("test", DefaultEntry())
-		if err != nil {
-			t.Fatal(err)
-		}
-
-		expected := Config{
-			Entries: map[string]*Entry{
-				"default": {
-					APIURL:   "api-url",
-					StoreURL: "store-api-url",
-					Token:    "dummy_token",
-					Launcher: Launcher{
-						Version: "latest",
-						Image:   "screwdrivercd/launcher",
-					},
+			expectErr: nil,
+		},
+		"failure by the name that exists": {
+			addedEntryName: "default",
+			expectConfig: Config{
+				Entries: map[string]*Entry{
+					"default": dummyEntry(),
 				},
-				"test": {
-					APIURL:   "",
-					StoreURL: "",
-					Token:    "",
-					Launcher: Launcher{
-						Version: "stable",
-						Image:   "screwdrivercd/launcher",
-					},
-				},
+				Current: "default",
 			},
-			Current: "default",
-		}
+			expectErr: fmt.Errorf("config `default` already exists"),
+		},
+	}
 
-		assert.Equal(t, expected, config)
-	})
-
-	t.Run("failure by the name that exists", func(t *testing.T) {
-		config := Config{
-			Current: "default",
-			Entries: map[string]*Entry{
-				"default": {
-					APIURL:   "api-url",
-					StoreURL: "store-api-url",
-					Token:    "dummy_token",
-					Launcher: Launcher{
-						Version: "latest",
-						Image:   "screwdrivercd/launcher",
-					},
-				},
-			},
-		}
-
-		err := config.AddEntry("default", DefaultEntry())
-		assert.Equal(t, "config `default` already exists", err.Error())
-	})
+	for name, test := range cases {
+		t.Run(name, func(t *testing.T) {
+			t.Parallel()
+			config := dummyConfig()
+			err := config.AddEntry(test.addedEntryName, DefaultEntry())
+			assert.Equal(t, test.expectErr, err)
+			assert.Equal(t, test.expectConfig, config)
+		})
+	}
 }
 
 func TestConfigDeleteEntry(t *testing.T) {
