@@ -6,21 +6,22 @@ import (
 	"path/filepath"
 
 	"github.com/go-yaml/yaml"
+	"github.com/mitchellh/mapstructure"
 )
 
 // Launcher is launcher entity struct
 type Launcher struct {
-	Version string `yaml:"version"`
-	Image   string `yaml:"image"`
+	Version string `yaml:"version" mapstructure:"launcher-version"`
+	Image   string `yaml:"image" mapstructure:"launcher-image"`
 }
 
 // Entry is entity struct of sd-local config
 type Entry struct {
-	APIURL   string   `yaml:"api-url"`
-	StoreURL string   `yaml:"store-url"`
-	Token    string   `yaml:"token"`
-	UUID     string   `yaml:"UUID"`
-	Launcher Launcher `yaml:"launcher"`
+	APIURL   string   `yaml:"api-url" mapstructure:"api-url"`
+	StoreURL string   `yaml:"store-url" mapstructure:"store-url"`
+	Token    string   `yaml:"token" mapstructure:"token"`
+	UUID     string   `yaml:"UUID" mapstructure:"uuid"`
+	Launcher Launcher `yaml:"launcher" mapstructure:",squash"`
 }
 
 // Config is a set of sd-local config entities
@@ -168,31 +169,12 @@ func (c *Config) Save() error {
 
 // Set preserve sd-local config with new value.
 func (e *Entry) Set(key, value string) error {
-	switch key {
-	case "api-url":
-		e.APIURL = value
-	case "store-url":
-		e.StoreURL = value
-	case "token":
-		e.Token = value
-	case "launcher-version":
-		if value == "" {
-			value = "stable"
-		}
-		e.Launcher.Version = value
-	case "launcher-image":
-		if value == "" {
-			value = "screwdrivercd/launcher"
-		}
-		e.Launcher.Image = value
-	case "uuid":
-		if value == "" {
-			value = "-"
-		}
-		e.UUID = value
-	default:
+	var m map[string]interface{}
+	mapstructure.Decode(e, &m)
+	if _, ok := m[key]; !ok {
 		return fmt.Errorf("invalid key %s", key)
 	}
-
+	m[key] = value
+	mapstructure.Decode(m, &e)
 	return nil
 }

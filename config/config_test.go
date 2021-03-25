@@ -11,6 +11,7 @@ import (
 	"time"
 
 	"github.com/go-yaml/yaml"
+	"github.com/mitchellh/mapstructure"
 
 	"github.com/stretchr/testify/assert"
 )
@@ -327,108 +328,58 @@ func TestConfigSave(t *testing.T) {
 }
 
 func TestSetEntry(t *testing.T) {
-	testCases := []struct {
-		name        string
-		setting     map[string]string
-		expectEntry Entry
-	}{
-		{
+	type setting struct {
+		key   string
+		value string
+	}
 
-			name: "success",
-			setting: map[string]string{
-				"api-url":          "example-api.com",
-				"store-url":        "example-store.com",
-				"token":            "dummy-token",
-				"launcher-version": "1.0.0",
-				"launcher-image":   "alpine",
-				"invalidKey":       "invalidValue",
+	cases := map[string]struct {
+		input       setting
+		expectValue string
+		expectErr   error
+	}{
+		"set api-url": {
+			input: setting{
+				key:   "api-url",
+				value: "example-api-url",
 			},
-			expectEntry: Entry{
-				APIURL:   "example-api.com",
-				StoreURL: "example-store.com",
-				Token:    "dummy-token",
-				Launcher: Launcher{
-					Version: "1.0.0",
-					Image:   "alpine",
-				},
-			},
+			expectValue: "example-api-url",
 		},
-		{
-			name: "success override",
-			setting: map[string]string{
-				"api-url":          "override-example-api.com",
-				"store-url":        "override-example-store.com",
-				"token":            "override-dummy-token",
-				"launcher-version": "override-1.0.0",
-				"launcher-image":   "override-alpine",
-				"invalidKey":       "override-invalidValue",
+		"set launcher-version": {
+			input: setting{
+				key:   "launcher-version",
+				value: "examle-version",
 			},
-			expectEntry: Entry{
-				APIURL:   "override-example-api.com",
-				StoreURL: "override-example-store.com",
-				Token:    "override-dummy-token",
-				Launcher: Launcher{
-					Version: "override-1.0.0",
-					Image:   "override-alpine",
-				},
-			},
+			expectValue: "examle-version",
 		},
-		{
-			name: "used default value",
-			setting: map[string]string{
-				"api-url":          "override-example-api.com",
-				"store-url":        "override-example-store.com",
-				"token":            "override-dummy-token",
-				"launcher-version": "",
-				"launcher-image":   "",
-				"invalidKey":       "override-invalidValue",
+		"set launcher-image": {
+			input: setting{
+				key:   "launcher-image",
+				value: "examle-image",
 			},
-			expectEntry: Entry{
-				APIURL:   "override-example-api.com",
-				StoreURL: "override-example-store.com",
-				Token:    "override-dummy-token",
-				Launcher: Launcher{
-					Version: "stable",
-					Image:   "screwdrivercd/launcher",
-				},
-			},
+			expectValue: "examle-image",
 		},
-		{
-			name: "invalid key",
-			setting: map[string]string{
-				"api-url":          "override-example-api.com",
-				"store-url":        "override-example-store.com",
-				"token":            "override-dummy-token",
-				"launcher-version": "",
-				"launcher-image":   "",
-				"invalidKey":       "invalidValue",
+		"set invalid-key": {
+			input: setting{
+				key:   "invalid-key",
+				value: "invalid-value",
 			},
-			expectEntry: Entry{
-				APIURL:   "override-example-api.com",
-				StoreURL: "override-example-store.com",
-				Token:    "override-dummy-token",
-				Launcher: Launcher{
-					Version: "stable",
-					Image:   "screwdrivercd/launcher",
-				},
-			},
+			expectValue: "",
+			expectErr:   fmt.Errorf("invalid key invalid-key"),
 		},
 	}
 
-	for _, tt := range testCases {
-		t.Run(tt.name, func(t *testing.T) {
+	for name, test := range cases {
+		t.Run(name, func(t *testing.T) {
+			t.Parallel()
 
-			e := &Entry{}
+			e := DefaultEntry()
+			err := e.Set(test.input.key, test.input.value)
+			assert.Equal(t, test.expectErr, err)
 
-			for key, val := range tt.setting {
-				err := e.Set(key, val)
-				if key == "invalidKey" {
-					assert.NotNil(t, err)
-				} else {
-					assert.Nil(t, err)
-				}
-			}
-			assert.Equal(t, tt.expectEntry, *e)
+			var m map[string]interface{}
+			mapstructure.Decode(e, &m)
+			assert.Equal(t, m[test.input.key], test.expectValue)
 		})
 	}
 }
