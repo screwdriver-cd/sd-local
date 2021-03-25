@@ -174,11 +174,15 @@ func (e *Entry) Set(key, value string) error {
 	// 2. Check map key found (error handring for unknown key) and set value
 	// 3. Update current entry by map
 	var m map[string]interface{}
-	mapstructure.Decode(e, &m)
+	if err := mapstructure.Decode(e, &m); err != nil {
+		return err
+	}
 	if _, ok := m[key]; !ok {
 		return fmt.Errorf("invalid key %s", key)
 	}
 	m[key] = value
-	mapstructure.Decode(m, &e)
+	if err := mapstructure.Decode(m, &e); err != nil {
+		return err
+	}
 	return nil
 }
