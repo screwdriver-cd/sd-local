@@ -180,6 +180,22 @@ func (e *Entry) Set(key, value string) error {
 	if _, ok := m[key]; !ok {
 		return fmt.Errorf("invalid key %s", key)
 	}
+
+	// To preserve compatibility
+	switch key {
+	case "launcher-version":
+		if value == "" {
+			value = "stable"
+		}
+	case "launcher-image":
+		if value == "" {
+			value = "screwdrivercd/launcher"
+		}
+	case "uuid":
+		if value == "" {
+			value = "-"
+		}
+	}
 	m[key] = value
 	if err := mapstructure.Decode(m, &e); err != nil {
 		return err

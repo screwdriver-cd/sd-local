@@ -352,16 +352,30 @@ func TestSetEntry(t *testing.T) {
 		"set launcher-version": {
 			input: setting{
 				key:   "launcher-version",
-				value: "examle-version",
+				value: "example-version",
 			},
-			expectValue: "examle-version",
+			expectValue: "example-version",
 		},
-		"set launcher-image": {
+		"set empty to launcher-version": {
+			input: setting{
+				key:   "launcher-version",
+				value: "",
+			},
+			expectValue: "stable",
+		},
+		"set empty to launcher-image": {
 			input: setting{
 				key:   "launcher-image",
-				value: "examle-image",
+				value: "",
 			},
-			expectValue: "examle-image",
+			expectValue: "screwdrivercd/launcher",
+		},
+		"set empty to uuid": {
+			input: setting{
+				key:   "uuid",
+				value: "",
+			},
+			expectValue: "-",
 		},
 		"set invalid-key": {
 			input: setting{
