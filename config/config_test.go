@@ -243,38 +243,37 @@ func TestConfigDeleteEntry(t *testing.T) {
 }
 
 func TestConfigSetCurrent(t *testing.T) {
-	testConfig := func() Config {
-		return Config{
-			Current: "default",
-			Entries: map[string]*Entry{
-				"default": {
-					APIURL:   "api-url",
-					StoreURL: "store-api-url",
-					Token:    "dummy_token",
-					Launcher: Launcher{},
-				},
-				"test": {
-					APIURL:   "api-url",
-					StoreURL: "store-api-url",
-					Token:    "dummy_token",
-					Launcher: Launcher{},
-				},
-			},
-			filePath: "/home/user/.sdlocal/config",
-		}
+	cases := map[string]struct {
+		setEntryName  string
+		expectCurrent string
+		expectErr     error
+	}{
+		"success to set": {
+			setEntryName:  "test",
+			expectCurrent: "test",
+			expectErr:     nil,
+		},
+		"failure to set": {
+			setEntryName:  "doesnotexist",
+			expectCurrent: "default",
+			expectErr:     fmt.Errorf("config `doesnotexist` does not exist"),
+		},
 	}
-	t.Run("success", func(t *testing.T) {
-		c := testConfig()
-		c.SetCurrent("test")
 
-		assert.Equal(t, "test", c.Current)
-	})
-	t.Run("failure", func(t *testing.T) {
-		c := testConfig()
-		err := c.SetCurrent("unknownconfig")
-
-		assert.Equal(t, "config `unknownconfig` does not exist", err.Error())
-	})
+	for name, test := range cases {
+		t.Run(name, func(t *testing.T) {
+			config := Config{
+				Current: "default",
+				Entries: map[string]*Entry{
+					"default": dummyEntry(),
+					"test":    DefaultEntry(),
+				},
+			}
+			err := config.SetCurrent(test.setEntryName)
+			assert.Equal(t, test.expectErr, err)
+			assert.Equal(t, test.expectCurrent, config.Current)
+		})
+	}
 }
 
 func TestConfigSave(t *testing.T) {
