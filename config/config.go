@@ -169,6 +169,10 @@ func (c *Config) Save() error {
 
 // Set preserve sd-local config with new value.
 func (e *Entry) Set(key, value string) error {
+	// Update the receiver(*Entry) with the args `key` and `value` as follows.
+	// 1. Encode current entry to empty map
+	// 2. Check map key found (error handring for unknown key) and set value
+	// 3. Update current entry by map
 	var m map[string]interface{}
 	mapstructure.Decode(e, &m)
 	if _, ok := m[key]; !ok {
