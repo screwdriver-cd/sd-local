@@ -31,8 +31,8 @@ The new config has only launcher-version and launcher-image.`,
 				return err
 			}
 
-			defaulEntry := config.DefaultEntry()
-			err = c.AddEntry(name, defaulEntry)
+			defaultEntry := config.DefaultEntry()
+			err = c.AddEntry(name, defaultEntry)
 			if err != nil {
 				return err
 			}
