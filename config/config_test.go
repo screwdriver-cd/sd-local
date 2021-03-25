@@ -384,7 +384,7 @@ func TestSetEntry(t *testing.T) {
 
 			var m map[string]interface{}
 			mapstructure.Decode(e, &m)
-			assert.Equal(t, m[test.input.key], test.expectValue)
+			assert.Equal(t, test.expectValue, m[test.input.key])
 		})
 	}
 }
