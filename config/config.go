@@ -30,6 +30,7 @@ type Config struct {
 	filePath string            `yaml:"-"`
 }
 
+// DefaultEntry describes the initial value of an entry
 func DefaultEntry() *Entry {
 	return &Entry{
 		APIURL:   "",
