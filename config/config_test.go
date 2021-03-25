@@ -128,6 +128,7 @@ func TestConfigEntry(t *testing.T) {
 	}
 
 	for name, test := range cases {
+		test := test
 		t.Run(name, func(t *testing.T) {
 			t.Parallel()
 			config := Config{
@@ -174,6 +175,7 @@ func TestConfigAddEntry(t *testing.T) {
 	}
 
 	for name, test := range cases {
+		test := test
 		t.Run(name, func(t *testing.T) {
 			t.Parallel()
 			config := dummyConfig()
@@ -225,6 +227,7 @@ func TestConfigDeleteEntry(t *testing.T) {
 	}
 
 	for name, test := range cases {
+		test := test
 		t.Run(name, func(t *testing.T) {
 			t.Parallel()
 
@@ -262,6 +265,7 @@ func TestConfigSetCurrent(t *testing.T) {
 	}
 
 	for name, test := range cases {
+		test := test
 		t.Run(name, func(t *testing.T) {
 			config := Config{
 				Current: "default",
@@ -335,7 +339,7 @@ func TestSetEntry(t *testing.T) {
 
 	cases := map[string]struct {
 		input       setting
-		expectValue string
+		expectValue interface{}
 		expectErr   error
 	}{
 		"set api-url": {
@@ -364,12 +368,13 @@ func TestSetEntry(t *testing.T) {
 				key:   "invalid-key",
 				value: "invalid-value",
 			},
-			expectValue: "",
+			expectValue: nil,
 			expectErr:   fmt.Errorf("invalid key invalid-key"),
 		},
 	}
 
 	for name, test := range cases {
+		test := test
 		t.Run(name, func(t *testing.T) {
 			t.Parallel()
 
