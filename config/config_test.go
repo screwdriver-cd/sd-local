@@ -184,93 +184,62 @@ func TestConfigAddEntry(t *testing.T) {
 }
 
 func TestConfigDeleteEntry(t *testing.T) {
-	t.Run("success", func(t *testing.T) {
-		config := Config{
-			Current: "default",
-			Entries: map[string]*Entry{
-				"default": {
-					APIURL:   "api-url",
-					StoreURL: "store-api-url",
-					Token:    "dummy_token",
-					Launcher: Launcher{
-						Version: "latest",
-						Image:   "screwdrivercd/launcher",
-					},
+	cases := map[string]struct {
+		deletedEntryName string
+		expectConfig     Config
+		expectErr        error
+	}{
+		"successfully deleted a test entry": {
+			deletedEntryName: "test",
+			expectConfig: Config{
+				Entries: map[string]*Entry{
+					"default": dummyEntry(),
 				},
-				"test": {
-					APIURL:   "api-url",
-					StoreURL: "store-api-url",
-					Token:    "dummy_token",
-					Launcher: Launcher{
-						Version: "latest",
-						Image:   "screwdrivercd/launcher",
-					},
-				},
+				Current: "default",
 			},
-		}
-
-		err := config.DeleteEntry("test")
-		if err != nil {
-			t.Fatal(err)
-		}
-
-		expected := Config{
-			Current: "default",
-			Entries: map[string]*Entry{
-				"default": {
-					APIURL:   "api-url",
-					StoreURL: "store-api-url",
-					Token:    "dummy_token",
-					Launcher: Launcher{
-						Version: "latest",
-						Image:   "screwdrivercd/launcher",
-					},
+			expectErr: nil,
+		},
+		"failure by the name that does not exist": {
+			deletedEntryName: "doesnotexist",
+			expectConfig: Config{
+				Entries: map[string]*Entry{
+					"default": dummyEntry(),
+					"test":    DefaultEntry(),
 				},
+				Current: "default",
 			},
-		}
-
-		assert.Equal(t, expected, config)
-	})
-
-	t.Run("failure", func(t *testing.T) {
-		config := Config{
-			Current: "default",
-			Entries: map[string]*Entry{
-				"default": {
-					APIURL:   "api-url",
-					StoreURL: "store-api-url",
-					Token:    "dummy_token",
-					Launcher: Launcher{
-						Version: "latest",
-						Image:   "screwdrivercd/launcher",
-					},
+			expectErr: fmt.Errorf("config `doesnotexist` does not exist"),
+		},
+		"failure by trying to delete current entry": {
+			deletedEntryName: "default",
+			expectConfig: Config{
+				Entries: map[string]*Entry{
+					"default": dummyEntry(),
+					"test":    DefaultEntry(),
 				},
+				Current: "default",
 			},
-		}
+			expectErr: fmt.Errorf("config `default` is current config"),
+		},
+	}
 
-		err := config.DeleteEntry("test")
-		assert.Equal(t, "config `test` does not exist", err.Error())
-	})
+	for name, test := range cases {
+		t.Run(name, func(t *testing.T) {
+			t.Parallel()
 
-	t.Run("failure by trying to delete current entry", func(t *testing.T) {
-		config := Config{
-			Current: "default",
-			Entries: map[string]*Entry{
-				"default": {
-					APIURL:   "api-url",
-					StoreURL: "store-api-url",
-					Token:    "dummy_token",
-					Launcher: Launcher{
-						Version: "latest",
-						Image:   "screwdrivercd/launcher",
-					},
+			config := Config{
+				Entries: map[string]*Entry{
+					"default": dummyEntry(),
+					"test":    DefaultEntry(),
 				},
-			},
-		}
+				Current: "default",
+			}
 
-		err := config.DeleteEntry("default")
-		assert.Equal(t, "config `default` is current config", err.Error())
-	})
+			err := config.DeleteEntry(test.deletedEntryName)
+			assert.Equal(t, test.expectErr, err)
+			assert.Equal(t, test.expectConfig, config)
+		})
+	}
 }
 
 func TestConfigSetCurrent(t *testing.T) {
