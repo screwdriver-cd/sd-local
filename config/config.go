@@ -6,21 +6,22 @@ import (
 	"path/filepath"
 
 	"github.com/go-yaml/yaml"
+	"github.com/mitchellh/mapstructure"
 )
 
 // Launcher is launcher entity struct
 type Launcher struct {
-	Version string `yaml:"version"`
-	Image   string `yaml:"image"`
+	Version string `yaml:"version" mapstructure:"launcher-version"`
+	Image   string `yaml:"image" mapstructure:"launcher-image"`
 }
 
 // Entry is entity struct of sd-local config
 type Entry struct {
-	APIURL   string   `yaml:"api-url"`
-	StoreURL string   `yaml:"store-url"`
-	Token    string   `yaml:"token"`
-	UUID     string   `yaml:"UUID"`
-	Launcher Launcher `yaml:"launcher"`
+	APIURL   string   `yaml:"api-url" mapstructure:"api-url"`
+	StoreURL string   `yaml:"store-url" mapstructure:"store-url"`
+	Token    string   `yaml:"token" mapstructure:"token"`
+	UUID     string   `yaml:"UUID" mapstructure:"uuid"`
+	Launcher Launcher `yaml:"launcher" mapstructure:",squash"`
 }
 
 // Config is a set of sd-local config entities
@@ -28,6 +29,20 @@ type Config struct {
 	Entries  map[string]*Entry `yaml:"configs"`
 	Current  string            `yaml:"current"`
 	filePath string            `yaml:"-"`
+}
+
+// DefaultEntry describes the initial value of an entry
+func DefaultEntry() *Entry {
+	return &Entry{
+		APIURL:   "",
+		StoreURL: "",
+		Token:    "",
+		UUID:     "",
+		Launcher: Launcher{
+			Version: "stable",
+			Image:   "screwdrivercd/launcher",
+		},
+	}
 }
 
 func create(configPath string) error {
@@ -50,7 +65,7 @@ func create(configPath string) error {
 
 	err = yaml.NewEncoder(file).Encode(Config{
 		Entries: map[string]*Entry{
-			"default": newEntry(),
+			"default": DefaultEntry(),
 		},
 		Current: "default",
 	})
@@ -59,15 +74,6 @@ func create(configPath string) error {
 	}
 
 	return nil
-}
-
-func newEntry() *Entry {
-	return &Entry{
-		Launcher: Launcher{
-			Version: "stable",
-			Image:   "screwdrivercd/launcher",
-		},
-	}
 }
 
 // New returns parsed config
@@ -93,20 +99,20 @@ func New(configPath string) (Config, error) {
 	}
 
 	if c.Entries == nil {
-		c.Entries = make(map[string]*Entry, 0)
+		c.Entries = make(map[string]*Entry)
 	}
 
 	return c, nil
 }
 
 // AddEntry create new Entry and add it to Config
-func (c *Config) AddEntry(name string) error {
+func (c *Config) AddEntry(name string, entry *Entry) error {
 	_, exist := c.Entries[name]
 	if exist {
 		return fmt.Errorf("config `%s` already exists", name)
 	}
 
-	c.Entries[name] = newEntry()
+	c.Entries[name] = entry
 	return nil
 }
 
@@ -163,31 +169,36 @@ func (c *Config) Save() error {
 
 // Set preserve sd-local config with new value.
 func (e *Entry) Set(key, value string) error {
+	// Update the receiver(*Entry) with the args `key` and `value` as follows.
+	// 1. Encode current entry to empty map
+	// 2. Check map key found (error handring for unknown key) and set value
+	// 3. Update current entry by map
+	var m map[string]interface{}
+	if err := mapstructure.Decode(e, &m); err != nil {
+		return err
+	}
+	if _, ok := m[key]; !ok {
+		return fmt.Errorf("invalid key %s", key)
+	}
+
+	// To preserve compatibility
 	switch key {
-	case "api-url":
-		e.APIURL = value
-	case "store-url":
-		e.StoreURL = value
-	case "token":
-		e.Token = value
 	case "launcher-version":
 		if value == "" {
 			value = "stable"
 		}
-		e.Launcher.Version = value
 	case "launcher-image":
 		if value == "" {
 			value = "screwdrivercd/launcher"
 		}
-		e.Launcher.Image = value
 	case "uuid":
 		if value == "" {
 			value = "-"
 		}
-		e.UUID = value
-	default:
-		return fmt.Errorf("invalid key %s", key)
 	}
-
+	m[key] = value
+	if err := mapstructure.Decode(m, &e); err != nil {
+		return err
+	}
 	return nil
 }

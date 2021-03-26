@@ -12,6 +12,7 @@ require (
 	github.com/konsorten/go-windows-terminal-sequences v1.0.2 // indirect
 	github.com/kr/pretty v0.2.0 // indirect
 	github.com/mitchellh/go-homedir v1.1.0
+	github.com/mitchellh/mapstructure v1.4.1
 	github.com/rhysd/go-github-selfupdate v1.2.2
 	github.com/sirupsen/logrus v1.5.0
 	github.com/spf13/cobra v0.0.7

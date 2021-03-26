@@ -26,17 +26,18 @@ The new config has only launcher-version and launcher-image.`,
 				return err
 			}
 
-			config, err := configNew(path)
+			c, err := configNew(path)
 			if err != nil {
 				return err
 			}
 
-			err = config.AddEntry(name)
+			defaultEntry := config.DefaultEntry()
+			err = c.AddEntry(name, defaultEntry)
 			if err != nil {
 				return err
 			}
 
-			err = config.Save()
+			err = c.Save()
 			if err != nil {
 				return err
 			}
