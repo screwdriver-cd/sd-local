@@ -44,6 +44,11 @@ func TestConfigSetCmd(t *testing.T) {
 			args:     []string{"set", "api-url"},
 			existErr: true,
 		},
+		{
+			name:     "filure by setting an invalid key",
+			args:     []string{"set", "invalid-key", "invalid-value"},
+			existErr: true,
+		},
 	}
 
 	for _, tt := range testCase {
