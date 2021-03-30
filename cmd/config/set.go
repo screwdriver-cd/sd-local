@@ -46,7 +46,7 @@ Can set the below settings:
 			err = entry.Set(key, value)
 			if err != nil {
 				if isInvalidKeyError(err) {
-					cmd.Help()
+					_ = cmd.Help()
 				}
 				return err
 			}
