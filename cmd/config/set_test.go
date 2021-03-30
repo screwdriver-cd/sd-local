@@ -27,26 +27,22 @@ func TestConfigSetCmd(t *testing.T) {
 	testCase := []struct {
 		name     string
 		args     []string
-		wantOut  string
-		checkErr bool
+		existErr bool
 	}{
 		{
 			name:     "success",
 			args:     []string{"set", "api-url", "example.com"},
-			wantOut:  "",
-			checkErr: false,
+			existErr: false,
 		},
 		{
 			name:     "failure by too many args",
 			args:     []string{"set", "api-url", "example.com", "many"},
-			wantOut:  "",
-			checkErr: true,
+			existErr: true,
 		},
 		{
 			name:     "failure by too little args",
 			args:     []string{"set", "api-url"},
-			wantOut:  "",
-			checkErr: true,
+			existErr: true,
 		},
 	}
 
@@ -57,13 +53,7 @@ func TestConfigSetCmd(t *testing.T) {
 			buf := bytes.NewBuffer(nil)
 			cmd.SetOut(buf)
 			err := cmd.Execute()
-			if tt.checkErr {
-				assert.NotNil(t, err)
-			} else {
-				assert.Nil(t, err)
-				assert.Equal(t, tt.wantOut, buf.String())
-			}
-
+			assert.Equal(t, tt.existErr, err != nil)
 		})
 	}
 }
