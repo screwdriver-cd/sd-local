@@ -46,13 +46,9 @@ Can set the below settings:
 			err = entry.Set(key, value)
 			if err != nil {
 				if isInvalidKeyError(err) {
-					err := cmd.Help()
-					if err != nil {
-						return err
-					}
-				} else {
-					return err
+					cmd.Help()
 				}
+				return err
 			}
 
 			err = config.Save()
