@@ -45,7 +45,7 @@ func TestConfigSetCmd(t *testing.T) {
 			existErr: true,
 		},
 		{
-			name:     "filure by setting an invalid key",
+			name:     "failure by setting an invalid key",
 			args:     []string{"set", "invalid-key", "invalid-value"},
 			existErr: true,
 		},
