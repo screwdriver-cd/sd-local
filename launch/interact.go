@@ -71,14 +71,18 @@ func (d *Interact) Run(c *exec.Cmd, commands [][]string) error {
 	// Copy stdin to the pty and the pty to stdout.
 	go func() {
 		if !d.flagVerbose {
+			// Clear entire screen
 			_, _ = io.Copy(os.Stdout, strings.NewReader("\x1b[2J"))
 		}
 
 		for _, v := range commands {
 			func() {
 				if !d.flagVerbose {
+					// Moves the cursor to row 1, column 1, and Clear from cursor to end of screen.
 					_, _ = io.Copy(os.Stdout, strings.NewReader("\x1b[1;H\x1b[0Jplease wait while sd-local setup process...\r\n"))
+					// Decreased intensity
 					_, _ = io.Copy(os.Stdout, strings.NewReader("\x1b[2m"))
+					// Normal intensity
 					defer io.Copy(os.Stdout, strings.NewReader("\x1b[22m"))
 				}
 
@@ -102,8 +106,10 @@ func (d *Interact) Run(c *exec.Cmd, commands [][]string) error {
 		// wait Launcher setup
 		time.Sleep(time.Second * 1)
 		if !d.flagVerbose {
+			// Moves the cursor to row 1, column 1, and Clear from cursor to end of screen.
 			_, _ = io.Copy(os.Stdout, strings.NewReader("\x1b[1;H\x1b[0J"))
 		} else {
+			// spacer
 			_, _ = io.Copy(os.Stdout, strings.NewReader("\r\n"))
 		}
 		_, _ = io.Copy(os.Stdout, strings.NewReader("Welcome to sd-local interactive mode. To exit type 'exit'\n"))
