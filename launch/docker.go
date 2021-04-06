@@ -57,7 +57,7 @@ func newDocker(setupImage, setupImageVer string, useSudo bool, interactiveMode b
 		commands:          make([]*exec.Cmd, 0, 10),
 		mutex:             &sync.Mutex{},
 		flagVerbose:       flagVerbose,
-		interact:          &Interact{},
+		interact:          &Interact{flagVerbose: flagVerbose},
 		socketPath:        socketPath,
 		localVolumes:      localVolumes,
 	}

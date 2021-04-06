@@ -22,6 +22,7 @@ type Interacter interface {
 
 // Interact takes interactive processing
 type Interact struct {
+	flagVerbose bool
 }
 
 // Run runs interactive process
@@ -69,27 +70,43 @@ func (d *Interact) Run(c *exec.Cmd, commands [][]string) error {
 
 	// Copy stdin to the pty and the pty to stdout.
 	go func() {
-		for _, v := range commands {
+		if !d.flagVerbose {
+			_, _ = io.Copy(os.Stdout, strings.NewReader("\x1b[2J"))
+		}
 
-			v := append(v, "\n")
-			command := strings.Join(v, " ")
-			for {
-				if len(command) <= maxByte {
-					io.Copy(ptmx, strings.NewReader(command[:]))
-					// Wait send the command.
-					time.Sleep(time.Millisecond * 300)
-					break
-				} else {
-					io.Copy(ptmx, strings.NewReader(command[:maxByte]))
-					// Wait send the command.
-					time.Sleep(time.Millisecond * 300)
-					command = command[maxByte:]
+		for _, v := range commands {
+			func() {
+				if !d.flagVerbose {
+					_, _ = io.Copy(os.Stdout, strings.NewReader("\x1b[1;H\x1b[0Jplease wait while sd-local setup process...\r\n"))
+					_, _ = io.Copy(os.Stdout, strings.NewReader("\x1b[2m"))
+					defer io.Copy(os.Stdout, strings.NewReader("\x1b[22m"))
 				}
-			}
+
+				v := append(v, "\n")
+				command := strings.Join(v, " ")
+				for {
+					if len(command) <= maxByte {
+						io.Copy(ptmx, strings.NewReader(command[:]))
+						// Wait send the command.
+						time.Sleep(time.Millisecond * 300)
+						break
+					} else {
+						io.Copy(ptmx, strings.NewReader(command[:maxByte]))
+						// Wait send the command.
+						time.Sleep(time.Millisecond * 300)
+						command = command[maxByte:]
+					}
+				}
+			}()
 		}
 		// wait Launcher setup
 		time.Sleep(time.Second * 1)
-		_, _ = io.Copy(os.Stdout, strings.NewReader("\r\nWelcome to sd-local interactive mode. To exit type 'exit'\n"))
+		if !d.flagVerbose {
+			_, _ = io.Copy(os.Stdout, strings.NewReader("\x1b[1;H\x1b[0J"))
+		} else {
+			_, _ = io.Copy(os.Stdout, strings.NewReader("\r\n"))
+		}
+		_, _ = io.Copy(os.Stdout, strings.NewReader("Welcome to sd-local interactive mode. To exit type 'exit'\n"))
 		_, _ = io.Copy(ptmx, strings.NewReader("\n"))
 		_, _ = io.Copy(ptmx, os.Stdin)
 	}()
