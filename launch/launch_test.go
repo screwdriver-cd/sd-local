@@ -55,7 +55,9 @@ func TestNew(t *testing.T) {
 		buf, _ := ioutil.ReadFile(filepath.Join(testDir, "job.json"))
 		job := screwdriver.Job{}
 		_ = json.Unmarshal(buf, &job)
-		job.Environment["SD_ARTIFACTS_DIR"] = "/test/artifacts"
+		mp := map[string]string{}
+		mp["SD_ARTIFACTS_DIR"] = "/test/artifacts"
+		job.Environment.Body = append(job.Environment.Body, mp)
 
 		config := config.Entry{
 			APIURL:   "http://api-test.screwdriver.cd",

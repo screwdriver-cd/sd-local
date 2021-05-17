@@ -8,6 +8,7 @@ import (
 	"net/http"
 	"net/url"
 	"path"
+	"regexp"
 	"strconv"
 	"strings"
 )
@@ -41,11 +42,31 @@ type Step struct {
 	Command string `json:"command"`
 }
 
+// MapSlice is an associative array which preserves order
+type MapSlice struct {
+	Body []map[string]string
+}
+
+// UnmarshalJSON replaces JSON of a normal associative array to MapSlice
+func (MS *MapSlice) UnmarshalJSON(data []byte) error {
+	output := []map[string]string{}
+	r := regexp.MustCompile(`"(.*?)" *: *"(.*?)"`)
+	for _, pair := range r.FindAllStringSubmatch(string(data), -1) {
+		mp := map[string]string{}
+		key := pair[1]
+		val := pair[2]
+		mp[key] = val
+		output = append(output, mp)
+	}
+	MS.Body = output
+	return nil
+}
+
 // Job is job entity struct
 type Job struct {
-	Steps       []Step            `json:"commands"`
-	Environment map[string]string `json:"environment"`
-	Image       string            `json:"image"`
+	Steps       []Step   `json:"commands"`
+	Environment MapSlice `json:"environment"`
+	Image       string   `json:"image"`
 }
 
 type jobs map[string][]Job

@@ -74,8 +74,12 @@ func TestJob(t *testing.T) {
 					Command: "echo publish",
 				},
 			},
-			Environment: map[string]string{
-				"TEST_ENV": "hoge",
+			Environment: MapSlice{
+				Body: []map[string]string{
+					{
+						"TEST_ENV": "hoge",
+					},
+				},
 			},
 			Image: "alpine",
 		}
