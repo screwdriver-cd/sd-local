@@ -6,9 +6,7 @@ import (
 	"os"
 	"os/exec"
 	"path"
-	"regexp"
 	"runtime"
-	"strings"
 
 	"github.com/screwdriver-cd/sd-local/config"
 	"github.com/screwdriver-cd/sd-local/screwdriver"
@@ -106,15 +104,9 @@ func DefaultSocketPath() string {
 
 func mergeEnv(env EnvVar, jobEnv screwdriver.MapSlice, optionEnv EnvVar) []EnvVar {
 	for _, e := range jobEnv.Body {
-		for k, v := range e {
-			val := v
-			for fr, to := range env {
-				val = strings.Replace(val, "${"+fr+"}", to, -1)
-			}
-			env[k] = val
-			rep := regexp.MustCompile(`\$\{[^\}]*\}`)
-			val = rep.ReplaceAllString(val, "")
-		}
+		val := os.ExpandEnv(e.Value)
+		env[e.Key] = val
+		os.Setenv(e.Key, val)
 	}
 	for k, v := range optionEnv {
 		env[k] = v

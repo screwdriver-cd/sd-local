@@ -44,19 +44,27 @@ type Step struct {
 
 // MapSlice is an associative array which preserves order
 type MapSlice struct {
-	Body []map[string]string
+	Body []struct {
+		Key   string
+		Value string
+	}
 }
 
 // UnmarshalJSON replaces JSON of a normal associative array to MapSlice
 func (MS *MapSlice) UnmarshalJSON(data []byte) error {
-	output := []map[string]string{}
+	var output []struct {
+		Key   string
+		Value string
+	}
 	r := regexp.MustCompile(`"(.*?)" *: *"(.*?)"`)
 	for _, pair := range r.FindAllStringSubmatch(string(data), -1) {
-		mp := map[string]string{}
-		key := pair[1]
-		val := pair[2]
-		mp[key] = val
-		output = append(output, mp)
+		output = append(output, struct {
+			Key   string
+			Value string
+		}{
+			pair[1],
+			pair[2],
+		})
 	}
 	MS.Body = output
 	return nil

@@ -75,9 +75,13 @@ func TestJob(t *testing.T) {
 				},
 			},
 			Environment: MapSlice{
-				Body: []map[string]string{
+				Body: []struct {
+					Key   string
+					Value string
+				}{
 					{
-						"TEST_ENV": "hoge",
+						"TEST_ENV",
+						"hoge",
 					},
 				},
 			},
