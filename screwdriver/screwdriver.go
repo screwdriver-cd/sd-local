@@ -42,16 +42,16 @@ type Step struct {
 	Command string `json:"command"`
 }
 
-// MapSlice is an associative array which preserves order
-type MapSlice struct {
+// PairSlice is an associative array which preserves order
+type PairSlice struct {
 	Body []struct {
 		Key   string
 		Value string
 	}
 }
 
-// UnmarshalJSON replaces JSON of a normal associative array to MapSlice
-func (MS *MapSlice) UnmarshalJSON(data []byte) error {
+// UnmarshalJSON replaces JSON of a normal associative array to PairSlice
+func (MS *PairSlice) UnmarshalJSON(data []byte) error {
 	var output []struct {
 		Key   string
 		Value string
@@ -72,9 +72,9 @@ func (MS *MapSlice) UnmarshalJSON(data []byte) error {
 
 // Job is job entity struct
 type Job struct {
-	Steps       []Step   `json:"commands"`
-	Environment MapSlice `json:"environment"`
-	Image       string   `json:"image"`
+	Steps       []Step    `json:"commands"`
+	Environment PairSlice `json:"environment"`
+	Image       string    `json:"image"`
 }
 
 type jobs map[string][]Job

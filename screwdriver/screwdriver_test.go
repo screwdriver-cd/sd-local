@@ -74,7 +74,7 @@ func TestJob(t *testing.T) {
 					Command: "echo publish",
 				},
 			},
-			Environment: MapSlice{
+			Environment: PairSlice{
 				Body: []struct {
 					Key   string
 					Value string

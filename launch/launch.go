@@ -102,7 +102,7 @@ func DefaultSocketPath() string {
 	return socketPath
 }
 
-func mergeEnv(env EnvVar, jobEnv screwdriver.MapSlice, optionEnv EnvVar) []EnvVar {
+func mergeEnv(env EnvVar, jobEnv screwdriver.PairSlice, optionEnv EnvVar) []EnvVar {
 	for _, e := range jobEnv.Body {
 		val := os.ExpandEnv(e.Value)
 		env[e.Key] = val
