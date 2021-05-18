@@ -51,7 +51,7 @@ type PairSlice struct {
 }
 
 // UnmarshalJSON replaces JSON of a normal associative array to PairSlice
-func (MS *PairSlice) UnmarshalJSON(data []byte) error {
+func (PS *PairSlice) UnmarshalJSON(data []byte) error {
 	var output []struct {
 		Key   string
 		Value string
@@ -66,7 +66,7 @@ func (MS *PairSlice) UnmarshalJSON(data []byte) error {
 			pair[2],
 		})
 	}
-	MS.Body = output
+	PS.Body = output
 	return nil
 }
 
