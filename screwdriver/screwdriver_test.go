@@ -74,8 +74,11 @@ func TestJob(t *testing.T) {
 					Command: "echo publish",
 				},
 			},
-			Environment: map[string]string{
-				"TEST_ENV": "hoge",
+			Environment: Environments{
+				{
+					"TEST_ENV",
+					"hoge",
+				},
 			},
 			Image: "alpine",
 		}

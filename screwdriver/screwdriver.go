@@ -8,9 +8,12 @@ import (
 	"net/http"
 	"net/url"
 	"path"
+	"regexp"
 	"strconv"
 	"strings"
 )
+
+var regexpForUnmarshal = regexp.MustCompile(`"(.*?)" *: *"(.*?)"`)
 
 const (
 	apiVersion        = "v4"
@@ -41,11 +44,31 @@ type Step struct {
 	Command string `json:"command"`
 }
 
+// Environments is an environment slice
+type Environments []struct {
+	Key   string
+	Value string
+}
+
+// UnmarshalJSON replaces JSON of a normal associative array to Environments
+func (en *Environments) UnmarshalJSON(data []byte) error {
+	for _, pair := range regexpForUnmarshal.FindAllStringSubmatch(string(data), -1) {
+		*en = append(*en, struct {
+			Key   string
+			Value string
+		}{
+			pair[1],
+			pair[2],
+		})
+	}
+	return nil
+}
+
 // Job is job entity struct
 type Job struct {
-	Steps       []Step            `json:"commands"`
-	Environment map[string]string `json:"environment"`
-	Image       string            `json:"image"`
+	Steps       []Step       `json:"commands"`
+	Environment Environments `json:"environment"`
+	Image       string       `json:"image"`
 }
 
 type jobs map[string][]Job

@@ -102,15 +102,20 @@ func DefaultSocketPath() string {
 	return socketPath
 }
 
-func mergeEnv(env, jobEnv, optionEnv EnvVar) []EnvVar {
-	for k, v := range jobEnv {
-		env[k] = v
+func mergeEnv(env EnvVar, jobEnv screwdriver.Environments, optionEnv EnvVar) ([]EnvVar, error) {
+	for _, e := range jobEnv {
+		val := os.ExpandEnv(e.Value)
+		env[e.Key] = val
+		err := os.Setenv(e.Key, val)
+		if err != nil {
+			return []EnvVar{}, fmt.Errorf("failed to setenv: %w", err)
+		}
 	}
 	for k, v := range optionEnv {
 		env[k] = v
 	}
 
-	return []EnvVar{env}
+	return []EnvVar{env}, nil
 }
 
 func createBuildEntry(option Option) buildEntry {
@@ -140,7 +145,11 @@ func createBuildEntry(option Option) buildEntry {
 		"SD_BASE_COMMAND_PATH": "/sd/commands/",
 	}
 
-	env := mergeEnv(defaultEnv, option.Job.Environment, option.OptionEnv)
+	env, err := mergeEnv(defaultEnv, option.Job.Environment, option.OptionEnv)
+
+	if err != nil {
+		logrus.Warn(err)
+	}
 
 	return buildEntry{
 		ID:              0,
