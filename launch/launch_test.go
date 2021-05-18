@@ -55,7 +55,7 @@ func TestNew(t *testing.T) {
 		buf, _ := ioutil.ReadFile(filepath.Join(testDir, "job.json"))
 		job := screwdriver.Job{}
 		_ = json.Unmarshal(buf, &job)
-		job.Environment.Body = append(job.Environment.Body, struct {
+		job.Environment = append(job.Environment, struct {
 			Key   string
 			Value string
 		}{

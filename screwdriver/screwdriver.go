@@ -13,6 +13,8 @@ import (
 	"strings"
 )
 
+var regexpForUnmarshal = regexp.MustCompile(`"(.*?)" *: *"(.*?)"`)
+
 const (
 	apiVersion        = "v4"
 	validatorEndpoint = "validator"
@@ -42,23 +44,16 @@ type Step struct {
 	Command string `json:"command"`
 }
 
-// PairSlice is an associative array which preserves order
-type PairSlice struct {
-	Body []struct {
-		Key   string
-		Value string
-	}
+// Environments is an environment slice
+type Environments []struct {
+	Key   string
+	Value string
 }
 
-// UnmarshalJSON replaces JSON of a normal associative array to PairSlice
-func (PS *PairSlice) UnmarshalJSON(data []byte) error {
-	var output []struct {
-		Key   string
-		Value string
-	}
-	r := regexp.MustCompile(`"(.*?)" *: *"(.*?)"`)
-	for _, pair := range r.FindAllStringSubmatch(string(data), -1) {
-		output = append(output, struct {
+// UnmarshalJSON replaces JSON of a normal associative array to Environments
+func (en *Environments) UnmarshalJSON(data []byte) error {
+	for _, pair := range regexpForUnmarshal.FindAllStringSubmatch(string(data), -1) {
+		*en = append(*en, struct {
 			Key   string
 			Value string
 		}{
@@ -66,15 +61,14 @@ func (PS *PairSlice) UnmarshalJSON(data []byte) error {
 			pair[2],
 		})
 	}
-	PS.Body = output
 	return nil
 }
 
 // Job is job entity struct
 type Job struct {
-	Steps       []Step    `json:"commands"`
-	Environment PairSlice `json:"environment"`
-	Image       string    `json:"image"`
+	Steps       []Step       `json:"commands"`
+	Environment Environments `json:"environment"`
+	Image       string       `json:"image"`
 }
 
 type jobs map[string][]Job

@@ -74,15 +74,10 @@ func TestJob(t *testing.T) {
 					Command: "echo publish",
 				},
 			},
-			Environment: PairSlice{
-				Body: []struct {
-					Key   string
-					Value string
-				}{
-					{
-						"TEST_ENV",
-						"hoge",
-					},
+			Environment: Environments{
+				{
+					"TEST_ENV",
+					"hoge",
 				},
 			},
 			Image: "alpine",
