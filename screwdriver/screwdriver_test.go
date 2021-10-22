@@ -74,7 +74,7 @@ func TestJob(t *testing.T) {
 					Command: "echo publish",
 				},
 			},
-			Environment: Environments{
+			Environment: EnvVar{
 				{
 					"TEST_ENV",
 					"hoge",

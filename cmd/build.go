@@ -38,7 +38,13 @@ var (
 	loggerDone      chan struct{}
 )
 
-func mergeEnvFromFile(optionEnv *map[string]string, envFilePath string) error {
+func mergeEnvFromFlag(optionEnv *screwdriver.EnvVar, flagEnv map[string]string) {
+	for k, v := range flagEnv {
+		optionEnv.Set(k, v)
+	}
+}
+
+func mergeEnvFromFile(optionEnv *screwdriver.EnvVar, envFilePath string) error {
 	absEnvFilePath, err := filepath.Abs(envFilePath)
 	if err != nil {
 		return err
@@ -50,9 +56,7 @@ func mergeEnvFromFile(optionEnv *map[string]string, envFilePath string) error {
 	}
 
 	for k, v := range env {
-		if _, ok := (*optionEnv)[k]; !ok {
-			(*optionEnv)[k] = v
-		}
+		optionEnv.Set(k, v)
 	}
 	return nil
 }
@@ -67,7 +71,7 @@ func generateUserAgent(uuid string) string {
 
 func newBuildCmd() *cobra.Command {
 	var srcURL string
-	var optionEnv map[string]string
+	var flagEnv map[string]string
 	var envFilePath string
 	var optionMeta string
 	var metaFilePath string
@@ -93,6 +97,7 @@ func newBuildCmd() *cobra.Command {
 		},
 		RunE: func(cmd *cobra.Command, args []string) error {
 			var err error
+			var optionEnv screwdriver.EnvVar
 			cmd.SilenceUsage = true
 
 			if envFilePath != "" {
@@ -101,6 +106,7 @@ func newBuildCmd() *cobra.Command {
 					return err
 				}
 			}
+			mergeEnvFromFlag(&optionEnv, flagEnv)
 
 			metaJSON := []byte("{}")
 			if optionMeta != "" {
@@ -293,7 +299,7 @@ ex) git@github.com:<org>/<repo>.git[#<branch>]
     https://github.com/<org>/<repo>.git[#<branch>]`)
 
 	buildCmd.Flags().StringToStringVarP(
-		&optionEnv,
+		&flagEnv,
 		"env",
 		"e",
 		map[string]string{},
