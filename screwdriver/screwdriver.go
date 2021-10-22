@@ -74,7 +74,7 @@ func (en EnvVar) MarshalJSON() ([]byte, error) {
 	return []byte(output), nil
 }
 
-// Get Value whose Key is key
+// Get the newest Value whose Key is key
 func (en EnvVar) Get(key string) string {
 	s := ""
 	for _, e := range en {
@@ -85,7 +85,7 @@ func (en EnvVar) Get(key string) string {
 	return s
 }
 
-// Set key to val
+// Set adds (key, val)
 func (en *EnvVar) Set(key string, val string) {
 	*en = append(*en, struct {
 		Key   string
