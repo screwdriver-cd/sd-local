@@ -122,7 +122,7 @@ func TestNew(t *testing.T) {
 		}
 
 		expectedBuildEntry := newBuildEntry()
-		//expectedBuildEntry.Environment[1] corresponds to SD_ARTIFACTS_DIR
+		// expectedBuildEntry.Environment[1] corresponds to SD_ARTIFACTS_DIR
 		expectedBuildEntry.Environment[1] = struct {
 			Key   string
 			Value string
