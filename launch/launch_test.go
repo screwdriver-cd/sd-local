@@ -18,20 +18,38 @@ import (
 var testDir string = "./testdata"
 
 func newBuildEntry(options ...func(b *buildEntry)) buildEntry {
-	buf, _ := ioutil.ReadFile(filepath.Join(testDir, "job1.json"))
+	buf, _ := ioutil.ReadFile(filepath.Join(testDir, "job.json"))
 	job := screwdriver.Job{}
 	_ = json.Unmarshal(buf, &job)
 
 	b := buildEntry{
 		ID: 0,
-		Environment: []EnvVar{{
-			"SD_ARTIFACTS_DIR":     "/test/artifacts",
-			"SD_API_URL":           "http://api-test.screwdriver.cd/v4",
-			"SD_STORE_URL":         "http://store-test.screwdriver.cd/v1",
-			"SD_TOKEN":             "testjwt",
-			"SD_BASE_COMMAND_PATH": "/sd/commands/",
-			"FOO":                  "foo",
-		}},
+		Environment: screwdriver.EnvVar{
+			{
+				"SD_TOKEN",
+				"testjwt",
+			},
+			{
+				"SD_ARTIFACTS_DIR",
+				"/test/artifacts",
+			},
+			{
+				"SD_API_URL",
+				"http://api-test.screwdriver.cd/v4",
+			},
+			{
+				"SD_STORE_URL",
+				"http://store-test.screwdriver.cd/v1",
+			},
+			{
+				"SD_BASE_COMMAND_PATH",
+				"/sd/commands/",
+			},
+			{
+				"FOO",
+				"foo",
+			},
+		},
 		EventID:       0,
 		JobID:         0,
 		ParentBuildID: []int{0},
@@ -52,16 +70,10 @@ func newBuildEntry(options ...func(b *buildEntry)) buildEntry {
 
 func TestNew(t *testing.T) {
 	t.Run("success with custom artifacts dir", func(t *testing.T) {
-		buf, _ := ioutil.ReadFile(filepath.Join(testDir, "job1.json"))
+		buf, _ := ioutil.ReadFile(filepath.Join(testDir, "job.json"))
 		job := screwdriver.Job{}
 		_ = json.Unmarshal(buf, &job)
-		job.Environment = append(job.Environment, struct {
-			Key   string
-			Value string
-		}{
-			"SD_ARTIFACTS_DIR",
-			"/test/artifacts",
-		})
+		job.Environment.Set("SD_ARTIFACTS_DIR", "/test/artifacts")
 
 		config := config.Entry{
 			APIURL:   "http://api-test.screwdriver.cd",
@@ -71,6 +83,14 @@ func TestNew(t *testing.T) {
 		}
 
 		expectedBuildEntry := newBuildEntry()
+		expectedBuildEntry.Environment[1] = struct {
+			Key   string
+			Value string
+		}{
+			"SD_ARTIFACTS_DIR",
+			"/sd/workspace/artifacts",
+		}
+		expectedBuildEntry.Environment.Set("SD_ARTIFACTS_DIR", "/test/artifacts")
 		expectedBuildEntry.SrcPath = "/test/sd-local/build/repo"
 
 		option := Option{
@@ -90,7 +110,7 @@ func TestNew(t *testing.T) {
 	})
 
 	t.Run("success with default artifacts dir", func(t *testing.T) {
-		buf, _ := ioutil.ReadFile(filepath.Join(testDir, "job1.json"))
+		buf, _ := ioutil.ReadFile(filepath.Join(testDir, "job.json"))
 		job := screwdriver.Job{}
 		_ = json.Unmarshal(buf, &job)
 
@@ -102,40 +122,14 @@ func TestNew(t *testing.T) {
 		}
 
 		expectedBuildEntry := newBuildEntry()
-		expectedBuildEntry.Environment[0]["SD_ARTIFACTS_DIR"] = "/sd/workspace/artifacts"
-
-		option := Option{
-			Job:           job,
-			Entry:         config,
-			JobName:       "test",
-			JWT:           "testjwt",
-			ArtifactsPath: "sd-artifacts",
-			Meta:          Meta{},
+		// expectedBuildEntry.Environment[1] corresponds to SD_ARTIFACTS_DIR
+		expectedBuildEntry.Environment[1] = struct {
+			Key   string
+			Value string
+		}{
+			"SD_ARTIFACTS_DIR",
+			"/sd/workspace/artifacts",
 		}
-
-		launcher := New(option)
-		l, ok := launcher.(*launch)
-		assert.True(t, ok)
-		assert.Equal(t, expectedBuildEntry, l.buildEntry)
-	})
-
-	t.Run("success with nested environment", func(t *testing.T) {
-		buf, _ := ioutil.ReadFile(filepath.Join(testDir, "job2.json"))
-		job := screwdriver.Job{}
-		_ = json.Unmarshal(buf, &job)
-
-		config := config.Entry{
-			APIURL:   "http://api-test.screwdriver.cd",
-			StoreURL: "http://store-test.screwdriver.cd",
-			Token:    "testtoken",
-			Launcher: config.Launcher{Version: "latest", Image: "screwdrivercd/launcher"},
-		}
-
-		expectedBuildEntry := newBuildEntry()
-		expectedBuildEntry.Environment[0]["SD_ARTIFACTS_DIR"] = "/sd/workspace/artifacts"
-		expectedBuildEntry.Environment[0]["BEFORE"] = "BEFORE"
-		expectedBuildEntry.Environment[0]["X"] = "XXX"
-		expectedBuildEntry.Environment[0]["AFTER"] = "AFTERXXX"
 
 		option := Option{
 			Job:           job,
@@ -178,7 +172,7 @@ func (m *mockRunner) kill(os.Signal) {
 
 func TestRun(t *testing.T) {
 	t.Run("success", func(t *testing.T) {
-		buf, _ := ioutil.ReadFile(filepath.Join(testDir, "job1.json"))
+		buf, _ := ioutil.ReadFile(filepath.Join(testDir, "job.json"))
 		job := screwdriver.Job{}
 		_ = json.Unmarshal(buf, &job)
 
@@ -204,7 +198,7 @@ func TestRun(t *testing.T) {
 	})
 
 	t.Run("failure in lookPath", func(t *testing.T) {
-		buf, _ := ioutil.ReadFile(filepath.Join(testDir, "job1.json"))
+		buf, _ := ioutil.ReadFile(filepath.Join(testDir, "job.json"))
 		job := screwdriver.Job{}
 		_ = json.Unmarshal(buf, &job)
 
@@ -230,7 +224,7 @@ func TestRun(t *testing.T) {
 	})
 
 	t.Run("failure in SetupBin", func(t *testing.T) {
-		buf, _ := ioutil.ReadFile(filepath.Join(testDir, "job1.json"))
+		buf, _ := ioutil.ReadFile(filepath.Join(testDir, "job.json"))
 		job := screwdriver.Job{}
 		_ = json.Unmarshal(buf, &job)
 
@@ -256,7 +250,7 @@ func TestRun(t *testing.T) {
 	})
 
 	t.Run("failure in RunBuild", func(t *testing.T) {
-		buf, _ := ioutil.ReadFile(filepath.Join(testDir, "job1.json"))
+		buf, _ := ioutil.ReadFile(filepath.Join(testDir, "job.json"))
 		job := screwdriver.Job{}
 		_ = json.Unmarshal(buf, &job)
 
@@ -284,7 +278,7 @@ func TestRun(t *testing.T) {
 
 func TestKill(t *testing.T) {
 	t.Run("success to call kill", func(t *testing.T) {
-		buf, _ := ioutil.ReadFile(filepath.Join(testDir, "job1.json"))
+		buf, _ := ioutil.ReadFile(filepath.Join(testDir, "job.json"))
 		job := screwdriver.Job{}
 		_ = json.Unmarshal(buf, &job)
 
@@ -303,7 +297,7 @@ func TestKill(t *testing.T) {
 
 func TestClean(t *testing.T) {
 	t.Run("success to call clean", func(t *testing.T) {
-		buf, _ := ioutil.ReadFile(filepath.Join(testDir, "job1.json"))
+		buf, _ := ioutil.ReadFile(filepath.Join(testDir, "job.json"))
 		job := screwdriver.Job{}
 		_ = json.Unmarshal(buf, &job)
 

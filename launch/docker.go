@@ -86,11 +86,11 @@ func (d *docker) setupBin() error {
 }
 
 func (d *docker) runBuild(buildEntry buildEntry) error {
-	environment := buildEntry.Environment[0]
+	environment := buildEntry.Environment
 
 	srcDir := buildEntry.SrcPath
 	hostArtDir := buildEntry.ArtifactsPath
-	containerArtDir := environment["SD_ARTIFACTS_DIR"]
+	containerArtDir := environment.Get("SD_ARTIFACTS_DIR")
 	buildImage := buildEntry.Image
 	logfilePath := filepath.Join(containerArtDir, LogFile)
 
@@ -132,7 +132,7 @@ func (d *docker) runBuild(buildEntry buildEntry) error {
 	if d.interactiveMode {
 		configJSONArg = fmt.Sprintf("%q", configJSONArg)
 	}
-	launchCommands := []string{"/opt/sd/local_run.sh", configJSONArg, buildEntry.JobName, environment["SD_API_URL"], environment["SD_STORE_URL"], logfilePath}
+	launchCommands := []string{"/opt/sd/local_run.sh", configJSONArg, buildEntry.JobName, environment.Get("SD_API_URL"), environment.Get("SD_STORE_URL"), logfilePath}
 	if d.interactiveMode {
 		dockerCommandOptions = append([]string{"-itd"}, dockerCommandOptions...)
 		dockerCommandOptions = append(dockerCommandOptions, "/bin/sh")

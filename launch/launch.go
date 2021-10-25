@@ -40,15 +40,12 @@ type launch struct {
 	runner     runner
 }
 
-// EnvVar is a map for environment variables
-type EnvVar map[string]string
-
 // Meta is a map for metadata
 type Meta map[string]interface{}
 
 type buildEntry struct {
 	ID              int                `json:"id"`
-	Environment     []EnvVar           `json:"environment"`
+	Environment     screwdriver.EnvVar `json:"environment"`
 	EventID         int                `json:"eventId"`
 	JobID           int                `json:"jobId"`
 	ParentBuildID   []int              `json:"parentBuildId"`
@@ -76,7 +73,7 @@ type Option struct {
 	ArtifactsPath   string
 	Memory          string
 	SrcPath         string
-	OptionEnv       EnvVar
+	OptionEnv       screwdriver.EnvVar
 	Meta            Meta
 	UseSudo         bool
 	UsePrivileged   bool
@@ -102,22 +99,6 @@ func DefaultSocketPath() string {
 	return socketPath
 }
 
-func mergeEnv(env EnvVar, jobEnv screwdriver.Environments, optionEnv EnvVar) ([]EnvVar, error) {
-	for _, e := range jobEnv {
-		val := os.ExpandEnv(e.Value)
-		env[e.Key] = val
-		err := os.Setenv(e.Key, val)
-		if err != nil {
-			return []EnvVar{}, fmt.Errorf("failed to setenv: %w", err)
-		}
-	}
-	for k, v := range optionEnv {
-		env[k] = v
-	}
-
-	return []EnvVar{env}, nil
-}
-
 func createBuildEntry(option Option) buildEntry {
 	apiURL, storeURL := option.Entry.APIURL, option.Entry.StoreURL
 
@@ -137,19 +118,31 @@ func createBuildEntry(option Option) buildEntry {
 		logrus.Warn("SD_STORE_URL is invalid. It may cause errors")
 	}
 
-	defaultEnv := EnvVar{
-		"SD_TOKEN":             option.JWT,
-		"SD_ARTIFACTS_DIR":     defaultArtDir,
-		"SD_API_URL":           apiURL,
-		"SD_STORE_URL":         storeURL,
-		"SD_BASE_COMMAND_PATH": "/sd/commands/",
+	env := screwdriver.EnvVar{
+		{
+			"SD_TOKEN",
+			option.JWT,
+		},
+		{
+			"SD_ARTIFACTS_DIR",
+			defaultArtDir,
+		},
+		{
+			"SD_API_URL",
+			apiURL,
+		},
+		{
+			"SD_STORE_URL",
+			storeURL,
+		},
+		{
+			"SD_BASE_COMMAND_PATH",
+			"/sd/commands/",
+		},
 	}
 
-	env, err := mergeEnv(defaultEnv, option.Job.Environment, option.OptionEnv)
-
-	if err != nil {
-		logrus.Warn(err)
-	}
+	env.Merge(option.Job.Environment)
+	env.Merge(option.OptionEnv)
 
 	return buildEntry{
 		ID:              0,

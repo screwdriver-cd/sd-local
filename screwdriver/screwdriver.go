@@ -44,14 +44,14 @@ type Step struct {
 	Command string `json:"command"`
 }
 
-// Environments is an environment slice
-type Environments []struct {
+// EnvVar is an environment slice
+type EnvVar []struct {
 	Key   string
 	Value string
 }
 
-// UnmarshalJSON replaces JSON of a normal associative array to Environments
-func (en *Environments) UnmarshalJSON(data []byte) error {
+// UnmarshalJSON replaces JSON of a normal associative array to EnvVar
+func (en *EnvVar) UnmarshalJSON(data []byte) error {
 	for _, pair := range regexpForUnmarshal.FindAllStringSubmatch(string(data), -1) {
 		*en = append(*en, struct {
 			Key   string
@@ -64,11 +64,50 @@ func (en *Environments) UnmarshalJSON(data []byte) error {
 	return nil
 }
 
+// MarshalJSON replaces EnvVar to JSON of a normal associative array
+func (en EnvVar) MarshalJSON() ([]byte, error) {
+	outputArray := make([]string, len(en))
+	for i, pair := range en {
+		outputArray[i] = "{\"" + pair.Key + "\":\"" + pair.Value + "\"}"
+	}
+	output := "[" + strings.Join(outputArray, ",") + "]"
+	return []byte(output), nil
+}
+
+// Get the newest Value whose Key is key
+func (en EnvVar) Get(key string) string {
+	s := ""
+	for _, e := range en {
+		if e.Key == key {
+			s = e.Value
+		}
+	}
+	return s
+}
+
+// Set adds (key, val)
+func (en *EnvVar) Set(key string, val string) {
+	*en = append(*en, struct {
+		Key   string
+		Value string
+	}{
+		key,
+		val,
+	})
+}
+
+// Merge en2 to en
+func (en *EnvVar) Merge(en2 EnvVar) {
+	for _, e := range en2 {
+		en.Set(e.Key, e.Value)
+	}
+}
+
 // Job is job entity struct
 type Job struct {
-	Steps       []Step       `json:"commands"`
-	Environment Environments `json:"environment"`
-	Image       string       `json:"image"`
+	Steps       []Step `json:"commands"`
+	Environment EnvVar `json:"environment"`
+	Image       string `json:"image"`
 }
 
 type jobs map[string][]Job

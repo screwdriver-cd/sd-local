@@ -10,6 +10,7 @@ import (
 
 	"github.com/screwdriver-cd/sd-local/config"
 	"github.com/screwdriver-cd/sd-local/launch"
+	"github.com/screwdriver-cd/sd-local/screwdriver"
 	"github.com/sirupsen/logrus"
 	"github.com/stretchr/testify/assert"
 )
@@ -64,13 +65,29 @@ func TestBuildCmd(t *testing.T) {
 		buf := bytes.NewBuffer(nil)
 		root.SetOut(buf)
 
-		expected := launch.EnvVar{
-			"hoge": "fuga",
-			"foo":  "bar",
+		expected1 := screwdriver.EnvVar{
+			{
+				"hoge",
+				"fuga",
+			},
+			{
+				"foo",
+				"bar",
+			},
+		}
+		expected2 := screwdriver.EnvVar{
+			{
+				"foo",
+				"bar",
+			},
+			{
+				"hoge",
+				"fuga",
+			},
 		}
 
 		launchNew = func(option launch.Option) launch.Launcher {
-			assert.Equal(t, expected, option.OptionEnv)
+			assert.Contains(t, [...]screwdriver.EnvVar{expected1, expected2}, option.OptionEnv)
 			return mockLaunch{}
 		}
 
@@ -88,13 +105,29 @@ func TestBuildCmd(t *testing.T) {
 		buf := bytes.NewBuffer(nil)
 		root.SetOut(buf)
 
-		expected := launch.EnvVar{
-			"hoge": "fuga",
-			"foo":  "bar",
+		expected1 := screwdriver.EnvVar{
+			{
+				"hoge",
+				"fuga",
+			},
+			{
+				"foo",
+				"bar",
+			},
+		}
+		expected2 := screwdriver.EnvVar{
+			{
+				"foo",
+				"bar",
+			},
+			{
+				"hoge",
+				"fuga",
+			},
 		}
 
 		launchNew = func(option launch.Option) launch.Launcher {
-			assert.Equal(t, expected, option.OptionEnv)
+			assert.Contains(t, [...]screwdriver.EnvVar{expected1, expected2}, option.OptionEnv)
 			return mockLaunch{}
 		}
 
@@ -112,14 +145,81 @@ func TestBuildCmd(t *testing.T) {
 		buf := bytes.NewBuffer(nil)
 		root.SetOut(buf)
 
-		expected := launch.EnvVar{
-			"hoge": "overwritten",
-			"foo":  "bar",
-			"baz":  "qux",
+		expected1 := screwdriver.EnvVar{
+			{
+				"hoge",
+				"fuga",
+			},
+			{
+				"foo",
+				"bar",
+			},
+			{
+				"hoge",
+				"overwritten",
+			},
+			{
+				"baz",
+				"qux",
+			},
+		}
+		expected2 := screwdriver.EnvVar{
+			{
+				"hoge",
+				"fuga",
+			},
+			{
+				"foo",
+				"bar",
+			},
+			{
+				"baz",
+				"qux",
+			},
+			{
+				"hoge",
+				"overwritten",
+			},
+		}
+		expected3 := screwdriver.EnvVar{
+			{
+				"foo",
+				"bar",
+			},
+			{
+				"hoge",
+				"fuga",
+			},
+			{
+				"hoge",
+				"overwritten",
+			},
+			{
+				"baz",
+				"qux",
+			},
+		}
+		expected4 := screwdriver.EnvVar{
+			{
+				"foo",
+				"bar",
+			},
+			{
+				"hoge",
+				"fuga",
+			},
+			{
+				"baz",
+				"qux",
+			},
+			{
+				"hoge",
+				"overwritten",
+			},
 		}
 
 		launchNew = func(option launch.Option) launch.Launcher {
-			assert.Equal(t, expected, option.OptionEnv)
+			assert.Contains(t, [...]screwdriver.EnvVar{expected1, expected2, expected3, expected4}, option.OptionEnv)
 			return mockLaunch{}
 		}
 
