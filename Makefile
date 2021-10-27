@@ -1,12 +1,14 @@
 GOCMD=go
+GOTESTSUM_VERSION=v1.7.0
+GOLINT_VERSION=latest
 GOBUILD=$(GOCMD) build
 GOCLEAN=$(GOCMD) clean
-GOTEST=$(GOPATH)/bin/gotestsum
+GOTEST=$(GOCMD) run gotest.tools/gotestsum@$(GOTESTSUM_VERSION)
 GOGET=$(GOCMD) get
 GOLIST=$(GOCMD) list
 GOTOOL=$(GOCMD) tool
 GOLIST_PKG=$(GOLIST) ./... | grep -v /vendor/
-GOLINT=$(GOPATH)/bin/golint
+GOLINT=$(GOCMD) run golang.org/x/lint/golint@$(GOLINT_VERSION)
 GORELEASER=goreleaser
 BINARY_NAME=sd-local
 COVERPROFILE?=cover.out
