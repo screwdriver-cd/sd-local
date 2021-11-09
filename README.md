@@ -60,6 +60,11 @@ Flags:
 Global Flags:
   -v, --verbose   verbose output.
 ```
+* There are some ways to set environment variables for a build. If the same key is set in more than one way, the priority is as follows:
+  1. `--env` or `-e` Flag
+  1. `--env-file` Flag
+  1. environment of screwdriver.yaml
+  1. defaultValue (e.g.: `SD_TOKEN`, `SD_API_URL`)
 
 ##### config
 _create_
