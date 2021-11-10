@@ -64,7 +64,7 @@ Global Flags:
   1. `--env` or `-e` Flag
   1. `--env-file` Flag
   1. environment in a screwdriver.yaml
-  1. default value (e.g.: `SD_TOKEN`, `SD_API_URL`)
+  1. defaultEnv (e.g.: `SD_TOKEN`, `SD_API_URL`)
 
 ##### config
 _create_
