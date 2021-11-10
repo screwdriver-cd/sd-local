@@ -63,8 +63,8 @@ Global Flags:
 * There are some ways to set environment variables for a build. If the same key is set in more than one way, the priority is as follows:
   1. `--env` or `-e` Flag
   1. `--env-file` Flag
-  1. environment of screwdriver.yaml
-  1. defaultValue (e.g.: `SD_TOKEN`, `SD_API_URL`)
+  1. environment in a screwdriver.yaml
+  1. default value (e.g.: `SD_TOKEN`, `SD_API_URL`)
 
 ##### config
 _create_
