@@ -13,7 +13,7 @@ import (
 	"strings"
 )
 
-var regexpForUnmarshal = regexp.MustCompile(`"(.*?)" *: *"(.*?)"`)
+var regexpForUnmarshal = regexp.MustCompile(`"(.*?)" *: *"((.*?(\\\")?)+)"`)
 
 const (
 	apiVersion        = "v4"

@@ -13,7 +13,8 @@
           }
         ],
         "environment": {
-          "TEST_ENV": "hoge"
+          "TEST_ENV": "hoge",
+          "ESCAPED_COMMAND": "-c \"echo FOO\""
         },
         "image": "alpine"
       }

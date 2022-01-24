@@ -79,6 +79,10 @@ func TestJob(t *testing.T) {
 					"TEST_ENV",
 					"hoge",
 				},
+				{
+					"ESCAPED_COMMAND",
+					"-c \\\"echo FOO\\\"",
+				},
 			},
 			Image: "alpine",
 		}
