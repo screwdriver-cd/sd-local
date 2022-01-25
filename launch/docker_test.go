@@ -66,9 +66,10 @@ func TestNewDocker(t *testing.T) {
 			interact:          &Interact{},
 			socketPath:        "/auth.sock",
 			localVolumes:      []string{"path:path"},
+			buildUser:         "jithin",
 		}
 
-		d := newDocker("launcher", "latest", false, false, "/auth.sock", false, []string{"path:path"})
+		d := newDocker("launcher", "latest", false, false, "/auth.sock", false, []string{"path:path"}, "jithin")
 
 		assert.Equal(t, expected, d)
 	})

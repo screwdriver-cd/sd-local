@@ -31,6 +31,7 @@ type docker struct {
 	interact          Interacter
 	socketPath        string
 	localVolumes      []string
+	buildUser         string
 }
 
 var _ runner = (*docker)(nil)
@@ -46,7 +47,7 @@ const (
 	orgRepo = "sd-local/local-build"
 )
 
-func newDocker(setupImage, setupImageVer string, useSudo bool, interactiveMode bool, socketPath string, flagVerbose bool, localVolumes []string) runner {
+func newDocker(setupImage, setupImageVer string, useSudo bool, interactiveMode bool, socketPath string, flagVerbose bool, localVolumes []string, buildUser string) runner {
 	return &docker{
 		volume:            "SD_LAUNCH_BIN",
 		habVolume:         "SD_LAUNCH_HAB",
@@ -60,6 +61,7 @@ func newDocker(setupImage, setupImageVer string, useSudo bool, interactiveMode b
 		interact:          &Interact{flagVerbose: flagVerbose},
 		socketPath:        socketPath,
 		localVolumes:      localVolumes,
+		buildUser:         buildUser,
 	}
 }
 
@@ -146,6 +148,10 @@ func (d *docker) runBuild(buildEntry buildEntry) error {
 
 	if buildEntry.UsePrivileged {
 		dockerCommandOptions = append([]string{"--privileged"}, dockerCommandOptions...)
+	}
+
+	if d.buildUser != "" {
+		dockerCommandOptions = append([]string{fmt.Sprintf("-u%s", d.buildUser)}, dockerCommandOptions...)
 	}
 
 	if d.interactiveMode {

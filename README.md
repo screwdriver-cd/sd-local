@@ -57,6 +57,7 @@ Flags:
       --sudo                   Use sudo command for container runtime.
       --vol string             Mount local volumes into build container. (<src>:<destination>) (default [])
 
+  -u, --user string            Change default build user. Default value is from container in use.
 Global Flags:
   -v, --verbose   verbose output.
 ```

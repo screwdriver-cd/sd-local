@@ -77,6 +77,7 @@ func newBuildCmd() *cobra.Command {
 	var metaFilePath string
 	var socketPath string
 	var localVolumes []string
+	var buildUser string
 
 	buildCmd := &cobra.Command{
 		Use:   "build [job name]",
@@ -256,6 +257,7 @@ func newBuildCmd() *cobra.Command {
 				SocketPath:      socketPath,
 				FlagVerbose:     flagVerbose,
 				LocalVolumes:    localVolumes,
+				BuildUser:       buildUser,
 			}
 
 			launch := launchNew(option)
@@ -356,6 +358,13 @@ ex) git@github.com:<org>/<repo>.git[#<branch>]
 		"vol",
 		[]string{},
 		"Volumes to mount into build container.")
+
+	buildCmd.Flags().StringVarP(
+		&buildUser,
+		"user",
+		"u",
+		"",
+		"Change default build user. Default value is from container in use.")
 
 	return buildCmd
 }

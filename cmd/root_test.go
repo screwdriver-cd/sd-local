@@ -60,6 +60,7 @@ Flags:
                                ex) git@github.com:<org>/<repo>.git[#<branch>]
                                    https://github.com/<org>/<repo>.git[#<branch>]
       --sudo                   Use sudo command for container runtime.
+  -u, --user string            Change default build user. Default value is from container in use.
       --vol strings            Volumes to mount into build container.
 
 `, defaultSocketPath)
