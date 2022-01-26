@@ -73,7 +73,7 @@ func (en *EnvVar) UnmarshalJSON(data []byte) error {
 	orderedMap := NewOMap()
 	err := json.Unmarshal(inputbytes, orderedMap)
 	if err != nil {
-		return fmt.Errorf("failed to unmarshal: %v", err)
+		return err
 	}
 
 	iter := orderedMap.EntriesIter()
@@ -106,7 +106,7 @@ func (en EnvVar) MarshalJSON() ([]byte, error) {
 
 	s, err := json.Marshal(outputArray)
 	if err != nil {
-		panic(err)
+		return nil, err
 	}
 
 	return []byte(s), nil
