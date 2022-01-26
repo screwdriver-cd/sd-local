@@ -69,9 +69,9 @@ func jsonEscape(i string) string {
 
 // UnmarshalJSON replaces JSON of a normal associative array to EnvVar
 func (en *EnvVar) UnmarshalJSON(data []byte) error {
-	inputbytes := []byte(data)
+	inputBytes := []byte(data)
 	orderedMap := NewOMap()
-	err := json.Unmarshal(inputbytes, orderedMap)
+	err := json.Unmarshal(inputBytes, orderedMap)
 	if err != nil {
 		return err
 	}
@@ -104,12 +104,12 @@ func (en EnvVar) MarshalJSON() ([]byte, error) {
 		outputArray[i] = envMap
 	}
 
-	s, err := json.Marshal(outputArray)
+	marshaled, err := json.Marshal(outputArray)
 	if err != nil {
 		return nil, err
 	}
 
-	return []byte(s), nil
+	return []byte(marshaled), nil
 }
 
 // Get the newest Value whose Key is key
