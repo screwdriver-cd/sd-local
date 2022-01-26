@@ -11,6 +11,8 @@ import (
 	"regexp"
 	"strconv"
 	"strings"
+
+	ordered "gitlab.com/c0b/go-ordered-json"
 )
 
 var regexpForUnmarshal = regexp.MustCompile(`"(.*?)" *: *"((.*?(\\\")?)+)"`)
@@ -50,17 +52,62 @@ type EnvVar []struct {
 	Value string
 }
 
+type MyEnvVar []struct {
+	Key   string
+	Value string
+}
+
+type OMap ordered.OrderedMap
+
+var NewOMap = ordered.NewOrderedMap
+
+func jsonEscape(i string) string {
+	b, err := json.Marshal(i)
+	if err != nil {
+		panic(err)
+	}
+	s := string(b)
+	return s[1 : len(s)-1]
+}
+
 // UnmarshalJSON replaces JSON of a normal associative array to EnvVar
 func (en *EnvVar) UnmarshalJSON(data []byte) error {
-	for _, pair := range regexpForUnmarshal.FindAllStringSubmatch(string(data), -1) {
+	// new impl
+	b := []byte(data)
+	m1 := NewOMap()
+	err := json.Unmarshal(b, m1)
+	if err != nil {
+		fmt.Println("error:", err)
+	}
+
+	fmt.Printf("(%%#v) %#v\n", m1)
+
+	iter := m1.EntriesIter()
+	for {
+		pair, ok := iter()
+		if !ok {
+			break
+		}
+		fmt.Printf("%-12s: %v\n", pair.Key, pair.Value)
 		*en = append(*en, struct {
 			Key   string
 			Value string
 		}{
-			pair[1],
-			pair[2],
+			pair.Key,
+			jsonEscape(pair.Value.(string)),
 		})
+
 	}
+
+	// for _, pair := range regexpForUnmarshal.FindAllStringSubmatch(string(data), -1) {
+	// 	*en = append(*en, struct {
+	// 		Key   string
+	// 		Value string
+	// 	}{
+	// 		pair[1],
+	// 		pair[2],
+	// 	})
+	// }
 	return nil
 }
 
@@ -71,6 +118,8 @@ func (en EnvVar) MarshalJSON() ([]byte, error) {
 		outputArray[i] = "{\"" + pair.Key + "\":\"" + pair.Value + "\"}"
 	}
 	output := "[" + strings.Join(outputArray, ",") + "]"
+	println("Marshal output")
+	println(output)
 	return []byte(output), nil
 }
 
@@ -227,7 +276,14 @@ func (sd *sdAPI) validate(filePath string) (jobs, error) {
 	}
 
 	v := new(validatorResponse)
+	// byteArray, _ := ioutil.ReadAll(res.Body)
+	// jsonBytes := ([]byte)(byteArray)
+	// !!!
 	err = json.NewDecoder(res.Body).Decode(v)
+
+	fmt.Printf("(%%#v) %#v\n", v)
+
+	// err = json.Unmarshal(jsonBytes, v)
 	if err != nil {
 		return nil, fmt.Errorf("failed to parse validator response: %v", err)
 	}
