@@ -96,29 +96,19 @@ func (en *EnvVar) UnmarshalJSON(data []byte) error {
 
 // MarshalJSON replaces EnvVar to JSON of a normal associative array
 func (en EnvVar) MarshalJSON() ([]byte, error) {
-	outputArray := make([]string, len(en))
-	outputArray2 := make([]map[string]string, len(en))
+	outputArray := make([]map[string]string, len(en))
 
-	for i2, pair2 := range en {
+	for i, pair := range en {
 		envMap := make(map[string]string, 2)
-		envMap[pair2.Key] = pair2.Value
-		outputArray2[i2] = envMap
+		envMap[pair.Key] = pair.Value
+		outputArray[i] = envMap
 	}
 
-	println("Marshaled output arrayMap")
-	s, err := json.Marshal(outputArray2)
+	s, err := json.Marshal(outputArray)
 	if err != nil {
 		panic(err)
 	}
-	fmt.Println(string(s))
 
-	for i, pair := range en {
-		outputArray[i] = "{\"" + pair.Key + "\":\"" + pair.Value + "\"}"
-	}
-	output := "[" + strings.Join(outputArray, ",") + "]"
-
-	println("Marshaled output original")
-	println(string(output))
 	return []byte(s), nil
 }
 
