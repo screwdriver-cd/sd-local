@@ -83,6 +83,14 @@ func TestJob(t *testing.T) {
 					"ESCAPED_COMMAND",
 					"-c \\\"echo FOO\\\"",
 				},
+				{
+					"FOO",
+					"'abc\\\\'",
+				},
+				{
+					"BAR",
+					"'def\\\"'",
+				},
 			},
 			Image: "alpine",
 		}

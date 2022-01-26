@@ -8,12 +8,11 @@ import (
 	"net/http"
 	"net/url"
 	"path"
-	"regexp"
 	"strconv"
 	"strings"
-)
 
-var regexpForUnmarshal = regexp.MustCompile(`"(.*?)" *: *"((.*?(\\\")?)+)"`)
+	ordered "gitlab.com/c0b/go-ordered-json"
+)
 
 const (
 	apiVersion        = "v4"
@@ -50,17 +49,45 @@ type EnvVar []struct {
 	Value string
 }
 
+// NewOMap is constructor to make new OrderedMap
+var NewOMap = ordered.NewOrderedMap
+
+// Escape strings
+// from: "a\"b\"c"
+// to: "a\\\"b\\\"c"
+func jsonEscape(i string) string {
+	b, err := json.Marshal(i)
+	if err != nil {
+		panic(err)
+	}
+	s := string(b)
+	return s[1 : len(s)-1]
+}
+
 // UnmarshalJSON replaces JSON of a normal associative array to EnvVar
 func (en *EnvVar) UnmarshalJSON(data []byte) error {
-	for _, pair := range regexpForUnmarshal.FindAllStringSubmatch(string(data), -1) {
+	inputbytes := []byte(data)
+	orderedMap := NewOMap()
+	err := json.Unmarshal(inputbytes, orderedMap)
+	if err != nil {
+		return fmt.Errorf("failed to unmarshal: %v", err)
+	}
+
+	iter := orderedMap.EntriesIter()
+	for {
+		pair, ok := iter()
+		if !ok {
+			break
+		}
 		*en = append(*en, struct {
 			Key   string
 			Value string
 		}{
-			pair[1],
-			pair[2],
+			pair.Key,
+			jsonEscape(pair.Value.(string)),
 		})
 	}
+
 	return nil
 }
 

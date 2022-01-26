@@ -14,7 +14,9 @@
         ],
         "environment": {
           "TEST_ENV": "hoge",
-          "ESCAPED_COMMAND": "-c \"echo FOO\""
+          "ESCAPED_COMMAND": "-c \"echo FOO\"",
+          "FOO": "'abc\\'",
+          "BAR": "'def\"'"
         },
         "image": "alpine"
       }
