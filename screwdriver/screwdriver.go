@@ -49,11 +49,6 @@ type EnvVar []struct {
 	Value string
 }
 
-type MyEnvVar []struct {
-	Key   string
-	Value string
-}
-
 type OMap ordered.OrderedMap
 
 var NewOMap = ordered.NewOrderedMap
