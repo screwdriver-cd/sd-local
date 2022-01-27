@@ -44,24 +44,24 @@ type launch struct {
 type Meta map[string]interface{}
 
 type buildEntry struct {
-	ID              int                `json:"id"`
-	Environment     screwdriver.EnvVar `json:"environment"`
-	EventID         int                `json:"eventId"`
-	JobID           int                `json:"jobId"`
-	ParentBuildID   []int              `json:"parentBuildId"`
-	Sha             string             `json:"sha"`
-	Meta            Meta               `json:"meta"`
-	Steps           []screwdriver.Step `json:"steps"`
-	Image           string             `json:"-"`
-	JobName         string             `json:"-"`
-	ArtifactsPath   string             `json:"-"`
-	MemoryLimit     string             `json:"-"`
-	SrcPath         string             `json:"-"`
-	UseSudo         bool               `json:"-"`
-	InteractiveMode bool               `json:"-"`
-	SocketPath      string             `json:"-"`
-	UsePrivileged   bool               `json:"-"`
-	LocalVolumes    []string           `json:"-"`
+	ID              int                 `json:"id"`
+	Environment     []map[string]string `json:"environment"`
+	EventID         int                 `json:"eventId"`
+	JobID           int                 `json:"jobId"`
+	ParentBuildID   []int               `json:"parentBuildId"`
+	Sha             string              `json:"sha"`
+	Meta            Meta                `json:"meta"`
+	Steps           []screwdriver.Step  `json:"steps"`
+	Image           string              `json:"-"`
+	JobName         string              `json:"-"`
+	ArtifactsPath   string              `json:"-"`
+	MemoryLimit     string              `json:"-"`
+	SrcPath         string              `json:"-"`
+	UseSudo         bool                `json:"-"`
+	InteractiveMode bool                `json:"-"`
+	SocketPath      string              `json:"-"`
+	UsePrivileged   bool                `json:"-"`
+	LocalVolumes    []string            `json:"-"`
 }
 
 // Option is option for launch New
@@ -73,7 +73,7 @@ type Option struct {
 	ArtifactsPath   string
 	Memory          string
 	SrcPath         string
-	OptionEnv       screwdriver.EnvVar
+	OptionEnv       screwdriver.EnvVars
 	Meta            Meta
 	UseSudo         bool
 	UsePrivileged   bool
@@ -119,31 +119,10 @@ func createBuildEntry(option Option) buildEntry {
 		logrus.Warn("SD_STORE_URL is invalid. It may cause errors")
 	}
 
-	env := screwdriver.EnvVar{
-		{
-			"SD_TOKEN",
-			option.JWT,
-		},
-		{
-			"SD_ARTIFACTS_DIR",
-			defaultArtDir,
-		},
-		{
-			"SD_API_URL",
-			apiURL,
-		},
-		{
-			"SD_STORE_URL",
-			storeURL,
-		},
-		{
-			"SD_BASE_COMMAND_PATH",
-			"/sd/commands/",
-		},
-	}
+	env := []map[string]string{{"SD_TOKEN": option.JWT}, {"SD_ARTIFACTS_DIR": defaultArtDir}, {"SD_API_URL": apiURL}, {"SD_STORE_URL": storeURL}, {"SD_BASE_COMMAND_PATH": "/sd/commands/"}}
 
-	env.Merge(option.Job.Environment)
-	env.Merge(option.OptionEnv)
+	env = append(env, option.Job.Environment...)
+	env = append(env, option.OptionEnv...)
 
 	return buildEntry{
 		ID:              0,

@@ -38,13 +38,7 @@ var (
 	loggerDone      chan struct{}
 )
 
-func mergeEnvFromFlag(optionEnv *screwdriver.EnvVar, flagEnv map[string]string) {
-	for k, v := range flagEnv {
-		optionEnv.Set(k, v)
-	}
-}
-
-func mergeEnvFromFile(optionEnv *screwdriver.EnvVar, envFilePath string) error {
+func mergeEnvFromFile(optionEnv *screwdriver.EnvVars, envFilePath string) error {
 	absEnvFilePath, err := filepath.Abs(envFilePath)
 	if err != nil {
 		return err
@@ -55,9 +49,7 @@ func mergeEnvFromFile(optionEnv *screwdriver.EnvVar, envFilePath string) error {
 		return fmt.Errorf("failed to read env file in `%s`: %v", absEnvFilePath, err)
 	}
 
-	for k, v := range env {
-		optionEnv.Set(k, v)
-	}
+	optionEnv.Merge(env)
 	return nil
 }
 
@@ -98,7 +90,7 @@ func newBuildCmd() *cobra.Command {
 		},
 		RunE: func(cmd *cobra.Command, args []string) error {
 			var err error
-			var optionEnv screwdriver.EnvVar
+			var optionEnv screwdriver.EnvVars
 			cmd.SilenceUsage = true
 
 			if envFilePath != "" {
@@ -107,7 +99,7 @@ func newBuildCmd() *cobra.Command {
 					return err
 				}
 			}
-			mergeEnvFromFlag(&optionEnv, flagEnv)
+			optionEnv.Merge(flagEnv)
 
 			metaJSON := []byte("{}")
 			if optionMeta != "" {

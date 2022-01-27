@@ -74,25 +74,8 @@ func TestJob(t *testing.T) {
 					Command: "echo publish",
 				},
 			},
-			Environment: EnvVar{
-				{
-					"TEST_ENV",
-					"hoge",
-				},
-				{
-					"ESCAPED_COMMAND",
-					"-c \\\"echo FOO\\\"",
-				},
-				{
-					"FOO",
-					"'abc\\\\'",
-				},
-				{
-					"BAR",
-					"'def\\\"'",
-				},
-			},
-			Image: "alpine",
+			Environment: []map[string]string{{"TEST_ENV": "hoge"}, {"ESCAPED_COMMAND": "-c \\\"echo FOO\\\""}, {"FOO": "'abc\\\\'"}, {"BAR": "'def\\\"'"}},
+			Image:       "alpine",
 		}
 
 		gotJob, err := testAPI.Job("main", filepath.Join(testDir, "screwdriver.yaml"))
