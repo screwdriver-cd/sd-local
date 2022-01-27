@@ -74,7 +74,7 @@ func TestJob(t *testing.T) {
 					Command: "echo publish",
 				},
 			},
-			Environment: []map[string]string{{"TEST_ENV": "hoge"}, {"ESCAPED_COMMAND": "-c \\\"echo FOO\\\""}, {"FOO": "'abc\\\\'"}, {"BAR": "'def\\\"'"}},
+			Environment: []map[string]string{{"TEST_ENV": "hoge"}, {"ESCAPED_COMMAND": "-c \"echo FOO\""}, {"FOO": "'abc\\'"}, {"BAR": "'def\"'"}},
 			Image:       "alpine",
 		}
 
