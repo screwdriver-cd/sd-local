@@ -67,28 +67,6 @@ func (en *EnvVars) UnmarshalJSON(data []byte) error {
 	return nil
 }
 
-// // Get the newest Value whose Key is key
-// func (en EnvVar) Get(key string) string {
-// 	s := ""
-// 	for _, e := range en {
-// 		if e.Key == key {
-// 			s = e.Value
-// 		}
-// 	}
-// 	return s
-// }
-
-// // Set adds (key, val)
-// func (en *EnvVar) Set(key string, val string) {
-// 	*en = append(*en, struct {
-// 		Key   string
-// 		Value string
-// 	}{
-// 		key,
-// 		val,
-// 	})
-// }
-
 // Merge associative array to EnvVars
 func (en *EnvVars) Merge(en2 map[string]string) {
 	for k, v := range en2 {
