@@ -315,7 +315,7 @@ func signum(sig os.Signal) int {
 	}
 }
 
-// GetEnv gets the newest value whose key is key
+// GetEnv returns the newest value corresponding to the key
 func GetEnv(en []map[string]string, key string) string {
 	s := ""
 	for _, e := range en {
