@@ -49,7 +49,7 @@ func mergeEnvFromFile(optionEnv *screwdriver.EnvVars, envFilePath string) error 
 		return fmt.Errorf("failed to read env file in `%s`: %v", absEnvFilePath, err)
 	}
 
-	optionEnv.Merge(env)
+	optionEnv.AppendAll(env)
 	return nil
 }
 
@@ -99,7 +99,7 @@ func newBuildCmd() *cobra.Command {
 					return err
 				}
 			}
-			optionEnv.Merge(flagEnv)
+			optionEnv.AppendAll(flagEnv)
 
 			metaJSON := []byte("{}")
 			if optionMeta != "" {

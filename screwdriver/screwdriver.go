@@ -67,8 +67,8 @@ func (en *EnvVars) UnmarshalJSON(data []byte) error {
 	return nil
 }
 
-// Merge associative array to EnvVars
-func (en *EnvVars) Merge(en2 map[string]string) {
+// AppendAll associative array to EnvVars
+func (en *EnvVars) AppendAll(en2 map[string]string) {
 	for k, v := range en2 {
 		*en = append(*en, map[string]string{k: v})
 	}
