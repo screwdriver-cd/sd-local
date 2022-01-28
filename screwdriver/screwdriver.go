@@ -67,7 +67,7 @@ func (en *EnvVars) UnmarshalJSON(data []byte) error {
 	return nil
 }
 
-// AppendAll associative array to EnvVars
+// AppendAll appends all elements in associative array to EnvVars
 func (en *EnvVars) AppendAll(en2 map[string]string) {
 	for k, v := range en2 {
 		*en = append(*en, map[string]string{k: v})
