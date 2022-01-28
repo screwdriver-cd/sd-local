@@ -319,10 +319,8 @@ func signum(sig os.Signal) int {
 func GetEnv(en []map[string]string, key string) string {
 	s := ""
 	for _, e := range en {
-		for k, v := range e {
-			if k == key {
-				s = v
-			}
+		if v, ok := e[key]; ok {
+			s = v
 		}
 	}
 	return s
