@@ -23,33 +23,8 @@ func newBuildEntry(options ...func(b *buildEntry)) buildEntry {
 	_ = json.Unmarshal(buf, &job)
 
 	b := buildEntry{
-		ID: 0,
-		Environment: screwdriver.EnvVar{
-			{
-				"SD_TOKEN",
-				"testjwt",
-			},
-			{
-				"SD_ARTIFACTS_DIR",
-				"/test/artifacts",
-			},
-			{
-				"SD_API_URL",
-				"http://api-test.screwdriver.cd/v4",
-			},
-			{
-				"SD_STORE_URL",
-				"http://store-test.screwdriver.cd/v1",
-			},
-			{
-				"SD_BASE_COMMAND_PATH",
-				"/sd/commands/",
-			},
-			{
-				"FOO",
-				"foo",
-			},
-		},
+		ID:            0,
+		Environment:   []map[string]string{{"SD_TOKEN": "testjwt"}, {"SD_ARTIFACTS_DIR": "/test/artifacts"}, {"SD_API_URL": "http://api-test.screwdriver.cd/v4"}, {"SD_STORE_URL": "http://store-test.screwdriver.cd/v1"}, {"SD_BASE_COMMAND_PATH": "/sd/commands/"}, {"FOO": "foo"}},
 		EventID:       0,
 		JobID:         0,
 		ParentBuildID: []int{0},
@@ -73,7 +48,7 @@ func TestNew(t *testing.T) {
 		buf, _ := ioutil.ReadFile(filepath.Join(testDir, "job.json"))
 		job := screwdriver.Job{}
 		_ = json.Unmarshal(buf, &job)
-		job.Environment.Set("SD_ARTIFACTS_DIR", "/test/artifacts")
+		job.Environment = append(job.Environment, map[string]string{"SD_ARTIFACTS_DIR": "/test/artifacts"})
 
 		config := config.Entry{
 			APIURL:   "http://api-test.screwdriver.cd",
@@ -83,14 +58,8 @@ func TestNew(t *testing.T) {
 		}
 
 		expectedBuildEntry := newBuildEntry()
-		expectedBuildEntry.Environment[1] = struct {
-			Key   string
-			Value string
-		}{
-			"SD_ARTIFACTS_DIR",
-			"/sd/workspace/artifacts",
-		}
-		expectedBuildEntry.Environment.Set("SD_ARTIFACTS_DIR", "/test/artifacts")
+		expectedBuildEntry.Environment[1] = map[string]string{"SD_ARTIFACTS_DIR": "/sd/workspace/artifacts"}
+		expectedBuildEntry.Environment = append(expectedBuildEntry.Environment, map[string]string{"SD_ARTIFACTS_DIR": "/test/artifacts"})
 		expectedBuildEntry.SrcPath = "/test/sd-local/build/repo"
 
 		option := Option{
@@ -123,13 +92,7 @@ func TestNew(t *testing.T) {
 
 		expectedBuildEntry := newBuildEntry()
 		// expectedBuildEntry.Environment[1] corresponds to SD_ARTIFACTS_DIR
-		expectedBuildEntry.Environment[1] = struct {
-			Key   string
-			Value string
-		}{
-			"SD_ARTIFACTS_DIR",
-			"/sd/workspace/artifacts",
-		}
+		expectedBuildEntry.Environment[1] = map[string]string{"SD_ARTIFACTS_DIR": "/sd/workspace/artifacts"}
 
 		option := Option{
 			Job:           job,

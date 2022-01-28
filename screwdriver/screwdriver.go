@@ -8,12 +8,11 @@ import (
 	"net/http"
 	"net/url"
 	"path"
-	"regexp"
 	"strconv"
 	"strings"
-)
 
-var regexpForUnmarshal = regexp.MustCompile(`"(.*?)" *: *"((.*?(\\\")?)+)"`)
+	ordered "gitlab.com/c0b/go-ordered-json"
+)
 
 const (
 	apiVersion        = "v4"
@@ -44,70 +43,42 @@ type Step struct {
 	Command string `json:"command"`
 }
 
-// EnvVar is an environment slice
-type EnvVar []struct {
-	Key   string
-	Value string
-}
+// EnvVars is an environment slice
+type EnvVars []map[string]string
 
-// UnmarshalJSON replaces JSON of a normal associative array to EnvVar
-func (en *EnvVar) UnmarshalJSON(data []byte) error {
-	for _, pair := range regexpForUnmarshal.FindAllStringSubmatch(string(data), -1) {
-		*en = append(*en, struct {
-			Key   string
-			Value string
-		}{
-			pair[1],
-			pair[2],
-		})
+// UnmarshalJSON replaces JSON of a normal associative array to EnvVars
+func (en *EnvVars) UnmarshalJSON(data []byte) error {
+	inputbytes := []byte(data)
+	orderedMap := ordered.NewOrderedMap()
+	err := json.Unmarshal(inputbytes, orderedMap)
+	if err != nil {
+		return fmt.Errorf("failed to unmarshal: %v", err)
 	}
+
+	iter := orderedMap.EntriesIter()
+	for {
+		pair, ok := iter()
+		if !ok {
+			break
+		}
+		*en = append(*en, map[string]string{pair.Key: pair.Value.(string)})
+	}
+
 	return nil
 }
 
-// MarshalJSON replaces EnvVar to JSON of a normal associative array
-func (en EnvVar) MarshalJSON() ([]byte, error) {
-	outputArray := make([]string, len(en))
-	for i, pair := range en {
-		outputArray[i] = "{\"" + pair.Key + "\":\"" + pair.Value + "\"}"
-	}
-	output := "[" + strings.Join(outputArray, ",") + "]"
-	return []byte(output), nil
-}
-
-// Get the newest Value whose Key is key
-func (en EnvVar) Get(key string) string {
-	s := ""
-	for _, e := range en {
-		if e.Key == key {
-			s = e.Value
-		}
-	}
-	return s
-}
-
-// Set adds (key, val)
-func (en *EnvVar) Set(key string, val string) {
-	*en = append(*en, struct {
-		Key   string
-		Value string
-	}{
-		key,
-		val,
-	})
-}
-
-// Merge en2 to en
-func (en *EnvVar) Merge(en2 EnvVar) {
-	for _, e := range en2 {
-		en.Set(e.Key, e.Value)
+// AppendAll appends all elements in associative array to EnvVars
+func (en *EnvVars) AppendAll(en2 map[string]string) {
+	for k, v := range en2 {
+		*en = append(*en, map[string]string{k: v})
 	}
 }
 
 // Job is job entity struct
 type Job struct {
-	Steps       []Step `json:"commands"`
-	Environment EnvVar `json:"environment"`
-	Image       string `json:"image"`
+	Steps       []Step  `json:"commands"`
+	Environment EnvVars `json:"environment"`
+	Image       string  `json:"image"`
 }
 
 type jobs map[string][]Job

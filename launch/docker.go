@@ -92,7 +92,7 @@ func (d *docker) runBuild(buildEntry buildEntry) error {
 
 	srcDir := buildEntry.SrcPath
 	hostArtDir := buildEntry.ArtifactsPath
-	containerArtDir := environment.Get("SD_ARTIFACTS_DIR")
+	containerArtDir := GetEnv(environment, "SD_ARTIFACTS_DIR")
 	buildImage := buildEntry.Image
 	logfilePath := filepath.Join(containerArtDir, LogFile)
 
@@ -134,7 +134,7 @@ func (d *docker) runBuild(buildEntry buildEntry) error {
 	if d.interactiveMode {
 		configJSONArg = fmt.Sprintf("%q", configJSONArg)
 	}
-	launchCommands := []string{"/opt/sd/local_run.sh", configJSONArg, buildEntry.JobName, environment.Get("SD_API_URL"), environment.Get("SD_STORE_URL"), logfilePath}
+	launchCommands := []string{"/opt/sd/local_run.sh", configJSONArg, buildEntry.JobName, GetEnv(environment, "SD_API_URL"), GetEnv(environment, "SD_STORE_URL"), logfilePath}
 	if d.interactiveMode {
 		dockerCommandOptions = append([]string{"-itd"}, dockerCommandOptions...)
 		dockerCommandOptions = append(dockerCommandOptions, "/bin/sh")
@@ -313,4 +313,15 @@ func signum(sig os.Signal) int {
 	default:
 		return -1
 	}
+}
+
+// GetEnv returns the newest value corresponding to the key
+func GetEnv(en []map[string]string, key string) string {
+	s := ""
+	for _, e := range en {
+		if v, ok := e[key]; ok {
+			s = v
+		}
+	}
+	return s
 }
