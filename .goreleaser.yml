@@ -5,6 +5,7 @@ builds:
       - darwin
     goarch:
       - amd64
+      - arm64
     env:
       - CGO_ENABLED=0
     ldflags:
@@ -13,3 +14,6 @@ builds:
 archives:
   - format: binary
     name_template: "{{ .ProjectName }}_{{ .Os }}_{{ .Arch }}"
+
+universal_binaries:
+- replace: false
