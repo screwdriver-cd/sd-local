@@ -1,3 +1,17 @@
+brews:
+  - tap:
+      owner: screwdriver-cd
+      name: sd-local
+      branch: master
+    folder: Formula
+    homepage: "https://github.com/screwdriver-cd/sd-local"
+    description: "Screwdriver local mode."
+    commit_msg_template: "[skip ci] Brew formula update for {{ .ProjectName }} version {{ .Tag }}"
+    install: |
+      bin.install File.basename(@stable.url) => "sd-local"
+    test: |
+      system "#{bin}/sd-local", "--help"
+
 builds:
   - binary: sd-local
     goos:
