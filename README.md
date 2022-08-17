@@ -8,7 +8,17 @@ Screwdriver local mode. See [User Guide](https://docs.screwdriver.cd/user-guide/
 ## Usage
 
 ### Install
+
 See [User Guide](https://docs.screwdriver.cd/user-guide/local) for instructions.
+
+#### Installing locally using homebrew
+
+Tap and install `sd-local`.
+
+```bash
+brew tap screwdriver-cd/sd-local https://github.com/screwdriver-cd/sd-local.git
+brew install sd-local
+```
 
 ### Execute
 ```bash
