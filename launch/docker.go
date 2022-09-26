@@ -129,6 +129,7 @@ func (d *docker) runBuild(buildEntry buildEntry) error {
 	for _, v := range dockerVolumes {
 		dockerCommandOptions = append(dockerCommandOptions, "-v", v)
 	}
+	dockerCommandOptions = append(dockerCommandOptions, "--entrypoint", "/bin/sh")
 	dockerCommandOptions = append(dockerCommandOptions, "-e", "SSH_AUTH_SOCK=/tmp/auth.sock", buildImage)
 	configJSONArg := string(configJSON)
 	if d.interactiveMode {
@@ -137,7 +138,7 @@ func (d *docker) runBuild(buildEntry buildEntry) error {
 	launchCommands := []string{"/opt/sd/local_run.sh", configJSONArg, buildEntry.JobName, GetEnv(environment, "SD_API_URL"), GetEnv(environment, "SD_STORE_URL"), logfilePath}
 	if d.interactiveMode {
 		dockerCommandOptions = append([]string{"-itd"}, dockerCommandOptions...)
-		dockerCommandOptions = append(dockerCommandOptions, "/bin/sh")
+
 	} else {
 		dockerCommandOptions = append(dockerCommandOptions, launchCommands...)
 	}
