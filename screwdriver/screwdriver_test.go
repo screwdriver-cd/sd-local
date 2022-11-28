@@ -137,15 +137,10 @@ func TestJob(t *testing.T) {
 	})
 
 	t.Run("failure by sending request", func(t *testing.T) {
-		server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-			w.WriteHeader(301)
-			w.Header().Set("Location", "")
-		}))
-
 		testAPI := sdAPI{
 			HTTPClient: http.DefaultClient,
 			UserToken:  "dummy",
-			APIURL:     server.URL,
+			APIURL:     "invalid-protocol://example.com",
 			SDJWT:      "jwt",
 		}
 
