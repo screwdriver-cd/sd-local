@@ -197,9 +197,10 @@ $ go get github.com/screwdriver-cd/sd-local
 $ go test -cover github.com/screwdriver-cd/sd-local/...
 ```
 
-## Faq
-1. SSH Agent forwarding in Mac
-   If your `sd-local` build needs to have access ssh-agent from your Mac. Following are the options to pass local `ssh-agent` socket to `sd-local`
+## FAQ
+1. How to forward your local ssh-agent to sd-local in Mac? 
+
+   If your `sd-local` build need to access ssh keys present in your local ssh-agent, then following are the options.
    1. If Using [Colima](https://github.com/abiosoft/colima/)
       ```
       sd-local build -i docker-build-api-pr --vol "$HOME/.ssh/known_hosts:/root/.ssh/known_hosts" -S $(colima ssh eval 'echo $SSH_AUTH_SOCK')
