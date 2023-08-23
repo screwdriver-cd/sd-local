@@ -2,7 +2,6 @@ package config
 
 import (
 	"bytes"
-	"fmt"
 	"os"
 	"testing"
 
@@ -72,7 +71,7 @@ func TestConfigUseCmd(t *testing.T) {
 			err := cmd.Execute()
 			if tt.checkErr {
 				assert.NotNil(t, err)
-				assert.Equal(t, tt.wantOut, fmt.Sprintf("%s", err))
+				assert.Equal(t, tt.wantOut, err.Error())
 			} else {
 				assert.Nil(t, err)
 				assert.Equal(t, tt.wantOut, buf.String())

@@ -105,7 +105,7 @@ func TestRootCmd(t *testing.T) {
 		root.AddCommand(newBuildCmd())
 		root.SetArgs([]string{})
 		buf := bytes.NewBuffer(nil)
-		root.SetOutput(buf)
+		root.SetOut(buf)
 		err := root.Execute()
 		want := "Run build instantly on your local machine with\na mostly the same environment as Screwdriver.cd's\n\nUsage:\n  sd-local [flags]\n  sd-local [command]\n\nAvailable Commands:\n  build       Run screwdriver build.\n  completion  Generate the autocompletion script for the specified shell\n  help        Help about any command\n\nFlags:\n  -h, --help      help for sd-local\n  -v, --verbose   verbose output.\n\nUse \"sd-local [command] --help\" for more information about a command.\n"
 		assert.Equal(t, want, buf.String())
