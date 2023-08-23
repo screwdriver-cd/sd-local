@@ -105,9 +105,9 @@ func TestRootCmd(t *testing.T) {
 		root.AddCommand(newBuildCmd())
 		root.SetArgs([]string{})
 		buf := bytes.NewBuffer(nil)
-		root.SetOut(buf)
+		root.SetOutput(buf)
 		err := root.Execute()
-		want := "Run build instantly on your local machine with\na mostly the same environment as Screwdriver.cd's\n\nUsage:\n  sd-local [command]\n\nAvailable Commands:\n  build       Run screwdriver build.\n  help        Help about any command\n\nFlags:\n  -h, --help      help for sd-local\n  -v, --verbose   verbose output.\n\nUse \"sd-local [command] --help\" for more information about a command.\n"
+		want := "Run build instantly on your local machine with\na mostly the same environment as Screwdriver.cd's\n\nUsage:\n  sd-local [flags]\n  sd-local [command]\n\nAvailable Commands:\n  build       Run screwdriver build.\n  completion  Generate the autocompletion script for the specified shell\n  help        Help about any command\n\nFlags:\n  -h, --help      help for sd-local\n  -v, --verbose   verbose output.\n\nUse \"sd-local [command] --help\" for more information about a command.\n"
 		assert.Equal(t, want, buf.String())
 		assert.Nil(t, err)
 	})
@@ -119,7 +119,7 @@ func TestRootCmd(t *testing.T) {
 		buf := bytes.NewBuffer(nil)
 		root.SetOut(buf)
 		err := root.Execute()
-		want := "Run build instantly on your local machine with\na mostly the same environment as Screwdriver.cd's\n\nUsage:\n  sd-local [command]\n\nAvailable Commands:\n  help        Help about any command\n  update      Update to the latest version\n\nFlags:\n  -h, --help      help for sd-local\n  -v, --verbose   verbose output.\n\nUse \"sd-local [command] --help\" for more information about a command.\n"
+		want := "Run build instantly on your local machine with\na mostly the same environment as Screwdriver.cd's\n\nUsage:\n  sd-local [flags]\n  sd-local [command]\n\nAvailable Commands:\n  completion  Generate the autocompletion script for the specified shell\n  help        Help about any command\n  update      Update to the latest version\n\nFlags:\n  -h, --help      help for sd-local\n  -v, --verbose   verbose output.\n\nUse \"sd-local [command] --help\" for more information about a command.\n"
 		assert.Equal(t, want, buf.String())
 		assert.Nil(t, err)
 	})
@@ -131,11 +131,12 @@ func TestRootCmd(t *testing.T) {
 		buf := bytes.NewBuffer(nil)
 		root.SetOut(buf)
 		err := root.Execute()
-		want := "Error: accepts 1 arg(s), received 0\n" +
-			"Usage:\n  sd-local build [job name] [flags]\n" +
+		wantErr := "accepts 1 arg(s), received 0"
+		want := "Usage:\n  sd-local build [job name] [flags]\n" +
 			buildLocalFlags() +
 			"Global Flags:\n  -v, --verbose   verbose output.\n\n"
 		assert.Equal(t, want, buf.String())
+		assert.Equal(t, wantErr, err.Error())
 		assert.NotNil(t, err)
 	})
 
@@ -146,8 +147,9 @@ func TestRootCmd(t *testing.T) {
 		buf := bytes.NewBuffer(nil)
 		root.SetOut(buf)
 		err := root.Execute()
-		want := "Error: unknown command \"hoge\" for \"sd-local\"\nRun 'sd-local --help' for usage.\n"
-		assert.Equal(t, want, buf.String())
+		wantErr := "unknown command \"hoge\" for \"sd-local\""
+
+		assert.Equal(t, wantErr, err.Error())
 		assert.NotNil(t, err)
 	})
 }

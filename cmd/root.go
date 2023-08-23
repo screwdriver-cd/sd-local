@@ -30,6 +30,14 @@ func newRootCmd() *cobra.Command {
 		Short: "Run build in local",
 		Long: `Run build instantly on your local machine with
 a mostly the same environment as Screwdriver.cd's`,
+		Args: cobra.NoArgs,
+		RunE: func(cmd *cobra.Command, args []string) error {
+			err := cmd.Help()
+			if err != nil {
+				return err
+			}
+			return nil
+		},
 	}
 
 	rootCmd.PersistentFlags().BoolVarP(

@@ -185,9 +185,10 @@ func TestBuildCmd(t *testing.T) {
 		}
 
 		err := root.Execute()
-		want := "Error: can't pass the both options `meta` and `meta-file`, please specify only one of them\n" +
-			"Usage:\n  build [job name] [flags]\n" +
+		wantErr := "can't pass the both options `meta` and `meta-file`, please specify only one of them"
+		want := "Usage:\n  build [job name] [flags]\n" +
 			buildLocalFlags()
+		assert.Equal(t, wantErr, err.Error())
 		assert.Equal(t, want, buf.String())
 		assert.NotNil(t, err)
 	})
@@ -198,9 +199,10 @@ func TestBuildCmd(t *testing.T) {
 		buf := bytes.NewBuffer(nil)
 		root.SetOut(buf)
 		err := root.Execute()
-		want := "Error: accepts 1 arg(s), received 2\n" +
-			"Usage:\n  build [job name] [flags]\n" +
+		wantErr := "accepts 1 arg(s), received 2"
+		want := "Usage:\n  build [job name] [flags]\n" +
 			buildLocalFlags()
+		assert.Equal(t, wantErr, err.Error())
 		assert.Equal(t, want, buf.String())
 		assert.NotNil(t, err)
 	})
@@ -212,9 +214,10 @@ func TestBuildCmd(t *testing.T) {
 		buf := bytes.NewBuffer(nil)
 		root.SetOut(buf)
 		err := root.Execute()
-		want := "Error: accepts 1 arg(s), received 0\n" +
-			"Usage:\n  build [job name] [flags]\n" +
+		wantErr := "accepts 1 arg(s), received 0"
+		want := "Usage:\n  build [job name] [flags]\n" +
 			buildLocalFlags()
+		assert.Equal(t, wantErr, err.Error())
 		assert.Equal(t, want, buf.String())
 		assert.NotNil(t, err)
 	})
