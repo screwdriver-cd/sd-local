@@ -113,7 +113,7 @@ func TestSelfUpdate(t *testing.T) {
 		{
 			name:      "Failed current version is dev",
 			current:   "dev",
-			errOutput: "Error: This is a development version and cannot be updated\nUsage:\n  update [flags]\n\nFlags:\n  -h, --help   help for update\n  -y, --yes    answer yes for all questions\n\n",
+			errOutput: "This is a development version and cannot be updated",
 			logOutput: []string{
 				"Current version: dev",
 			},
@@ -155,8 +155,13 @@ func TestSelfUpdate(t *testing.T) {
 			updateFlag = true
 			errBuf := bytes.NewBuffer(nil)
 			cmd.SetOut(errBuf)
-			cmd.Execute()
-			assert.Equal(t, tt.errOutput, errBuf.String())
+			cmdErr := cmd.Execute()
+
+			if tt.errOutput != "" {
+				assert.Equal(t, tt.errOutput, cmdErr.Error())
+
+			}
+
 			for _, want := range tt.logOutput {
 				assert.Contains(t, logBuf.String(), want)
 			}

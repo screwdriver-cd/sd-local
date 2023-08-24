@@ -45,18 +45,18 @@ func TestConfigUseCmd(t *testing.T) {
 		{
 			name:     "failure with too many args",
 			args:     []string{"use", "test", "args"},
-			wantOut:  "Error: accepts 1 arg(s), received 2\n",
+			wantOut:  "accepts 1 arg(s), received 2",
 			checkErr: true,
 		},
 		{name: "failure without args",
 			args:     []string{"use"},
-			wantOut:  "Error: accepts 1 arg(s), received 0\n",
+			wantOut:  "accepts 1 arg(s), received 0",
 			checkErr: true,
 		},
 		{
 			name:     "failure because of passing unknown config",
 			args:     []string{"use", "unknownconfig"},
-			wantOut:  "Error: config `unknownconfig` does not exist\n",
+			wantOut:  "config `unknownconfig` does not exist",
 			checkErr: true,
 		},
 	}
@@ -71,7 +71,7 @@ func TestConfigUseCmd(t *testing.T) {
 			err := cmd.Execute()
 			if tt.checkErr {
 				assert.NotNil(t, err)
-				assert.Equal(t, tt.wantOut, buf.String())
+				assert.Equal(t, tt.wantOut, err.Error())
 			} else {
 				assert.Nil(t, err)
 				assert.Equal(t, tt.wantOut, buf.String())
