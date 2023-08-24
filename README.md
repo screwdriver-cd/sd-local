@@ -202,10 +202,15 @@ $ go test -cover github.com/screwdriver-cd/sd-local/...
 
    If your `sd-local` build needs access to ssh keys for your ssh-agent, then you can do one of the following options:
    1. If using [Colima](https://github.com/abiosoft/colima/):
+  
+      Make sure to start colmia with ssh-agent `colima start --ssh-agent`
       ```
       sd-local build -i docker-build-api-pr --vol "$HOME/.ssh/known_hosts:/root/.ssh/known_hosts" -S $(colima ssh eval 'echo $SSH_AUTH_SOCK')
       ```
-   2. If using [Docker Desktop](https://www.docker.com/products/docker-desktop):
+   3. If using [Docker Desktop](https://www.docker.com/products/docker-desktop):
+
+      Make sure to run Docker for Mac from a terminal `killall Docker && open /Applications/Docker.app`
+      
       ```
       sd-local build -i docker-build-api-pr --vol "$HOME/.ssh/known_hosts:/root/.ssh/known_hosts"
       ```
