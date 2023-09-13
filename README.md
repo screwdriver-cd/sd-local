@@ -207,7 +207,7 @@ $ go test -cover github.com/screwdriver-cd/sd-local/...
       ```
       sd-local build -i docker-build-api-pr --vol "$HOME/.ssh/known_hosts:/root/.ssh/known_hosts" -S $(colima ssh eval 'echo $SSH_AUTH_SOCK')
       ```
-   3. If using [Docker Desktop](https://www.docker.com/products/docker-desktop):
+   2. If using [Docker Desktop](https://www.docker.com/products/docker-desktop):
 
       Make sure to run Docker for Mac from a terminal `killall Docker && open /Applications/Docker.app`
       
