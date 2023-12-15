@@ -77,6 +77,15 @@ Global Flags:
   1. environment in a screwdriver.yaml
   1. defaultEnv (e.g.: `SD_TOKEN`, `SD_API_URL`)
 
+* You can use docker commands in the build to run containers, build images, etc.
+  * Set `screwdriver.cd/dockerEnabled: true` in the job annotations.
+```yaml
+jobs:
+  main:
+    annotations:
+      screwdriver.cd/dockerEnabled: true
+```
+
 ##### config
 _create_
 ```bash
