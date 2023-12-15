@@ -30,6 +30,7 @@ func newBuildEntry(options ...func(b *buildEntry)) buildEntry {
 		ParentBuildID: []int{0},
 		Sha:           "dummy",
 		Meta:          Meta{},
+		Annotations:   map[string]interface{}{},
 		Steps:         job.Steps,
 		Image:         job.Image,
 		JobName:       "test",
@@ -49,6 +50,7 @@ func TestNew(t *testing.T) {
 		job := screwdriver.Job{}
 		_ = json.Unmarshal(buf, &job)
 		job.Environment = append(job.Environment, map[string]string{"SD_ARTIFACTS_DIR": "/test/artifacts"})
+		job.Annotations = map[string]interface{}{}
 
 		config := config.Entry{
 			APIURL:   "http://api-test.screwdriver.cd",
@@ -81,6 +83,7 @@ func TestNew(t *testing.T) {
 	t.Run("success with default artifacts dir", func(t *testing.T) {
 		buf, _ := ioutil.ReadFile(filepath.Join(testDir, "job.json"))
 		job := screwdriver.Job{}
+		job.Annotations = map[string]interface{}{}
 		_ = json.Unmarshal(buf, &job)
 
 		config := config.Entry{

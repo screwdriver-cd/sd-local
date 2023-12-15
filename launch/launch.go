@@ -44,24 +44,25 @@ type launch struct {
 type Meta map[string]interface{}
 
 type buildEntry struct {
-	ID              int                 `json:"id"`
-	Environment     []map[string]string `json:"environment"`
-	EventID         int                 `json:"eventId"`
-	JobID           int                 `json:"jobId"`
-	ParentBuildID   []int               `json:"parentBuildId"`
-	Sha             string              `json:"sha"`
-	Meta            Meta                `json:"meta"`
-	Steps           []screwdriver.Step  `json:"steps"`
-	Image           string              `json:"-"`
-	JobName         string              `json:"-"`
-	ArtifactsPath   string              `json:"-"`
-	MemoryLimit     string              `json:"-"`
-	SrcPath         string              `json:"-"`
-	UseSudo         bool                `json:"-"`
-	InteractiveMode bool                `json:"-"`
-	SocketPath      string              `json:"-"`
-	UsePrivileged   bool                `json:"-"`
-	LocalVolumes    []string            `json:"-"`
+	ID              int                    `json:"id"`
+	Environment     []map[string]string    `json:"environment"`
+	EventID         int                    `json:"eventId"`
+	JobID           int                    `json:"jobId"`
+	ParentBuildID   []int                  `json:"parentBuildId"`
+	Sha             string                 `json:"sha"`
+	Meta            Meta                   `json:"meta"`
+	Annotations     map[string]interface{} `json:"annotations"`
+	Steps           []screwdriver.Step     `json:"steps"`
+	Image           string                 `json:"-"`
+	JobName         string                 `json:"-"`
+	ArtifactsPath   string                 `json:"-"`
+	MemoryLimit     string                 `json:"-"`
+	SrcPath         string                 `json:"-"`
+	UseSudo         bool                   `json:"-"`
+	InteractiveMode bool                   `json:"-"`
+	SocketPath      string                 `json:"-"`
+	UsePrivileged   bool                   `json:"-"`
+	LocalVolumes    []string               `json:"-"`
 }
 
 // Option is option for launch New
@@ -132,6 +133,7 @@ func createBuildEntry(option Option) buildEntry {
 		ParentBuildID:   []int{0},
 		Sha:             "dummy",
 		Meta:            option.Meta,
+		Annotations:     option.Job.Annotations,
 		Steps:           option.Job.Steps,
 		Image:           option.Job.Image,
 		JobName:         option.JobName,
