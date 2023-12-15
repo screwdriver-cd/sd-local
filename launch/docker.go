@@ -18,6 +18,7 @@ import (
 	"github.com/sirupsen/logrus"
 )
 
+// DinD has the information needed to start the dind-rootless container
 type DinD struct {
 	volume          string
 	shareVolumeName string
