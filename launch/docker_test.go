@@ -67,6 +67,14 @@ func TestNewDocker(t *testing.T) {
 			socketPath:        "/auth.sock",
 			localVolumes:      []string{"path:path"},
 			buildUser:         "jithin",
+			dind: DinD{
+				volume:          "SD_DIND_CERT",
+				shareVolumeName: "SD_DIND_SHARE",
+				shareVolumePath: "/opt/sd_dind_share",
+				container:       "sd-local-dind",
+				network:         "sd-local-dind-bridge",
+				image:           "docker:23.0.1-dind-rootless",
+			},
 		}
 
 		d := newDocker("launcher", "latest", false, false, "/auth.sock", false, []string{"path:path"}, "jithin")
@@ -150,6 +158,14 @@ func TestRunBuild(t *testing.T) {
 		setupImage:        "launcher",
 		setupImageVersion: "latest",
 		socketPath:        os.Getenv("SSH_AUTH_SOCK"),
+		dind: DinD{
+			volume:          "SD_DIND_CERT",
+			shareVolumeName: "SD_DIND_SHARE",
+			shareVolumePath: "/opt/sd_dind_share",
+			container:       "sd-local-dind",
+			network:         "sd-local-dind-bridge",
+			image:           "docker:23.0.1-dind-rootless",
+		},
 	}
 
 	testCase := []struct {
@@ -170,6 +186,16 @@ func TestRunBuild(t *testing.T) {
 				fmt.Sprintf("docker container run -m2GB --rm -v /:/sd/workspace/src/screwdriver.cd/sd-local/local-build -v sd-artifacts/:/test/artifacts -v %s:/opt/sd -v %s:/opt/sd/hab -v %s --entrypoint /bin/sh -e SSH_AUTH_SOCK=/tmp/auth.sock node:12 /opt/sd/local_run.sh ", d.volume, d.habVolume, sshSocket)},
 			newBuildEntry(func(b *buildEntry) {
 				b.MemoryLimit = "2GB"
+			})},
+		{"success with dind", "SUCCESS_RUN_BUILD", nil,
+			[]string{
+				"docker pull docker:23.0.1-dind-rootless",
+				"docker network create sd-local-dind-bridge",
+				"docker container run --rm --privileged --name sd-local-dind -d --network sd-local-dind-bridge --network-alias docker -e DOCKER_TLS_CERTDIR=/certs -v SD_DIND_CERT:/certs/client -v SD_DIND_SHARE:/opt/sd_dind_share docker:23.0.1-dind-rootless",
+				"docker pull node:12",
+				fmt.Sprintf("docker container run --network %s -e DOCKER_TLS_CERTDIR=/certs -e DOCKER_HOST=tcp://docker:2376 -e DOCKER_TLS_VERIFY=1 -e DOCKER_CERT_PATH=/certs/client -e SD_DIND_SHARE_PATH=%s -v %s:/certs/client:ro -v %s:%s --rm -v /:/sd/workspace/src/screwdriver.cd/sd-local/local-build -v sd-artifacts/:/test/artifacts -v %s:/opt/sd -v %s:/opt/sd/hab -v %s --entrypoint /bin/sh -e SSH_AUTH_SOCK=/tmp/auth.sock node:12 /opt/sd/local_run.sh ", d.dind.network, d.dind.shareVolumePath, d.dind.volume, d.dind.shareVolumeName, d.dind.shareVolumePath, d.volume, d.habVolume, sshSocket)},
+			newBuildEntry(func(b *buildEntry) {
+				b.Annotations["screwdriver.cd/dockerEnabled"] = true
 			})},
 		{"failure build run", "FAIL_BUILD_CONTAINER_RUN", fmt.Errorf("failed to run build container: exit status 1"), []string{}, newBuildEntry()},
 		{"failure build image pull", "FAIL_BUILD_IMAGE_PULL", fmt.Errorf("failed to pull user image exit status 1"), []string{}, newBuildEntry()},

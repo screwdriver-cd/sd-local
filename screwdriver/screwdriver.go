@@ -76,9 +76,10 @@ func (en *EnvVars) AppendAll(en2 map[string]string) {
 
 // Job is job entity struct
 type Job struct {
-	Steps       []Step  `json:"commands"`
-	Environment EnvVars `json:"environment"`
-	Image       string  `json:"image"`
+	Annotations map[string]interface{} `json:"annotations"`
+	Steps       []Step                 `json:"commands"`
+	Environment EnvVars                `json:"environment"`
+	Image       string                 `json:"image"`
 }
 
 type jobs map[string][]Job
