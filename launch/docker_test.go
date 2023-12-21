@@ -94,7 +94,7 @@ func TestSetupBin(t *testing.T) {
 		setupImage:        "launcher",
 		setupImageVersion: "latest",
 		dind: DinD{
-			enabled:         false
+			enabled:         false,
 			volume:          "SD_DIND_CERT",
 			shareVolumeName: "SD_DIND_SHARE",
 			shareVolumePath: "/opt/sd_dind_share",
@@ -169,7 +169,7 @@ func TestRunBuild(t *testing.T) {
 		setupImageVersion: "latest",
 		socketPath:        os.Getenv("SSH_AUTH_SOCK"),
 		dind: DinD{
-			enabled:         false
+			enabled:         false,
 			volume:          "SD_DIND_CERT",
 			shareVolumeName: "SD_DIND_SHARE",
 			shareVolumePath: "/opt/sd_dind_share",
@@ -288,7 +288,7 @@ func TestRunBuildWithSudo(t *testing.T) {
 		useSudo:           true,
 		socketPath:        os.Getenv("SSH_AUTH_SOCK"),
 		dind: DinD{
-			enabled:         false
+			enabled:         false,
 			volume:          "SD_DIND_CERT",
 			shareVolumeName: "SD_DIND_SHARE",
 			shareVolumePath: "/opt/sd_dind_share",
@@ -352,7 +352,7 @@ func TestRunBuildWithInteractiveMode(t *testing.T) {
 		interact:          &mockInteract{},
 		socketPath:        os.Getenv("SSH_AUTH_SOCK"),
 		dind: DinD{
-			enabled:         false
+			enabled:         false,
 			volume:          "SD_DIND_CERT",
 			shareVolumeName: "SD_DIND_SHARE",
 			shareVolumePath: "/opt/sd_dind_share",
