@@ -93,15 +93,6 @@ func TestSetupBin(t *testing.T) {
 		volume:            "SD_LAUNCH_BIN",
 		setupImage:        "launcher",
 		setupImageVersion: "latest",
-		dind: DinD{
-			enabled:         false,
-			volume:          "SD_DIND_CERT",
-			shareVolumeName: "SD_DIND_SHARE",
-			shareVolumePath: "/opt/sd_dind_share",
-			container:       "sd-local-dind",
-			network:         "sd-local-dind-bridge",
-			image:           "docker:23.0.1-dind-rootless",
-		},
 	}
 
 	testCase := []struct {
