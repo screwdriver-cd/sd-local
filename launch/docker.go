@@ -109,9 +109,7 @@ func (d *docker) setupBin() error {
 }
 
 func (d *docker) runBuild(buildEntry buildEntry) error {
-	dockerEnabled, _ := buildEntry.Annotations["screwdriver.cd/dockerEnabled"].(bool)
-
-	if dockerEnabled {
+	if d.dind.enabled {
 		if err := d.runDinD(); err != nil {
 			return fmt.Errorf("failed to prepare dind container: %v", err)
 		}
@@ -180,7 +178,7 @@ func (d *docker) runBuild(buildEntry buildEntry) error {
 		dockerCommandOptions = append([]string{"--privileged"}, dockerCommandOptions...)
 	}
 
-	if dockerEnabled {
+	if d.dind.enabled {
 		dockerCommandOptions = append(
 			[]string{
 				"--network", d.dind.network,
