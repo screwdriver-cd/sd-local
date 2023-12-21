@@ -68,7 +68,7 @@ func TestNewDocker(t *testing.T) {
 			localVolumes:      []string{"path:path"},
 			buildUser:         "jithin",
 			dind: DinD{
-				enable:          true,
+				enabled:         true,
 				volume:          "SD_DIND_CERT",
 				shareVolumeName: "SD_DIND_SHARE",
 				shareVolumePath: "/opt/sd_dind_share",

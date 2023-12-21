@@ -20,7 +20,7 @@ import (
 
 // DinD has the information needed to start the dind-rootless container
 type DinD struct {
-	enable          bool
+	enabled         bool
 	volume          string
 	shareVolumeName string
 	shareVolumePath string
@@ -59,7 +59,7 @@ const (
 	orgRepo = "sd-local/local-build"
 )
 
-func newDocker(setupImage, setupImageVer string, useSudo bool, interactiveMode bool, socketPath string, flagVerbose bool, localVolumes []string, buildUser string, dindEnable bool) runner {
+func newDocker(setupImage, setupImageVer string, useSudo bool, interactiveMode bool, socketPath string, flagVerbose bool, localVolumes []string, buildUser string, dindEnabled bool) runner {
 	return &docker{
 		volume:            "SD_LAUNCH_BIN",
 		habVolume:         "SD_LAUNCH_HAB",
@@ -75,7 +75,7 @@ func newDocker(setupImage, setupImageVer string, useSudo bool, interactiveMode b
 		localVolumes:      localVolumes,
 		buildUser:         buildUser,
 		dind: DinD{
-			enable:          dindEnable,
+			enabled:         dindEnabled,
 			volume:          "SD_DIND_CERT",
 			shareVolumeName: "SD_DIND_SHARE",
 			shareVolumePath: "/opt/sd_dind_share",
@@ -345,7 +345,7 @@ func (d *docker) clean() {
 		logrus.Warn(fmt.Errorf("failed to remove hab volume: %v", err))
 	}
 
-	if d.dind.enable {
+	if d.dind.enabled {
 		_, err = d.execDockerCommand("kill", d.dind.container)
 
 		if err != nil {
