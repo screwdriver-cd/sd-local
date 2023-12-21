@@ -68,6 +68,7 @@ func TestNewDocker(t *testing.T) {
 			localVolumes:      []string{"path:path"},
 			buildUser:         "jithin",
 			dind: DinD{
+				enable:          true,  
 				volume:          "SD_DIND_CERT",
 				shareVolumeName: "SD_DIND_SHARE",
 				shareVolumePath: "/opt/sd_dind_share",
@@ -77,7 +78,7 @@ func TestNewDocker(t *testing.T) {
 			},
 		}
 
-		d := newDocker("launcher", "latest", false, false, "/auth.sock", false, []string{"path:path"}, "jithin")
+		d := newDocker("launcher", "latest", false, false, "/auth.sock", false, []string{"path:path"}, "jithin", true)
 
 		assert.Equal(t, expected, d)
 	})

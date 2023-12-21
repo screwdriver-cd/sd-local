@@ -151,8 +151,9 @@ func createBuildEntry(option Option) buildEntry {
 // New creates new Launcher interface.
 func New(option Option) Launcher {
 	l := new(launch)
+	dindEnable, _ := option.Job.Annotations["screwdriver.cd/dockerEnabled"].(bool)
 
-	l.runner = newDocker(option.Entry.Launcher.Image, option.Entry.Launcher.Version, option.UseSudo, option.InteractiveMode, option.SocketPath, option.FlagVerbose, option.LocalVolumes, option.BuildUser)
+	l.runner = newDocker(option.Entry.Launcher.Image, option.Entry.Launcher.Version, option.UseSudo, option.InteractiveMode, option.SocketPath, option.FlagVerbose, option.LocalVolumes, option.BuildUser, dindEnable)
 	l.buildEntry = createBuildEntry(option)
 
 	return l
