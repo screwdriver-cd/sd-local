@@ -68,6 +68,7 @@ func TestNewDocker(t *testing.T) {
 			localVolumes:      []string{"path:path"},
 			buildUser:         "jithin",
 			dind: DinD{
+				enabled:         true,
 				volume:          "SD_DIND_CERT",
 				shareVolumeName: "SD_DIND_SHARE",
 				shareVolumePath: "/opt/sd_dind_share",
@@ -77,7 +78,7 @@ func TestNewDocker(t *testing.T) {
 			},
 		}
 
-		d := newDocker("launcher", "latest", false, false, "/auth.sock", false, []string{"path:path"}, "jithin")
+		d := newDocker("launcher", "latest", false, false, "/auth.sock", false, []string{"path:path"}, "jithin", true)
 
 		assert.Equal(t, expected, d)
 	})
@@ -159,6 +160,7 @@ func TestRunBuild(t *testing.T) {
 		setupImageVersion: "latest",
 		socketPath:        os.Getenv("SSH_AUTH_SOCK"),
 		dind: DinD{
+			enabled:         false,
 			volume:          "SD_DIND_CERT",
 			shareVolumeName: "SD_DIND_SHARE",
 			shareVolumePath: "/opt/sd_dind_share",
@@ -187,6 +189,55 @@ func TestRunBuild(t *testing.T) {
 			newBuildEntry(func(b *buildEntry) {
 				b.MemoryLimit = "2GB"
 			})},
+		{"failure build run", "FAIL_BUILD_CONTAINER_RUN", fmt.Errorf("failed to run build container: exit status 1"), []string{}, newBuildEntry()},
+		{"failure build image pull", "FAIL_BUILD_IMAGE_PULL", fmt.Errorf("failed to pull user image exit status 1"), []string{}, newBuildEntry()},
+	}
+
+	for _, tt := range testCase {
+		t.Run(tt.name, func(t *testing.T) {
+			c := newFakeExecCommand(tt.id)
+			execCommand = c.execCmd
+			err := d.runBuild(tt.buildEntry)
+			for i, expectedCommand := range tt.expectedCommands {
+				assert.True(t, strings.Contains(c.commands[i], expectedCommand), "expect %q \nbut got \n%q", expectedCommand, c.commands[i])
+			}
+			if tt.expectError != nil {
+				assert.Equal(t, tt.expectError.Error(), err.Error())
+			} else {
+				assert.Nil(t, err)
+			}
+		})
+	}
+}
+
+func TestRunBuildWithDind(t *testing.T) {
+	defer func() {
+		execCommand = exec.Command
+	}()
+
+	d := &docker{
+		volume:            "SD_LAUNCH_BIN",
+		setupImage:        "launcher",
+		setupImageVersion: "latest",
+		socketPath:        os.Getenv("SSH_AUTH_SOCK"),
+		dind: DinD{
+			enabled:         true,
+			volume:          "SD_DIND_CERT",
+			shareVolumeName: "SD_DIND_SHARE",
+			shareVolumePath: "/opt/sd_dind_share",
+			container:       "sd-local-dind",
+			network:         "sd-local-dind-bridge",
+			image:           "docker:23.0.1-dind-rootless",
+		},
+	}
+
+	testCase := []struct {
+		name             string
+		id               string
+		expectError      error
+		expectedCommands []string
+		buildEntry       buildEntry
+	}{
 		{"success with dind", "SUCCESS_RUN_BUILD", nil,
 			[]string{
 				"docker pull docker:23.0.1-dind-rootless",
@@ -197,8 +248,6 @@ func TestRunBuild(t *testing.T) {
 			newBuildEntry(func(b *buildEntry) {
 				b.Annotations["screwdriver.cd/dockerEnabled"] = true
 			})},
-		{"failure build run", "FAIL_BUILD_CONTAINER_RUN", fmt.Errorf("failed to run build container: exit status 1"), []string{}, newBuildEntry()},
-		{"failure build image pull", "FAIL_BUILD_IMAGE_PULL", fmt.Errorf("failed to pull user image exit status 1"), []string{}, newBuildEntry()},
 	}
 
 	for _, tt := range testCase {
@@ -229,6 +278,15 @@ func TestRunBuildWithSudo(t *testing.T) {
 		setupImageVersion: "latest",
 		useSudo:           true,
 		socketPath:        os.Getenv("SSH_AUTH_SOCK"),
+		dind: DinD{
+			enabled:         false,
+			volume:          "SD_DIND_CERT",
+			shareVolumeName: "SD_DIND_SHARE",
+			shareVolumePath: "/opt/sd_dind_share",
+			container:       "sd-local-dind",
+			network:         "sd-local-dind-bridge",
+			image:           "docker:23.0.1-dind-rootless",
+		},
 	}
 
 	testCase := []struct {
@@ -284,6 +342,15 @@ func TestRunBuildWithInteractiveMode(t *testing.T) {
 		interactiveMode:   true,
 		interact:          &mockInteract{},
 		socketPath:        os.Getenv("SSH_AUTH_SOCK"),
+		dind: DinD{
+			enabled:         false,
+			volume:          "SD_DIND_CERT",
+			shareVolumeName: "SD_DIND_SHARE",
+			shareVolumePath: "/opt/sd_dind_share",
+			container:       "sd-local-dind",
+			network:         "sd-local-dind-bridge",
+			image:           "docker:23.0.1-dind-rootless",
+		},
 	}
 
 	testCase := []struct {

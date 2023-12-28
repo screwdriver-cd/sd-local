@@ -20,6 +20,7 @@ import (
 
 // DinD has the information needed to start the dind-rootless container
 type DinD struct {
+	enabled         bool
 	volume          string
 	shareVolumeName string
 	shareVolumePath string
@@ -58,7 +59,7 @@ const (
 	orgRepo = "sd-local/local-build"
 )
 
-func newDocker(setupImage, setupImageVer string, useSudo bool, interactiveMode bool, socketPath string, flagVerbose bool, localVolumes []string, buildUser string) runner {
+func newDocker(setupImage, setupImageVer string, useSudo bool, interactiveMode bool, socketPath string, flagVerbose bool, localVolumes []string, buildUser string, dindEnabled bool) runner {
 	return &docker{
 		volume:            "SD_LAUNCH_BIN",
 		habVolume:         "SD_LAUNCH_HAB",
@@ -74,6 +75,7 @@ func newDocker(setupImage, setupImageVer string, useSudo bool, interactiveMode b
 		localVolumes:      localVolumes,
 		buildUser:         buildUser,
 		dind: DinD{
+			enabled:         dindEnabled,
 			volume:          "SD_DIND_CERT",
 			shareVolumeName: "SD_DIND_SHARE",
 			shareVolumePath: "/opt/sd_dind_share",
@@ -107,9 +109,7 @@ func (d *docker) setupBin() error {
 }
 
 func (d *docker) runBuild(buildEntry buildEntry) error {
-	dockerEnabled, _ := buildEntry.Annotations["screwdriver.cd/dockerEnabled"].(bool)
-
-	if dockerEnabled {
+	if d.dind.enabled {
 		if err := d.runDinD(); err != nil {
 			return fmt.Errorf("failed to prepare dind container: %v", err)
 		}
@@ -178,7 +178,7 @@ func (d *docker) runBuild(buildEntry buildEntry) error {
 		dockerCommandOptions = append([]string{"--privileged"}, dockerCommandOptions...)
 	}
 
-	if dockerEnabled {
+	if d.dind.enabled {
 		dockerCommandOptions = append(
 			[]string{
 				"--network", d.dind.network,
@@ -343,28 +343,30 @@ func (d *docker) clean() {
 		logrus.Warn(fmt.Errorf("failed to remove hab volume: %v", err))
 	}
 
-	_, err = d.execDockerCommand("kill", d.dind.container)
+	if d.dind.enabled {
+		_, err = d.execDockerCommand("kill", d.dind.container)
 
-	if err != nil {
-		logrus.Warn(fmt.Errorf("failed to remove dind container: %v", err))
-	}
+		if err != nil {
+			logrus.Warn(fmt.Errorf("failed to remove dind container: %v", err))
+		}
 
-	_, err = d.execDockerCommand("network", "rm", "--force", d.dind.network)
+		_, err = d.execDockerCommand("network", "rm", "--force", d.dind.network)
 
-	if err != nil {
-		logrus.Warn(fmt.Errorf("failed to remove dind volume: %v", err))
-	}
+		if err != nil {
+			logrus.Warn(fmt.Errorf("failed to remove dind volume: %v", err))
+		}
 
-	_, err = d.execDockerCommand("volume", "rm", "--force", d.dind.volume)
+		_, err = d.execDockerCommand("volume", "rm", "--force", d.dind.volume)
 
-	if err != nil {
-		logrus.Warn(fmt.Errorf("failed to remove dind volume: %v", err))
-	}
+		if err != nil {
+			logrus.Warn(fmt.Errorf("failed to remove dind volume: %v", err))
+		}
 
-	_, err = d.execDockerCommand("volume", "rm", "--force", d.dind.shareVolumeName)
+		_, err = d.execDockerCommand("volume", "rm", "--force", d.dind.shareVolumeName)
 
-	if err != nil {
-		logrus.Warn(fmt.Errorf("failed to remove dind share volume: %v", err))
+		if err != nil {
+			logrus.Warn(fmt.Errorf("failed to remove dind share volume: %v", err))
+		}
 	}
 }
 
