@@ -54,6 +54,7 @@ Flags:
   -m, --memory string          Memory limit for build container, which take a positive integer, followed by a suffix of b, k, m, g.
       --meta string            Metadata to pass into the build environment, which is represented with JSON format
       --meta-file string       Path to the meta file. meta file is represented with JSON format.
+      --no-image-pull          Skip container image pulls to save time.
       --privileged             Use privileged mode for container runtime.
   -S, --socket string          Path to the socket. It will used in build container.%s
       --src-url string         Specify the source url to build.

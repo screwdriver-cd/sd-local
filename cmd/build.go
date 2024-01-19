@@ -70,6 +70,7 @@ func newBuildCmd() *cobra.Command {
 	var socketPath string
 	var localVolumes []string
 	var buildUser string
+	var noImagePull bool
 
 	buildCmd := &cobra.Command{
 		Use:   "build [job name]",
@@ -250,6 +251,7 @@ func newBuildCmd() *cobra.Command {
 				FlagVerbose:     flagVerbose,
 				LocalVolumes:    localVolumes,
 				BuildUser:       buildUser,
+				NoImagePull:     noImagePull,
 			}
 
 			launch := launchNew(option)
@@ -357,6 +359,12 @@ ex) git@github.com:<org>/<repo>.git[#<branch>]
 		"u",
 		"",
 		"Change default build user. Default value is from container in use.")
+
+	buildCmd.Flags().BoolVar(
+		&noImagePull,
+		"no-image-pull",
+		false,
+		"Skip container image pulls to save time.")
 
 	return buildCmd
 }
