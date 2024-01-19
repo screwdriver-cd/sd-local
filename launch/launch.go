@@ -83,6 +83,7 @@ type Option struct {
 	FlagVerbose     bool
 	LocalVolumes    []string
 	BuildUser       string
+	NoImagePull     bool
 }
 
 const (
@@ -153,7 +154,7 @@ func New(option Option) Launcher {
 	l := new(launch)
 	dindEnabled, _ := option.Job.Annotations["screwdriver.cd/dockerEnabled"].(bool)
 
-	l.runner = newDocker(option.Entry.Launcher.Image, option.Entry.Launcher.Version, option.UseSudo, option.InteractiveMode, option.SocketPath, option.FlagVerbose, option.LocalVolumes, option.BuildUser, dindEnabled)
+	l.runner = newDocker(option.Entry.Launcher.Image, option.Entry.Launcher.Version, option.UseSudo, option.InteractiveMode, option.SocketPath, option.FlagVerbose, option.LocalVolumes, option.BuildUser, option.NoImagePull, dindEnabled)
 	l.buildEntry = createBuildEntry(option)
 
 	return l
