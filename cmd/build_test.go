@@ -3,7 +3,6 @@ package cmd
 import (
 	"bytes"
 	"io"
-	"io/ioutil"
 	"os"
 	"path/filepath"
 	"testing"
@@ -37,7 +36,7 @@ func TestBuildCmd(t *testing.T) {
 
 		root := newBuildCmd()
 
-		dir, err := ioutil.TempDir("", "example")
+		dir, err := os.MkdirTemp("", "example")
 		if err != nil {
 			t.Fatal(err)
 		}

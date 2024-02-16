@@ -4,7 +4,6 @@ import (
 	"bytes"
 	"context"
 	"fmt"
-	"io/ioutil"
 	"os"
 	"strings"
 	"testing"
@@ -48,7 +47,7 @@ func write(tb testing.TB, filepath string, inputs []string) {
 
 func TestRun(t *testing.T) {
 	t.Run("success", func(t *testing.T) {
-		tmpFile, err := ioutil.TempFile("", "")
+		tmpFile, err := os.CreateTemp("", "*")
 		if err != nil {
 			t.Fatal(err)
 		}
@@ -83,7 +82,7 @@ func TestRun(t *testing.T) {
 	})
 
 	t.Run("success with long JSON output", func(t *testing.T) {
-		tmpFile, err := ioutil.TempFile("", "")
+		tmpFile, err := os.CreateTemp("", "*")
 		if err != nil {
 			t.Fatal(err)
 		}
@@ -132,7 +131,7 @@ func TestRun(t *testing.T) {
 		defer func() {
 			logrus.SetOutput(os.Stderr)
 		}()
-		tmpFile, err := ioutil.TempFile("", "")
+		tmpFile, err := os.CreateTemp("", "*")
 		if err != nil {
 			t.Fatal(err)
 		}
@@ -199,7 +198,7 @@ func TestStop(t *testing.T) {
 
 func TestNew(t *testing.T) {
 	t.Run("success", func(t *testing.T) {
-		tmpFile, err := ioutil.TempFile("", "")
+		tmpFile, err := os.CreateTemp("", "*")
 		if err != nil {
 			t.Fatal(err)
 		}
