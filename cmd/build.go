@@ -5,7 +5,6 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
-	"io/ioutil"
 	"os"
 	"path/filepath"
 	"runtime"
@@ -112,7 +111,7 @@ func newBuildCmd() *cobra.Command {
 					return err
 				}
 
-				metaJSON, err = ioutil.ReadFile(absMetaFilePath)
+				metaJSON, err = os.ReadFile(absMetaFilePath)
 
 				if err != nil {
 					return fmt.Errorf("failed to read meta-file %s: %v", metaFilePath, err)

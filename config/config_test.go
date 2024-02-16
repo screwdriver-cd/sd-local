@@ -2,7 +2,6 @@ package config
 
 import (
 	"fmt"
-	"io/ioutil"
 	"math/rand"
 	"os"
 	"path/filepath"
@@ -318,7 +317,7 @@ func TestConfigSave(t *testing.T) {
 			t.Fatal(err)
 		}
 
-		actual, err := ioutil.ReadFile(cnfPath)
+		actual, err := os.ReadFile(cnfPath)
 		if err != nil {
 			t.Fatal(err)
 		}

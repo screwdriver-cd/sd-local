@@ -4,9 +4,9 @@ import (
 	"encoding/json"
 	"fmt"
 	"io"
-	"io/ioutil"
 	"net/http"
 	"net/url"
+	"os"
 	"path"
 	"strconv"
 	"strings"
@@ -167,7 +167,7 @@ func (sd *sdAPI) jwt() (string, error) {
 }
 
 func readScrewdriverYAML(filePath string) (string, error) {
-	yaml, err := ioutil.ReadFile(filePath)
+	yaml, err := os.ReadFile(filePath)
 	if err != nil {
 		return "", fmt.Errorf("failed to read screwdriver.yaml: %v", err)
 	}
