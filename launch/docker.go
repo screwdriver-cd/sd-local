@@ -126,7 +126,7 @@ func setupInteractiveMode(buildEntry *buildEntry) error {
 		return err
 	}
 
-	if err := os.MkdirAll(fmt.Sprintf("%s/bin", stepsPath), 0777); err != nil {
+	if err := os.MkdirAll(fmt.Sprintf("%s/.bin", stepsPath), 0777); err != nil {
 		return err
 	}
 
@@ -143,7 +143,7 @@ if [ "${step_name}" = "" ]; then echo "${step_list}";
 else . "${SD_STEPS_DIR}/${step_name}"; fi
 `, shellBin)
 
-	if err := os.WriteFile(fmt.Sprintf("%s/bin/sd-run", stepsPath), []byte(sdRunShell), 0755); err != nil {
+	if err := os.WriteFile(fmt.Sprintf("%s/.bin/sd-run", stepsPath), []byte(sdRunShell), 0755); err != nil {
 		return err
 	}
 
@@ -278,8 +278,8 @@ func (d *docker) runBuild(buildEntry buildEntry) error {
 			{".", "/tmp/sd-local.env"},
 			{"set", "+a"},
 			{"export", "PS1='sd-local# '"},
+			{"sdrun() { . /$SD_STEPS_DIR/.bin/sd-run $@; }"},
 			{"cd", "$SD_CHECKOUT_DIR"},
-			{"sdrun() { . /$SD_STEPS_DIR/bin/sd-run $@; }"},
 		}
 
 		if err := d.attachDockerCommand(attachCommands, commands); err != nil {
