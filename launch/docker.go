@@ -165,10 +165,26 @@ else . "${SD_STEPS_DIR}/${step_name}"; fi
 }
 
 func (d *docker) runBuild(buildEntry buildEntry) error {
+	dockerCommandArgs := []string{"container", "run"}
+	dockerCommandOptions := []string{"--rm", "--entrypoint", "/bin/sh", "-e", "SSH_AUTH_SOCK=/tmp/auth.sock"}
+
 	if d.dind.enabled {
 		if err := d.runDinD(); err != nil {
 			return fmt.Errorf("failed to prepare dind container: %v", err)
 		}
+
+		dockerCommandOptions = append(
+			[]string{
+				"--network", d.dind.network,
+				"-e", "DOCKER_TLS_CERTDIR=/certs",
+				"-e", "DOCKER_HOST=tcp://docker:2376",
+				"-e", "DOCKER_TLS_VERIFY=1",
+				"-e", "DOCKER_CERT_PATH=/certs/client",
+				"-e", fmt.Sprintf("SD_DIND_SHARE_PATH=%s", d.dind.shareVolumePath),
+				"-v", fmt.Sprintf("%s:/certs/client:ro", d.dind.volume),
+				"-v", fmt.Sprintf("%s:%s", d.dind.shareVolumeName, d.dind.shareVolumePath),
+			},
+			dockerCommandOptions...)
 	}
 
 	environment := buildEntry.Environment
@@ -188,80 +204,73 @@ func (d *docker) runBuild(buildEntry buildEntry) error {
 	habVol := fmt.Sprintf("%s:%s", d.habVolume, "/opt/sd/hab")
 
 	dockerVolumes := append(d.localVolumes, srcVol, artVol, stpVol, binVol, habVol, fmt.Sprintf("%s:/tmp/auth.sock:rw", d.socketPath))
+	for _, v := range dockerVolumes {
+		dockerCommandOptions = append(dockerCommandOptions, "-v", v)
+	}
+
+	if buildEntry.MemoryLimit != "" {
+		dockerCommandOptions = append(dockerCommandOptions, fmt.Sprintf("-m%s", buildEntry.MemoryLimit))
+	}
+
+	if buildEntry.UsePrivileged {
+		dockerCommandOptions = append(dockerCommandOptions, "--privileged")
+	}
 
 	if d.interactiveMode {
 		if err := setupInteractiveMode(&buildEntry); err != nil {
 			return err
 		}
+
+		dockerCommandOptions = append(dockerCommandOptions, "-itd")
 	}
+
+	if d.buildUser != "" {
+		dockerCommandOptions = append(dockerCommandOptions, fmt.Sprintf("-u%s", d.buildUser))
+	}
+
+	// Disable automatic image pulling
+	// Build image is explicitly pulled when the --no-image-pull option is not used
+	dockerCommandOptions = append(dockerCommandOptions, "--pull", "never")
+
+	// Now options are "(docker container run) --rm --entry-point ... --pull never <buildImage>"
+	dockerCommandOptions = append(dockerCommandOptions, buildImage)
 
 	configJSON, err := json.Marshal(buildEntry)
 	if err != nil {
 		return err
 	}
 
-	if !d.noImagePull {
-		logrus.Infof("Pulling docker image from %s...", buildImage)
-		_, err = d.execDockerCommand("pull", buildImage)
-		if err != nil {
-			return fmt.Errorf("failed to pull user image %v", err)
-		}
-	}
-
-	dockerCommandArgs := []string{"container", "run"}
-	dockerCommandOptions := []string{"--rm"}
-	dockerCommandOptions = append(dockerCommandOptions, "--pull", "never")
-	for _, v := range dockerVolumes {
-		dockerCommandOptions = append(dockerCommandOptions, "-v", v)
-	}
-	dockerCommandOptions = append(dockerCommandOptions, "--entrypoint", "/bin/sh")
-	dockerCommandOptions = append(dockerCommandOptions, "-e", "SSH_AUTH_SOCK=/tmp/auth.sock", buildImage)
 	configJSONArg := string(configJSON)
 	if d.interactiveMode {
 		configJSONArg = fmt.Sprintf("%q", configJSONArg)
 	}
-	launchCommands := []string{"/opt/sd/local_run.sh", configJSONArg, buildEntry.JobName, GetEnv(environment, "SD_API_URL"), GetEnv(environment, "SD_STORE_URL"), logfilePath}
-	if d.interactiveMode {
-		dockerCommandOptions = append([]string{"-itd"}, dockerCommandOptions...)
 
-	} else {
-		dockerCommandOptions = append(dockerCommandOptions, launchCommands...)
+	launchCommands := []string{
+		"/opt/sd/local_run.sh",
+		configJSONArg,
+		buildEntry.JobName,
+		GetEnv(environment, "SD_API_URL"),
+		GetEnv(environment, "SD_STORE_URL"),
+		logfilePath,
 	}
 
-	if buildEntry.MemoryLimit != "" {
-		dockerCommandOptions = append([]string{fmt.Sprintf("-m%s", buildEntry.MemoryLimit)}, dockerCommandOptions...)
-	}
+	// Pull build image explicitly before docker run
+	if !d.noImagePull {
+		logrus.Infof("Pulling docker image from %s...", buildImage)
 
-	if buildEntry.UsePrivileged {
-		dockerCommandOptions = append([]string{"--privileged"}, dockerCommandOptions...)
-	}
-
-	if d.dind.enabled {
-		dockerCommandOptions = append(
-			[]string{
-				"--network", d.dind.network,
-				"-e", "DOCKER_TLS_CERTDIR=/certs",
-				"-e", "DOCKER_HOST=tcp://docker:2376",
-				"-e", "DOCKER_TLS_VERIFY=1",
-				"-e", "DOCKER_CERT_PATH=/certs/client",
-				"-e", fmt.Sprintf("SD_DIND_SHARE_PATH=%s", d.dind.shareVolumePath),
-				"-v", fmt.Sprintf("%s:/certs/client:ro", d.dind.volume),
-				"-v", fmt.Sprintf("%s:%s", d.dind.shareVolumeName, d.dind.shareVolumePath),
-			},
-			dockerCommandOptions...)
-	}
-
-	if d.buildUser != "" {
-		dockerCommandOptions = append([]string{fmt.Sprintf("-u%s", d.buildUser)}, dockerCommandOptions...)
+		if _, err := d.execDockerCommand("pull", buildImage); err != nil {
+			return fmt.Errorf("failed to pull user image %v", err)
+		}
 	}
 
 	if d.interactiveMode {
-		// attach build container for sd-local interact mode
+		// Create build conatiner without command (e.g. docker run --rm ... image_name)
 		cid, err := d.execDockerCommand(append(dockerCommandArgs, dockerCommandOptions...)...)
 		if err != nil {
 			return fmt.Errorf("failed to run build container: %v", err)
 		}
 
+		// attach build container for sd-local interact mode
 		attachCommands := []string{"attach", cid}
 		commands := [][]string{
 			launchCommands,
@@ -272,14 +281,15 @@ func (d *docker) runBuild(buildEntry buildEntry) error {
 			{"cd", "$SD_CHECKOUT_DIR"},
 			{"sdrun() { . /$SD_STEPS_DIR/bin/sd-run $@; }"},
 		}
-		err = d.attachDockerCommand(attachCommands, commands)
-		if err != nil {
+
+		if err := d.attachDockerCommand(attachCommands, commands); err != nil {
 			return fmt.Errorf("failed to attach build container: %v", err)
 		}
 	} else {
-		// run for sd-local build mode
-		_, err = d.execDockerCommand(append(dockerCommandArgs, dockerCommandOptions...)...)
-		if err != nil {
+		// Run build container with launch command (e.g. docker run --rm ... image_name /opt/sd/local_run.sh ...)
+		dockerCommandOptions = append(dockerCommandOptions, launchCommands...)
+
+		if _, err := d.execDockerCommand(append(dockerCommandArgs, dockerCommandOptions...)...); err != nil {
 			return fmt.Errorf("failed to run build container: %v", err)
 		}
 	}
