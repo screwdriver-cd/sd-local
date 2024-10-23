@@ -24,7 +24,7 @@ func newBuildEntry(options ...func(b *buildEntry)) buildEntry {
 
 	b := buildEntry{
 		ID:            0,
-		Environment:   []map[string]string{{"SD_TOKEN": "testjwt"}, {"SD_ARTIFACTS_DIR": "/test/artifacts"}, {"SD_API_URL": "http://api-test.screwdriver.cd/v4"}, {"SD_STORE_URL": "http://store-test.screwdriver.cd/v1"}, {"SD_BASE_COMMAND_PATH": "/sd/commands/"}, {"FOO": "foo"}},
+		Environment:   []map[string]string{{"SD_TOKEN": "testjwt"}, {"SD_ARTIFACTS_DIR": "/test/artifacts"}, {"SD_STEPS_DIR": "/test/sd-steps"}, {"SD_API_URL": "http://api-test.screwdriver.cd/v4"}, {"SD_STORE_URL": "http://store-test.screwdriver.cd/v1"}, {"SD_BASE_COMMAND_PATH": "/sd/commands/"}, {"FOO": "foo"}},
 		EventID:       0,
 		JobID:         0,
 		ParentBuildID: []int{0},
@@ -35,6 +35,7 @@ func newBuildEntry(options ...func(b *buildEntry)) buildEntry {
 		Image:         job.Image,
 		JobName:       "test",
 		ArtifactsPath: "sd-artifacts",
+		StepsPath:     "sd-steps",
 	}
 
 	for _, option := range options {
@@ -45,11 +46,11 @@ func newBuildEntry(options ...func(b *buildEntry)) buildEntry {
 }
 
 func TestNew(t *testing.T) {
-	t.Run("success with custom artifacts dir", func(t *testing.T) {
-		buf, _ := ioutil.ReadFile(filepath.Join(testDir, "job.json"))
+	t.Run("success with custom artifacts dir and steps dir", func(t *testing.T) {
+		buf, _ := os.ReadFile(filepath.Join(testDir, "job.json"))
 		job := screwdriver.Job{}
 		_ = json.Unmarshal(buf, &job)
-		job.Environment = append(job.Environment, map[string]string{"SD_ARTIFACTS_DIR": "/test/artifacts"})
+		job.Environment = append(job.Environment, map[string]string{"SD_ARTIFACTS_DIR": "/test/artifacts", "SD_STEPS_DIR": "/test/sd-steps"})
 		job.Annotations = map[string]interface{}{}
 
 		config := config.Entry{
@@ -61,7 +62,8 @@ func TestNew(t *testing.T) {
 
 		expectedBuildEntry := newBuildEntry()
 		expectedBuildEntry.Environment[1] = map[string]string{"SD_ARTIFACTS_DIR": "/sd/workspace/artifacts"}
-		expectedBuildEntry.Environment = append(expectedBuildEntry.Environment, map[string]string{"SD_ARTIFACTS_DIR": "/test/artifacts"})
+		expectedBuildEntry.Environment[2] = map[string]string{"SD_STEPS_DIR": "/sd/workspace/sd-steps"}
+		expectedBuildEntry.Environment = append(expectedBuildEntry.Environment, map[string]string{"SD_ARTIFACTS_DIR": "/test/artifacts", "SD_STEPS_DIR": "/test/sd-steps"})
 		expectedBuildEntry.SrcPath = "/test/sd-local/build/repo"
 
 		option := Option{
@@ -70,6 +72,7 @@ func TestNew(t *testing.T) {
 			JobName:       "test",
 			JWT:           "testjwt",
 			ArtifactsPath: "sd-artifacts",
+			StepsPath:     "sd-steps",
 			SrcPath:       "/test/sd-local/build/repo",
 			Meta:          Meta{},
 		}
@@ -81,7 +84,7 @@ func TestNew(t *testing.T) {
 	})
 
 	t.Run("success with default artifacts dir", func(t *testing.T) {
-		buf, _ := ioutil.ReadFile(filepath.Join(testDir, "job.json"))
+		buf, _ := os.ReadFile(filepath.Join(testDir, "job.json"))
 		job := screwdriver.Job{}
 		job.Annotations = map[string]interface{}{}
 		_ = json.Unmarshal(buf, &job)
@@ -96,6 +99,7 @@ func TestNew(t *testing.T) {
 		expectedBuildEntry := newBuildEntry()
 		// expectedBuildEntry.Environment[1] corresponds to SD_ARTIFACTS_DIR
 		expectedBuildEntry.Environment[1] = map[string]string{"SD_ARTIFACTS_DIR": "/sd/workspace/artifacts"}
+		expectedBuildEntry.Environment[2] = map[string]string{"SD_STEPS_DIR": "/sd/workspace/sd-steps"}
 
 		option := Option{
 			Job:           job,
@@ -103,6 +107,7 @@ func TestNew(t *testing.T) {
 			JobName:       "test",
 			JWT:           "testjwt",
 			ArtifactsPath: "sd-artifacts",
+			StepsPath:     "sd-steps",
 			Meta:          Meta{},
 		}
 
