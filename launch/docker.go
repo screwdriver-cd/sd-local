@@ -126,18 +126,67 @@ func (d *docker) runBuild(buildEntry buildEntry) error {
 
 	srcDir := buildEntry.SrcPath
 	hostArtDir := buildEntry.ArtifactsPath
+	hostStepsDir := buildEntry.StepsPath
 	containerArtDir := GetEnv(environment, "SD_ARTIFACTS_DIR")
+	containerStepsDir := GetEnv(environment, "SD_STEPS_DIR")
 	buildImage := buildEntry.Image
 	logfilePath := filepath.Join(containerArtDir, LogFile)
 
 	srcVol := fmt.Sprintf("%s/:/sd/workspace/src/%s/%s", srcDir, scmHost, orgRepo)
 	artVol := fmt.Sprintf("%s/:%s", hostArtDir, containerArtDir)
+	stpVol := fmt.Sprintf("%s/:%s", hostStepsDir, containerStepsDir)
 	binVol := fmt.Sprintf("%s:%s", d.volume, "/opt/sd")
 	habVol := fmt.Sprintf("%s:%s", d.habVolume, "/opt/sd/hab")
 
-	dockerVolumes := append(d.localVolumes, srcVol, artVol, binVol, habVol, fmt.Sprintf("%s:/tmp/auth.sock:rw", d.socketPath))
+	dockerVolumes := append(d.localVolumes, srcVol, artVol, stpVol, binVol, habVol, fmt.Sprintf("%s:/tmp/auth.sock:rw", d.socketPath))
 
 	// Overwrite steps for sd-local interact mode. The env will load later.
+	if d.interactiveMode {
+		stepsPath, err := filepath.Abs(StepsDir)
+		if err != nil {
+			return err
+		}
+
+		err = os.MkdirAll(stepsPath, 0777)
+
+		if err != nil {
+			return err
+		}
+
+		err = os.MkdirAll(fmt.Sprintf("%s/bin", stepsPath), 0777)
+
+		if err != nil {
+			return err
+		}
+
+		shellBin := GetEnv(buildEntry.Environment, "USER_SHELL_BIN")
+
+		if len(shellBin) == 0 {
+			shellBin = "/bin/sh"
+		}
+
+		sdRunShell := fmt.Sprintf(`#!%s
+step_name="$1"
+step_list=$(ls ${SD_STEPS_DIR})
+if [ "${step_name}" = "" ]; then echo "${step_list}";
+else . "${SD_STEPS_DIR}/${step_name}"; fi
+`, shellBin)
+
+		err = os.WriteFile(fmt.Sprintf("%s/bin/sd-run", stepsPath), []byte(sdRunShell), 0755)
+
+		if err != nil {
+			return err
+		}
+
+		for _, step := range buildEntry.Steps {
+			err := os.WriteFile(fmt.Sprintf("%s/%s", stepsPath, step.Name), []byte("#!"+shellBin+" -e\n"+step.Command), 0755)
+
+			if err != nil {
+				return err
+			}
+		}
+	}
+
 	if d.interactiveMode {
 		buildEntry.Steps = []screwdriver.Step{
 			{
@@ -222,6 +271,7 @@ func (d *docker) runBuild(buildEntry buildEntry) error {
 			{"set", "+a"},
 			{"export", "PS1='sd-local# '"},
 			{"cd", "$SD_CHECKOUT_DIR"},
+			{"sdrun() { . /$SD_STEPS_DIR/bin/sd-run $@; }"},
 		}
 		err = d.attachDockerCommand(attachCommands, commands)
 		if err != nil {
@@ -354,6 +404,18 @@ func (d *docker) clean() {
 
 	if err != nil {
 		logrus.Warn(fmt.Errorf("failed to remove hab volume: %v", err))
+	}
+
+	if d.interactiveMode {
+		if stepsPath, err := filepath.Abs(StepsDir); err == nil {
+			err := os.RemoveAll(stepsPath)
+
+			if err != nil {
+				logrus.Warn(fmt.Errorf("failed to remove sd-steps directory %s: %v", stepsPath, err))
+			}
+		} else {
+			logrus.Warn(fmt.Errorf("failed to parse sd-steps directory %s: %v", stepsPath, err))
+		}
 	}
 
 	if d.dind.enabled {
