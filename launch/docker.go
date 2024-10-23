@@ -115,6 +115,55 @@ func (d *docker) setupBin() error {
 	return nil
 }
 
+func setupInteractiveMode(buildEntry *buildEntry) error {
+	stepsPath, err := filepath.Abs(StepsDir)
+
+	if err != nil {
+		return err
+	}
+
+	if err := os.MkdirAll(stepsPath, 0777); err != nil {
+		return err
+	}
+
+	if err := os.MkdirAll(fmt.Sprintf("%s/bin", stepsPath), 0777); err != nil {
+		return err
+	}
+
+	shellBin := GetEnv(buildEntry.Environment, "USER_SHELL_BIN")
+
+	if len(shellBin) == 0 {
+		shellBin = "/bin/sh"
+	}
+
+	sdRunShell := fmt.Sprintf(`#!%s
+step_name="$1"
+step_list=$(ls ${SD_STEPS_DIR})
+if [ "${step_name}" = "" ]; then echo "${step_list}";
+else . "${SD_STEPS_DIR}/${step_name}"; fi
+`, shellBin)
+
+	if err := os.WriteFile(fmt.Sprintf("%s/bin/sd-run", stepsPath), []byte(sdRunShell), 0755); err != nil {
+		return err
+	}
+
+	for _, step := range buildEntry.Steps {
+		if err := os.WriteFile(fmt.Sprintf("%s/%s", stepsPath, step.Name), []byte("#!"+shellBin+" -e\n"+step.Command), 0755); err != nil {
+			return err
+		}
+	}
+
+	// Overwrite steps for sd-local interact mode. The env will load later.
+	buildEntry.Steps = []screwdriver.Step{
+		{
+			Name:    "sd-local-init",
+			Command: "export > /tmp/sd-local.env",
+		},
+	}
+
+	return nil
+}
+
 func (d *docker) runBuild(buildEntry buildEntry) error {
 	if d.dind.enabled {
 		if err := d.runDinD(); err != nil {
@@ -140,59 +189,9 @@ func (d *docker) runBuild(buildEntry buildEntry) error {
 
 	dockerVolumes := append(d.localVolumes, srcVol, artVol, stpVol, binVol, habVol, fmt.Sprintf("%s:/tmp/auth.sock:rw", d.socketPath))
 
-	// Overwrite steps for sd-local interact mode. The env will load later.
 	if d.interactiveMode {
-		stepsPath, err := filepath.Abs(StepsDir)
-		if err != nil {
+		if err := setupInteractiveMode(&buildEntry); err != nil {
 			return err
-		}
-
-		err = os.MkdirAll(stepsPath, 0777)
-
-		if err != nil {
-			return err
-		}
-
-		err = os.MkdirAll(fmt.Sprintf("%s/bin", stepsPath), 0777)
-
-		if err != nil {
-			return err
-		}
-
-		shellBin := GetEnv(buildEntry.Environment, "USER_SHELL_BIN")
-
-		if len(shellBin) == 0 {
-			shellBin = "/bin/sh"
-		}
-
-		sdRunShell := fmt.Sprintf(`#!%s
-step_name="$1"
-step_list=$(ls ${SD_STEPS_DIR})
-if [ "${step_name}" = "" ]; then echo "${step_list}";
-else . "${SD_STEPS_DIR}/${step_name}"; fi
-`, shellBin)
-
-		err = os.WriteFile(fmt.Sprintf("%s/bin/sd-run", stepsPath), []byte(sdRunShell), 0755)
-
-		if err != nil {
-			return err
-		}
-
-		for _, step := range buildEntry.Steps {
-			err := os.WriteFile(fmt.Sprintf("%s/%s", stepsPath, step.Name), []byte("#!"+shellBin+" -e\n"+step.Command), 0755)
-
-			if err != nil {
-				return err
-			}
-		}
-	}
-
-	if d.interactiveMode {
-		buildEntry.Steps = []screwdriver.Step{
-			{
-				Name:    "sd-local-init",
-				Command: "export > /tmp/sd-local.env",
-			},
 		}
 	}
 
