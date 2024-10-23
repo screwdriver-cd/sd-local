@@ -3,7 +3,6 @@ package launch
 import (
 	"encoding/json"
 	"fmt"
-	"io/ioutil"
 	"os"
 	"os/exec"
 	"path/filepath"
@@ -18,7 +17,7 @@ import (
 var testDir string = "./testdata"
 
 func newBuildEntry(options ...func(b *buildEntry)) buildEntry {
-	buf, _ := ioutil.ReadFile(filepath.Join(testDir, "job.json"))
+	buf, _ := os.ReadFile(filepath.Join(testDir, "job.json"))
 	job := screwdriver.Job{}
 	_ = json.Unmarshal(buf, &job)
 
@@ -143,7 +142,7 @@ func (m *mockRunner) kill(os.Signal) {
 
 func TestRun(t *testing.T) {
 	t.Run("success", func(t *testing.T) {
-		buf, _ := ioutil.ReadFile(filepath.Join(testDir, "job.json"))
+		buf, _ := os.ReadFile(filepath.Join(testDir, "job.json"))
 		job := screwdriver.Job{}
 		_ = json.Unmarshal(buf, &job)
 
@@ -169,7 +168,7 @@ func TestRun(t *testing.T) {
 	})
 
 	t.Run("failure in lookPath", func(t *testing.T) {
-		buf, _ := ioutil.ReadFile(filepath.Join(testDir, "job.json"))
+		buf, _ := os.ReadFile(filepath.Join(testDir, "job.json"))
 		job := screwdriver.Job{}
 		_ = json.Unmarshal(buf, &job)
 
@@ -195,7 +194,7 @@ func TestRun(t *testing.T) {
 	})
 
 	t.Run("failure in SetupBin", func(t *testing.T) {
-		buf, _ := ioutil.ReadFile(filepath.Join(testDir, "job.json"))
+		buf, _ := os.ReadFile(filepath.Join(testDir, "job.json"))
 		job := screwdriver.Job{}
 		_ = json.Unmarshal(buf, &job)
 
@@ -221,7 +220,7 @@ func TestRun(t *testing.T) {
 	})
 
 	t.Run("failure in RunBuild", func(t *testing.T) {
-		buf, _ := ioutil.ReadFile(filepath.Join(testDir, "job.json"))
+		buf, _ := os.ReadFile(filepath.Join(testDir, "job.json"))
 		job := screwdriver.Job{}
 		_ = json.Unmarshal(buf, &job)
 
@@ -249,7 +248,7 @@ func TestRun(t *testing.T) {
 
 func TestKill(t *testing.T) {
 	t.Run("success to call kill", func(t *testing.T) {
-		buf, _ := ioutil.ReadFile(filepath.Join(testDir, "job.json"))
+		buf, _ := os.ReadFile(filepath.Join(testDir, "job.json"))
 		job := screwdriver.Job{}
 		_ = json.Unmarshal(buf, &job)
 
@@ -268,7 +267,7 @@ func TestKill(t *testing.T) {
 
 func TestClean(t *testing.T) {
 	t.Run("success to call clean", func(t *testing.T) {
-		buf, _ := ioutil.ReadFile(filepath.Join(testDir, "job.json"))
+		buf, _ := os.ReadFile(filepath.Join(testDir, "job.json"))
 		job := screwdriver.Job{}
 		_ = json.Unmarshal(buf, &job)
 

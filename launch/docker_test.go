@@ -3,6 +3,7 @@ package launch
 import (
 	"bytes"
 	"fmt"
+	"io/fs"
 	"os"
 	"os/exec"
 	"strings"
@@ -28,6 +29,13 @@ type fakeExecCommand struct {
 	commands []string
 }
 
+type fakeOs struct {
+	dirPath   string
+	fileNames []string
+	mkdirAll  func(path string, perm fs.FileMode) error
+	WriteFile func(path string, data []byte, perm fs.FileMode) error
+}
+
 type mockInteract struct {
 	Interacter
 }
@@ -45,6 +53,26 @@ func newFakeExecCommand(id string) *fakeExecCommand {
 		return cmd
 	}
 	return c
+}
+
+func newFakeOsMkdir(t *testing.T) *fakeOs {
+	f := &fakeOs{}
+	f.mkdirAll = func(path string, perm fs.FileMode) error {
+		f.dirPath = path
+
+		assert.Equal(t, os.FileMode(0777), perm)
+
+		return nil
+	}
+	f.WriteFile = func(path string, data []byte, perm fs.FileMode) error {
+		f.fileNames = append(f.fileNames, path)
+
+		assert.Equal(t, os.FileMode(0755), perm)
+
+		return nil
+	}
+
+	return f
 }
 
 func (d *mockInteract) Run(c *exec.Cmd, commands [][]string) error {
@@ -389,7 +417,13 @@ func TestRunBuildWithSudo(t *testing.T) {
 func TestRunBuildWithInteractiveMode(t *testing.T) {
 	defer func() {
 		execCommand = exec.Command
+		osMkdirAll = os.MkdirAll
+		osWriteFile = os.WriteFile
 	}()
+
+	fakeOs := newFakeOsMkdir(t)
+	osMkdirAll = fakeOs.mkdirAll
+	osWriteFile = fakeOs.WriteFile
 
 	d := &docker{
 		volume:            "SD_LAUNCH_BIN",

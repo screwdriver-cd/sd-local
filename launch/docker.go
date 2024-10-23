@@ -47,8 +47,12 @@ type docker struct {
 	dind              DinD
 }
 
-var _ runner = (*docker)(nil)
-var execCommand = exec.Command
+var (
+	_           runner = (*docker)(nil)
+	execCommand        = exec.Command
+	osMkdirAll         = os.MkdirAll
+	osWriteFile        = os.WriteFile
+)
 
 const (
 	// ArtifactsDir is default artifact directory name
@@ -122,11 +126,11 @@ func setupInteractiveMode(buildEntry *buildEntry) error {
 		return err
 	}
 
-	if err := os.MkdirAll(stepsPath, 0777); err != nil {
+	if err := osMkdirAll(stepsPath, 0777); err != nil {
 		return err
 	}
 
-	if err := os.MkdirAll(fmt.Sprintf("%s/.bin", stepsPath), 0777); err != nil {
+	if err := osMkdirAll(fmt.Sprintf("%s/.bin", stepsPath), 0777); err != nil {
 		return err
 	}
 
@@ -143,12 +147,12 @@ if [ "${step_name}" = "" ]; then echo "${step_list}";
 else . "${SD_STEPS_DIR}/${step_name}"; fi
 `, shellBin)
 
-	if err := os.WriteFile(fmt.Sprintf("%s/.bin/sd-run", stepsPath), []byte(sdRunShell), 0755); err != nil {
+	if err := osWriteFile(fmt.Sprintf("%s/.bin/sd-run", stepsPath), []byte(sdRunShell), 0755); err != nil {
 		return err
 	}
 
 	for _, step := range buildEntry.Steps {
-		if err := os.WriteFile(fmt.Sprintf("%s/%s", stepsPath, step.Name), []byte("#!"+shellBin+" -e\n"+step.Command), 0755); err != nil {
+		if err := osWriteFile(fmt.Sprintf("%s/%s", stepsPath, step.Name), []byte("#!"+shellBin+" -e\n"+step.Command), 0755); err != nil {
 			return err
 		}
 	}
