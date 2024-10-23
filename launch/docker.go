@@ -195,19 +195,16 @@ func (d *docker) runBuild(buildEntry buildEntry) error {
 
 	srcDir := buildEntry.SrcPath
 	hostArtDir := buildEntry.ArtifactsPath
-	hostStepsDir := buildEntry.StepsPath
 	containerArtDir := GetEnv(environment, "SD_ARTIFACTS_DIR")
-	containerStepsDir := GetEnv(environment, "SD_STEPS_DIR")
 	buildImage := buildEntry.Image
 	logfilePath := filepath.Join(containerArtDir, LogFile)
 
 	srcVol := fmt.Sprintf("%s/:/sd/workspace/src/%s/%s", srcDir, scmHost, orgRepo)
 	artVol := fmt.Sprintf("%s/:%s", hostArtDir, containerArtDir)
-	stpVol := fmt.Sprintf("%s/:%s", hostStepsDir, containerStepsDir)
 	binVol := fmt.Sprintf("%s:%s", d.volume, "/opt/sd")
 	habVol := fmt.Sprintf("%s:%s", d.habVolume, "/opt/sd/hab")
 
-	dockerVolumes := append(d.localVolumes, srcVol, artVol, stpVol, binVol, habVol, fmt.Sprintf("%s:/tmp/auth.sock:rw", d.socketPath))
+	dockerVolumes := append(d.localVolumes, srcVol, artVol, binVol, habVol, fmt.Sprintf("%s:/tmp/auth.sock:rw", d.socketPath))
 	for _, v := range dockerVolumes {
 		dockerCommandOptions = append(dockerCommandOptions, "-v", v)
 	}
@@ -225,7 +222,11 @@ func (d *docker) runBuild(buildEntry buildEntry) error {
 			return err
 		}
 
-		dockerCommandOptions = append(dockerCommandOptions, "-itd")
+		hostStepsDir := buildEntry.StepsPath
+		containerStepsDir := GetEnv(environment, "SD_STEPS_DIR")
+		stpVol := fmt.Sprintf("%s/:%s", hostStepsDir, containerStepsDir)
+
+		dockerCommandOptions = append(dockerCommandOptions, "-itd", "-v", stpVol)
 	}
 
 	if d.buildUser != "" {
