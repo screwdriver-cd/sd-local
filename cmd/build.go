@@ -28,6 +28,7 @@ var (
 	buildLogNew     = buildlog.New
 	launchNew       = launch.New
 	artifactsDir    = launch.ArtifactsDir
+	stepsDir        = launch.StepsDir
 	memory          = ""
 	scmNew          = scm.New
 	osMkdirAll      = os.MkdirAll
@@ -226,6 +227,11 @@ func newBuildCmd() *cobra.Command {
 				return err
 			}
 
+			stepsPath, err := filepath.Abs(stepsDir)
+			if err != nil {
+				return err
+			}
+
 			loggerDone = make(chan struct{})
 			logger, err := buildLogNew(filepath.Join(artifactsPath, launch.LogFile), os.Stdout, loggerDone)
 			if err != nil {
@@ -239,6 +245,7 @@ func newBuildCmd() *cobra.Command {
 				JobName:         jobName,
 				JWT:             api.JWT(),
 				ArtifactsPath:   artifactsPath,
+				StepsPath:       stepsPath,
 				Memory:          memory,
 				SrcPath:         srcPath,
 				OptionEnv:       optionEnv,
@@ -277,6 +284,12 @@ func newBuildCmd() *cobra.Command {
 		"artifacts-dir",
 		launch.ArtifactsDir,
 		"Path to the host side directory which is mounted into $SD_ARTIFACTS_DIR.")
+
+	buildCmd.Flags().StringVar(
+		&stepsDir,
+		"steps-dir",
+		launch.StepsDir,
+		"Path to the host side directory that is created to mount step script files when using interactive mode.")
 
 	buildCmd.Flags().StringVarP(
 		&memory,

@@ -55,6 +55,8 @@ const (
 	ArtifactsDir = "sd-artifacts"
 	// LogFile is default logfile name for build log
 	LogFile = "builds.log"
+	// StepsDir is default directory name for step script files
+	StepsDir = ".sd-steps"
 	// The definition of "ScmHost" and "OrgRepo" is in "PipelineFromID" of "screwdriver/screwdriver_local.go"
 	scmHost = "screwdriver.cd"
 	orgRepo = "sd-local/local-build"

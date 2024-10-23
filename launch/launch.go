@@ -56,6 +56,7 @@ type buildEntry struct {
 	Image           string                 `json:"-"`
 	JobName         string                 `json:"-"`
 	ArtifactsPath   string                 `json:"-"`
+	StepsPath       string                 `json:"-"`
 	MemoryLimit     string                 `json:"-"`
 	SrcPath         string                 `json:"-"`
 	UseSudo         bool                   `json:"-"`
@@ -72,6 +73,7 @@ type Option struct {
 	JobName         string
 	JWT             string
 	ArtifactsPath   string
+	StepsPath       string
 	Memory          string
 	SrcPath         string
 	OptionEnv       screwdriver.EnvVars
@@ -87,7 +89,8 @@ type Option struct {
 }
 
 const (
-	defaultArtDir = "/sd/workspace/artifacts"
+	defaultArtDir   = "/sd/workspace/artifacts"
+	defaultStepsDir = "/sd/workspace/sd-steps"
 )
 
 // DefaultSocketPath is a socket path on the localhost to bring in the build container.
@@ -121,7 +124,7 @@ func createBuildEntry(option Option) buildEntry {
 		logrus.Warn("SD_STORE_URL is invalid. It may cause errors")
 	}
 
-	env := []map[string]string{{"SD_TOKEN": option.JWT}, {"SD_ARTIFACTS_DIR": defaultArtDir}, {"SD_API_URL": apiURL}, {"SD_STORE_URL": storeURL}, {"SD_BASE_COMMAND_PATH": "/sd/commands/"}}
+	env := []map[string]string{{"SD_TOKEN": option.JWT}, {"SD_ARTIFACTS_DIR": defaultArtDir}, {"SD_STEPS_DIR": defaultStepsDir}, {"SD_API_URL": apiURL}, {"SD_STORE_URL": storeURL}, {"SD_BASE_COMMAND_PATH": "/sd/commands/"}}
 
 	env = append(env, option.Job.Environment...)
 	env = append(env, option.OptionEnv...)
@@ -139,6 +142,7 @@ func createBuildEntry(option Option) buildEntry {
 		Image:           option.Job.Image,
 		JobName:         option.JobName,
 		ArtifactsPath:   option.ArtifactsPath,
+		StepsPath:       option.StepsPath,
 		MemoryLimit:     option.Memory,
 		SrcPath:         option.SrcPath,
 		UseSudo:         option.UseSudo,
