@@ -232,6 +232,10 @@ func newBuildCmd() *cobra.Command {
 				return err
 			}
 
+			if err := osMkdirAll(sdUtilsPath, 0777); err != nil {
+				return err
+			}
+
 			loggerDone = make(chan struct{})
 			logger, err := buildLogNew(filepath.Join(artifactsPath, launch.LogFile), os.Stdout, loggerDone)
 			if err != nil {

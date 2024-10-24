@@ -36,6 +36,7 @@ type docker struct {
 	setupImageVersion string
 	useSudo           bool
 	interactiveMode   bool
+	sdUtilsPath       string
 	commands          []*exec.Cmd
 	mutex             *sync.Mutex
 	flagVerbose       bool
@@ -66,7 +67,7 @@ const (
 	orgRepo = "sd-local/local-build"
 )
 
-func newDocker(setupImage, setupImageVer string, useSudo bool, interactiveMode bool, socketPath string, flagVerbose bool, localVolumes []string, buildUser string, noImagePull bool, dindEnabled bool) runner {
+func newDocker(setupImage, setupImageVer string, useSudo bool, interactiveMode bool, sdUtilsPath string, socketPath string, flagVerbose bool, localVolumes []string, buildUser string, noImagePull bool, dindEnabled bool) runner {
 	return &docker{
 		volume:            "SD_LAUNCH_BIN",
 		habVolume:         "SD_LAUNCH_HAB",
@@ -78,6 +79,7 @@ func newDocker(setupImage, setupImageVer string, useSudo bool, interactiveMode b
 		mutex:             &sync.Mutex{},
 		flagVerbose:       flagVerbose,
 		interact:          &Interact{flagVerbose: flagVerbose},
+		sdUtilsPath:       sdUtilsPath,
 		socketPath:        socketPath,
 		localVolumes:      localVolumes,
 		buildUser:         buildUser,
@@ -119,16 +121,8 @@ func (d *docker) setupBin() error {
 	return nil
 }
 
-func setupInteractiveMode(buildEntry *buildEntry) error {
-	sdUtilsPath, err := filepath.Abs(SdUtilsDir)
-
-	if err != nil {
-		return err
-	}
-
-	if err := osMkdirAll(sdUtilsPath, 0777); err != nil {
-		return err
-	}
+func (d *docker) setupInteractiveMode(buildEntry *buildEntry) error {
+	sdUtilsPath := d.sdUtilsPath
 
 	if err := osMkdirAll(fmt.Sprintf("%s/bin", sdUtilsPath), 0777); err != nil {
 		return err
@@ -223,11 +217,11 @@ func (d *docker) runBuild(buildEntry buildEntry) error {
 	}
 
 	if d.interactiveMode {
-		if err := setupInteractiveMode(&buildEntry); err != nil {
+		if err := d.setupInteractiveMode(&buildEntry); err != nil {
 			return err
 		}
 
-		hostSdUtilsDir := buildEntry.SdUtilsPath
+		hostSdUtilsDir := d.sdUtilsPath
 		containerSdUtilsDir := GetEnv(environment, "SD_UTILS_DIR")
 		utlVol := fmt.Sprintf("%s/:%s", hostSdUtilsDir, containerSdUtilsDir)
 
@@ -426,7 +420,7 @@ func (d *docker) clean() {
 	}
 
 	if d.interactiveMode {
-		if sdUtilsPath, err := filepath.Abs(SdUtilsDir); err == nil {
+		if sdUtilsPath, err := filepath.Abs(d.sdUtilsPath); err == nil {
 			err := os.RemoveAll(sdUtilsPath)
 
 			if err != nil {

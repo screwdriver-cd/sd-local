@@ -43,7 +43,7 @@ func TestBuildCmd(t *testing.T) {
 
 		defer os.RemoveAll(dir)
 
-		artifactsDir := filepath.Join(dir, "sd-artifacts")
+		artifactsDir := filepath.Join(dir, "test-artifacts")
 
 		root.SetArgs([]string{"test", "--artifacts-dir", artifactsDir})
 		buf := bytes.NewBuffer(nil)
@@ -54,6 +54,36 @@ func TestBuildCmd(t *testing.T) {
 		assert.Nil(t, err)
 
 		_, err = os.Stat(artifactsDir)
+		assert.Nil(t, err)
+	})
+
+	t.Run("Success build cmd with --utils-dir", func(t *testing.T) {
+		defFunc := osMkdirAll
+		osMkdirAll = os.MkdirAll
+		defer func() {
+			osMkdirAll = defFunc
+		}()
+
+		root := newBuildCmd()
+
+		dir, err := os.MkdirTemp("", "example")
+		if err != nil {
+			t.Fatal(err)
+		}
+
+		defer os.RemoveAll(dir)
+
+		sdUtilsDir := filepath.Join(dir, "test-utils")
+
+		root.SetArgs([]string{"test", "--utils-dir", sdUtilsDir})
+		buf := bytes.NewBuffer(nil)
+		root.SetOut(buf)
+		err = root.Execute()
+		want := ""
+		assert.Equal(t, want, buf.String())
+		assert.Nil(t, err)
+
+		_, err = os.Stat(sdUtilsDir)
 		assert.Nil(t, err)
 	})
 

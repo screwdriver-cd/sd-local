@@ -56,7 +56,6 @@ type buildEntry struct {
 	Image           string                 `json:"-"`
 	JobName         string                 `json:"-"`
 	ArtifactsPath   string                 `json:"-"`
-	SdUtilsPath     string                 `json:"-"`
 	MemoryLimit     string                 `json:"-"`
 	SrcPath         string                 `json:"-"`
 	UseSudo         bool                   `json:"-"`
@@ -142,7 +141,6 @@ func createBuildEntry(option Option) buildEntry {
 		Image:           option.Job.Image,
 		JobName:         option.JobName,
 		ArtifactsPath:   option.ArtifactsPath,
-		SdUtilsPath:     option.SdUtilsPath,
 		MemoryLimit:     option.Memory,
 		SrcPath:         option.SrcPath,
 		UseSudo:         option.UseSudo,
@@ -158,7 +156,7 @@ func New(option Option) Launcher {
 	l := new(launch)
 	dindEnabled, _ := option.Job.Annotations["screwdriver.cd/dockerEnabled"].(bool)
 
-	l.runner = newDocker(option.Entry.Launcher.Image, option.Entry.Launcher.Version, option.UseSudo, option.InteractiveMode, option.SocketPath, option.FlagVerbose, option.LocalVolumes, option.BuildUser, option.NoImagePull, dindEnabled)
+	l.runner = newDocker(option.Entry.Launcher.Image, option.Entry.Launcher.Version, option.UseSudo, option.InteractiveMode, option.SdUtilsPath, option.SocketPath, option.FlagVerbose, option.LocalVolumes, option.BuildUser, option.NoImagePull, dindEnabled)
 	l.buildEntry = createBuildEntry(option)
 
 	return l

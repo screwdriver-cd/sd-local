@@ -12,6 +12,7 @@ import (
 	"testing"
 	"time"
 
+	"github.com/screwdriver-cd/sd-local/screwdriver"
 	"github.com/sirupsen/logrus"
 	"github.com/stretchr/testify/assert"
 )
@@ -30,8 +31,8 @@ type fakeExecCommand struct {
 }
 
 type fakeOs struct {
-	dirPath   string
-	fileNames []string
+	dirPaths  string
+	fileNames string
 	mkdirAll  func(path string, perm fs.FileMode) error
 	WriteFile func(path string, data []byte, perm fs.FileMode) error
 }
@@ -58,14 +59,14 @@ func newFakeExecCommand(id string) *fakeExecCommand {
 func newFakeOsMkdir(t *testing.T) *fakeOs {
 	f := &fakeOs{}
 	f.mkdirAll = func(path string, perm fs.FileMode) error {
-		f.dirPath = path
+		f.dirPaths += path + ","
 
 		assert.Equal(t, os.FileMode(0777), perm)
 
 		return nil
 	}
 	f.WriteFile = func(path string, data []byte, perm fs.FileMode) error {
-		f.fileNames = append(f.fileNames, path)
+		f.fileNames += path + ","
 
 		assert.Equal(t, os.FileMode(0755), perm)
 
@@ -88,6 +89,7 @@ func TestNewDocker(t *testing.T) {
 			setupImageVersion: "latest",
 			useSudo:           false,
 			interactiveMode:   false,
+			sdUtilsPath:       ".sd-utils",
 			commands:          make([]*exec.Cmd, 0, 10),
 			mutex:             &sync.Mutex{},
 			flagVerbose:       false,
@@ -107,7 +109,7 @@ func TestNewDocker(t *testing.T) {
 			},
 		}
 
-		d := newDocker("launcher", "latest", false, false, "/auth.sock", false, []string{"path:path"}, "jithin", false, true)
+		d := newDocker("launcher", "latest", false, false, ".sd-utils", "/auth.sock", false, []string{"path:path"}, "jithin", false, true)
 
 		assert.Equal(t, expected, d)
 	})
@@ -421,9 +423,10 @@ func TestRunBuildWithInteractiveMode(t *testing.T) {
 		osWriteFile = os.WriteFile
 	}()
 
-	fakeOs := newFakeOsMkdir(t)
-	osMkdirAll = fakeOs.mkdirAll
-	osWriteFile = fakeOs.WriteFile
+	steps := []screwdriver.Step{
+		{Name: "step1", Command: "echo 'This is a test command.'"},
+		{Name: "step2", Command: "cat /foo/bar"},
+	}
 
 	d := &docker{
 		volume:            "SD_LAUNCH_BIN",
@@ -431,6 +434,7 @@ func TestRunBuildWithInteractiveMode(t *testing.T) {
 		setupImageVersion: "latest",
 		useSudo:           true,
 		interactiveMode:   true,
+		sdUtilsPath:       ".sd-utils",
 		interact:          &mockInteract{},
 		socketPath:        os.Getenv("SSH_AUTH_SOCK"),
 		dind: DinD{
@@ -454,30 +458,44 @@ func TestRunBuildWithInteractiveMode(t *testing.T) {
 		{"success", "SUCCESS_RUN_BUILD_INTERACT", nil,
 			[]string{
 				"sudo docker pull node:12",
-				fmt.Sprintf("sudo docker container run --rm --entrypoint /bin/sh -e SSH_AUTH_SOCK=/tmp/auth.sock -v /:/sd/workspace/src/screwdriver.cd/sd-local/local-build -v sd-artifacts/:/test/artifacts -v %s:/opt/sd -v %s:/opt/sd/hab -v %s -itd -v sd-utils/:/test/sd-utils --pull never node:12", d.volume, d.habVolume, sshSocket),
+				fmt.Sprintf("sudo docker container run --rm --entrypoint /bin/sh -e SSH_AUTH_SOCK=/tmp/auth.sock -v /:/sd/workspace/src/screwdriver.cd/sd-local/local-build -v sd-artifacts/:/test/artifacts -v %s:/opt/sd -v %s:/opt/sd/hab -v %s -itd -v .sd-utils/:/test/sd-utils --pull never node:12", d.volume, d.habVolume, sshSocket),
 				"sudo docker attach "},
-			newBuildEntry()},
+			newBuildEntry(func(b *buildEntry) {
+				b.Steps = steps
+			})},
 		{"success with memory limit", "SUCCESS_RUN_BUILD_INTERACT", nil,
 			[]string{
 				"sudo docker pull node:12",
-				fmt.Sprintf("sudo docker container run --rm --entrypoint /bin/sh -e SSH_AUTH_SOCK=/tmp/auth.sock -v /:/sd/workspace/src/screwdriver.cd/sd-local/local-build -v sd-artifacts/:/test/artifacts -v %s:/opt/sd -v %s:/opt/sd/hab -v %s -m2GB -itd -v sd-utils/:/test/sd-utils --pull never node:12", d.volume, d.habVolume, sshSocket),
+				fmt.Sprintf("sudo docker container run --rm --entrypoint /bin/sh -e SSH_AUTH_SOCK=/tmp/auth.sock -v /:/sd/workspace/src/screwdriver.cd/sd-local/local-build -v sd-artifacts/:/test/artifacts -v %s:/opt/sd -v %s:/opt/sd/hab -v %s -m2GB -itd -v .sd-utils/:/test/sd-utils --pull never node:12", d.volume, d.habVolume, sshSocket),
 				"sudo docker attach SUCCESS_RUN_BUILD_INTERACT"},
 			newBuildEntry(func(b *buildEntry) {
 				b.MemoryLimit = "2GB"
+				b.Steps = steps
 			})},
-		{"failure build run", "FAIL_BUILD_CONTAINER_RUN_INTERACT", fmt.Errorf("failed to run build container: exit status 1"), []string{}, newBuildEntry()},
-		{"failure attach build container", "FAIL_BUILD_CONTAINER_ATTACH_INTERACT", fmt.Errorf("failed to attach build container: exit status 1"), []string{}, newBuildEntry()},
-		{"failure build image pull", "FAIL_BUILD_IMAGE_PULL_INTERACT", fmt.Errorf("failed to pull user image exit status 1"), []string{}, newBuildEntry()},
+		{"failure build run", "FAIL_BUILD_CONTAINER_RUN_INTERACT", fmt.Errorf("failed to run build container: exit status 1"), []string{}, newBuildEntry(func(b *buildEntry) { b.Steps = steps })},
+		{"failure attach build container", "FAIL_BUILD_CONTAINER_ATTACH_INTERACT", fmt.Errorf("failed to attach build container: exit status 1"), []string{}, newBuildEntry(func(b *buildEntry) { b.Steps = steps })},
+		{"failure build image pull", "FAIL_BUILD_IMAGE_PULL_INTERACT", fmt.Errorf("failed to pull user image exit status 1"), []string{}, newBuildEntry(func(b *buildEntry) { b.Steps = steps })},
 	}
 
 	for _, tt := range testCase {
 		t.Run(tt.name, func(t *testing.T) {
 			c := newFakeExecCommand(tt.id)
+			fakeOs := newFakeOsMkdir(t)
+
 			execCommand = c.execCmd
+			osMkdirAll = fakeOs.mkdirAll
+			osWriteFile = fakeOs.WriteFile
+
 			err := d.runBuild(tt.buildEntry)
 			for i, expectedCommand := range tt.expectedCommands {
 				assert.True(t, strings.Contains(c.commands[i], expectedCommand), "expect %q \nbut got \n%q", expectedCommand, c.commands[i])
 			}
+
+			assert.Contains(t, fakeOs.dirPaths, ".sd-utils/bin")
+			assert.Contains(t, fakeOs.dirPaths, ".sd-utils/step")
+			assert.Contains(t, fakeOs.fileNames, tt.buildEntry.Steps[0].Name)
+			assert.Contains(t, fakeOs.fileNames, tt.buildEntry.Steps[1].Name)
+
 			if tt.expectError != nil {
 				assert.Equal(t, tt.expectError.Error(), err.Error())
 			} else {

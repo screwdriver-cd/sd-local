@@ -34,7 +34,6 @@ func newBuildEntry(options ...func(b *buildEntry)) buildEntry {
 		Image:         job.Image,
 		JobName:       "test",
 		ArtifactsPath: "sd-artifacts",
-		SdUtilsPath:   "sd-utils",
 	}
 
 	for _, option := range options {
@@ -71,7 +70,7 @@ func TestNew(t *testing.T) {
 			JobName:       "test",
 			JWT:           "testjwt",
 			ArtifactsPath: "sd-artifacts",
-			SdUtilsPath:   "sd-utils",
+			SdUtilsPath:   ".sd-utils",
 			SrcPath:       "/test/sd-local/build/repo",
 			Meta:          Meta{},
 		}
@@ -106,7 +105,7 @@ func TestNew(t *testing.T) {
 			JobName:       "test",
 			JWT:           "testjwt",
 			ArtifactsPath: "sd-artifacts",
-			SdUtilsPath:   "sd-utils",
+			SdUtilsPath:   ".sd-utils",
 			Meta:          Meta{},
 		}
 
