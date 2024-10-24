@@ -419,10 +419,8 @@ func (d *docker) clean() {
 		logrus.Warn(fmt.Errorf("failed to remove hab volume: %v", err))
 	}
 
-	if d.interactiveMode {
-		if err := os.RemoveAll(d.sdUtilsPath); err != nil {
-			logrus.Warn(fmt.Errorf("failed to remove sd-utils directory %s: %v", d.sdUtilsPath, err))
-		}
+	if err := os.RemoveAll(d.sdUtilsPath); err != nil {
+		logrus.Warn(fmt.Errorf("failed to remove sd-utils directory %s: %v", d.sdUtilsPath, err))
 	}
 
 	if d.dind.enabled {
