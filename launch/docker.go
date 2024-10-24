@@ -420,14 +420,8 @@ func (d *docker) clean() {
 	}
 
 	if d.interactiveMode {
-		if sdUtilsPath, err := filepath.Abs(d.sdUtilsPath); err == nil {
-			err := os.RemoveAll(sdUtilsPath)
-
-			if err != nil {
-				logrus.Warn(fmt.Errorf("failed to remove sd-utils directory %s: %v", sdUtilsPath, err))
-			}
-		} else {
-			logrus.Warn(fmt.Errorf("failed to parse sd-utils directory %s: %v", sdUtilsPath, err))
+		if err := os.RemoveAll(d.sdUtilsPath); err != nil {
+			logrus.Warn(fmt.Errorf("failed to remove sd-utils directory %s: %v", d.sdUtilsPath, err))
 		}
 	}
 
