@@ -454,13 +454,13 @@ func TestRunBuildWithInteractiveMode(t *testing.T) {
 		{"success", "SUCCESS_RUN_BUILD_INTERACT", nil,
 			[]string{
 				"sudo docker pull node:12",
-				fmt.Sprintf("sudo docker container run --rm --entrypoint /bin/sh -e SSH_AUTH_SOCK=/tmp/auth.sock -v /:/sd/workspace/src/screwdriver.cd/sd-local/local-build -v sd-artifacts/:/test/artifacts -v %s:/opt/sd -v %s:/opt/sd/hab -v %s -itd -v sd-steps/:/test/sd-steps --pull never node:12", d.volume, d.habVolume, sshSocket),
+				fmt.Sprintf("sudo docker container run --rm --entrypoint /bin/sh -e SSH_AUTH_SOCK=/tmp/auth.sock -v /:/sd/workspace/src/screwdriver.cd/sd-local/local-build -v sd-artifacts/:/test/artifacts -v %s:/opt/sd -v %s:/opt/sd/hab -v %s -itd -v sd-utils/:/test/sd-utils --pull never node:12", d.volume, d.habVolume, sshSocket),
 				"sudo docker attach "},
 			newBuildEntry()},
 		{"success with memory limit", "SUCCESS_RUN_BUILD_INTERACT", nil,
 			[]string{
 				"sudo docker pull node:12",
-				fmt.Sprintf("sudo docker container run --rm --entrypoint /bin/sh -e SSH_AUTH_SOCK=/tmp/auth.sock -v /:/sd/workspace/src/screwdriver.cd/sd-local/local-build -v sd-artifacts/:/test/artifacts -v %s:/opt/sd -v %s:/opt/sd/hab -v %s -m2GB -itd -v sd-steps/:/test/sd-steps --pull never node:12", d.volume, d.habVolume, sshSocket),
+				fmt.Sprintf("sudo docker container run --rm --entrypoint /bin/sh -e SSH_AUTH_SOCK=/tmp/auth.sock -v /:/sd/workspace/src/screwdriver.cd/sd-local/local-build -v sd-artifacts/:/test/artifacts -v %s:/opt/sd -v %s:/opt/sd/hab -v %s -m2GB -itd -v sd-utils/:/test/sd-utils --pull never node:12", d.volume, d.habVolume, sshSocket),
 				"sudo docker attach SUCCESS_RUN_BUILD_INTERACT"},
 			newBuildEntry(func(b *buildEntry) {
 				b.MemoryLimit = "2GB"

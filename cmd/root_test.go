@@ -60,9 +60,9 @@ Flags:
       --src-url string         Specify the source url to build.
                                ex) git@github.com:<org>/<repo>.git[#<branch>]
                                    https://github.com/<org>/<repo>.git[#<branch>]
-      --steps-dir string       Path to the host side directory that is created to mount step script files when using interactive mode. (default ".sd-steps")
       --sudo                   Use sudo command for container runtime.
   -u, --user string            Change default build user. Default value is from container in use.
+      --utils-dir string       Path to the host side directory that is created to mount utility files for interactive mode. (default ".sd-utils")
       --vol strings            Volumes to mount into build container.
 
 `, defaultSocketPath)

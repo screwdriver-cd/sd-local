@@ -59,8 +59,8 @@ const (
 	ArtifactsDir = "sd-artifacts"
 	// LogFile is default logfile name for build log
 	LogFile = "builds.log"
-	// StepsDir is default directory name for step script files
-	StepsDir = ".sd-steps"
+	// SdUtilsDir is default directory name for sd-utils
+	SdUtilsDir = ".sd-utils"
 	// The definition of "ScmHost" and "OrgRepo" is in "PipelineFromID" of "screwdriver/screwdriver_local.go"
 	scmHost = "screwdriver.cd"
 	orgRepo = "sd-local/local-build"
@@ -120,17 +120,21 @@ func (d *docker) setupBin() error {
 }
 
 func setupInteractiveMode(buildEntry *buildEntry) error {
-	stepsPath, err := filepath.Abs(StepsDir)
+	sdUtilsPath, err := filepath.Abs(SdUtilsDir)
 
 	if err != nil {
 		return err
 	}
 
-	if err := osMkdirAll(stepsPath, 0777); err != nil {
+	if err := osMkdirAll(sdUtilsPath, 0777); err != nil {
 		return err
 	}
 
-	if err := osMkdirAll(fmt.Sprintf("%s/.bin", stepsPath), 0777); err != nil {
+	if err := osMkdirAll(fmt.Sprintf("%s/bin", sdUtilsPath), 0777); err != nil {
+		return err
+	}
+
+	if err := osMkdirAll(fmt.Sprintf("%s/steps", sdUtilsPath), 0777); err != nil {
 		return err
 	}
 
@@ -142,17 +146,18 @@ func setupInteractiveMode(buildEntry *buildEntry) error {
 
 	sdRunShell := fmt.Sprintf(`#!%s
 step_name="$1"
-step_list=$(ls ${SD_STEPS_DIR})
-if [ "${step_name}" = "" ]; then echo "${step_list}";
-else . "${SD_STEPS_DIR}/${step_name}"; fi
+step_dir="${SD_UTILS_DIR}/steps"
+step_list=$(ls "$step_dir")
+if [ "${step_name}" = "--list" ]; then echo "${step_list}";
+else . "${step_dir}/${step_name}"; fi
 `, shellBin)
 
-	if err := osWriteFile(fmt.Sprintf("%s/.bin/sd-run", stepsPath), []byte(sdRunShell), 0755); err != nil {
+	if err := osWriteFile(fmt.Sprintf("%s/bin/sd-run", sdUtilsPath), []byte(sdRunShell), 0755); err != nil {
 		return err
 	}
 
 	for _, step := range buildEntry.Steps {
-		if err := osWriteFile(fmt.Sprintf("%s/%s", stepsPath, step.Name), []byte("#!"+shellBin+" -e\n"+step.Command), 0755); err != nil {
+		if err := osWriteFile(fmt.Sprintf("%s/steps/%s", sdUtilsPath, step.Name), []byte("#!"+shellBin+" -e\n"+step.Command), 0755); err != nil {
 			return err
 		}
 	}
@@ -222,11 +227,11 @@ func (d *docker) runBuild(buildEntry buildEntry) error {
 			return err
 		}
 
-		hostStepsDir := buildEntry.StepsPath
-		containerStepsDir := GetEnv(environment, "SD_STEPS_DIR")
-		stpVol := fmt.Sprintf("%s/:%s", hostStepsDir, containerStepsDir)
+		hostSdUtilsDir := buildEntry.SdUtilsPath
+		containerSdUtilsDir := GetEnv(environment, "SD_UTILS_DIR")
+		utlVol := fmt.Sprintf("%s/:%s", hostSdUtilsDir, containerSdUtilsDir)
 
-		dockerCommandOptions = append(dockerCommandOptions, "-itd", "-v", stpVol)
+		dockerCommandOptions = append(dockerCommandOptions, "-itd", "-v", utlVol)
 	}
 
 	if d.buildUser != "" {
@@ -283,7 +288,7 @@ func (d *docker) runBuild(buildEntry buildEntry) error {
 			{".", "/tmp/sd-local.env"},
 			{"set", "+a"},
 			{"export", "PS1='sd-local# '"},
-			{"sdrun() { . /$SD_STEPS_DIR/.bin/sd-run $@; }"},
+			{"sdrun() { . /$SD_UTILS_DIR/bin/sd-run $@; }"},
 			{"cd", "$SD_CHECKOUT_DIR"},
 		}
 
@@ -421,14 +426,14 @@ func (d *docker) clean() {
 	}
 
 	if d.interactiveMode {
-		if stepsPath, err := filepath.Abs(StepsDir); err == nil {
-			err := os.RemoveAll(stepsPath)
+		if sdUtilsPath, err := filepath.Abs(SdUtilsDir); err == nil {
+			err := os.RemoveAll(sdUtilsPath)
 
 			if err != nil {
-				logrus.Warn(fmt.Errorf("failed to remove sd-steps directory %s: %v", stepsPath, err))
+				logrus.Warn(fmt.Errorf("failed to remove sd-utils directory %s: %v", sdUtilsPath, err))
 			}
 		} else {
-			logrus.Warn(fmt.Errorf("failed to parse sd-steps directory %s: %v", stepsPath, err))
+			logrus.Warn(fmt.Errorf("failed to parse sd-utils directory %s: %v", sdUtilsPath, err))
 		}
 	}
 
