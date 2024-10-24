@@ -2,9 +2,9 @@ package screwdriver
 
 import (
 	"fmt"
-	"io/ioutil"
 	"net/http"
 	"net/http/httptest"
+	"os"
 	"path/filepath"
 	"strings"
 	"testing"
@@ -50,7 +50,7 @@ func TestJob(t *testing.T) {
 			w.WriteHeader(200)
 			w.Header().Set("Content-Type", "application/json")
 
-			testJSON, err := ioutil.ReadFile(filepath.Join(testDir, "validatedSuccess.json"))
+			testJSON, err := os.ReadFile(filepath.Join(testDir, "validatedSuccess.json"))
 			assert.Nil(t, err)
 			fmt.Fprintln(w, string(testJSON))
 		}))
@@ -177,7 +177,7 @@ func TestJob(t *testing.T) {
 			w.WriteHeader(200)
 			w.Header().Set("Content-Type", "application/json")
 
-			testJSON, err := ioutil.ReadFile(filepath.Join(testDir, "validatedFailed.json"))
+			testJSON, err := os.ReadFile(filepath.Join(testDir, "validatedFailed.json"))
 			assert.Nil(t, err)
 
 			fmt.Fprintln(w, string(testJSON))
@@ -202,7 +202,7 @@ func TestJob(t *testing.T) {
 			w.WriteHeader(200)
 			w.Header().Set("Content-Type", "application/json")
 
-			testJSON, err := ioutil.ReadFile(filepath.Join(testDir, "validatedSuccess.json"))
+			testJSON, err := os.ReadFile(filepath.Join(testDir, "validatedSuccess.json"))
 			assert.Nil(t, err)
 			fmt.Fprintln(w, string(testJSON))
 		}))

@@ -72,6 +72,7 @@ type Option struct {
 	JobName         string
 	JWT             string
 	ArtifactsPath   string
+	SdUtilsPath     string
 	Memory          string
 	SrcPath         string
 	OptionEnv       screwdriver.EnvVars
@@ -87,7 +88,8 @@ type Option struct {
 }
 
 const (
-	defaultArtDir = "/sd/workspace/artifacts"
+	defaultArtDir     = "/sd/workspace/artifacts"
+	defaultSdUtilsDir = "/sd/workspace/sd-utils"
 )
 
 // DefaultSocketPath is a socket path on the localhost to bring in the build container.
@@ -121,7 +123,7 @@ func createBuildEntry(option Option) buildEntry {
 		logrus.Warn("SD_STORE_URL is invalid. It may cause errors")
 	}
 
-	env := []map[string]string{{"SD_TOKEN": option.JWT}, {"SD_ARTIFACTS_DIR": defaultArtDir}, {"SD_API_URL": apiURL}, {"SD_STORE_URL": storeURL}, {"SD_BASE_COMMAND_PATH": "/sd/commands/"}}
+	env := []map[string]string{{"SD_TOKEN": option.JWT}, {"SD_ARTIFACTS_DIR": defaultArtDir}, {"SD_UTILS_DIR": defaultSdUtilsDir}, {"SD_API_URL": apiURL}, {"SD_STORE_URL": storeURL}, {"SD_BASE_COMMAND_PATH": "/sd/commands/"}}
 
 	env = append(env, option.Job.Environment...)
 	env = append(env, option.OptionEnv...)
@@ -154,7 +156,7 @@ func New(option Option) Launcher {
 	l := new(launch)
 	dindEnabled, _ := option.Job.Annotations["screwdriver.cd/dockerEnabled"].(bool)
 
-	l.runner = newDocker(option.Entry.Launcher.Image, option.Entry.Launcher.Version, option.UseSudo, option.InteractiveMode, option.SocketPath, option.FlagVerbose, option.LocalVolumes, option.BuildUser, option.NoImagePull, dindEnabled)
+	l.runner = newDocker(option.Entry.Launcher.Image, option.Entry.Launcher.Version, option.UseSudo, option.InteractiveMode, option.SdUtilsPath, option.SocketPath, option.FlagVerbose, option.LocalVolumes, option.BuildUser, option.NoImagePull, dindEnabled)
 	l.buildEntry = createBuildEntry(option)
 
 	return l

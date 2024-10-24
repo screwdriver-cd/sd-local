@@ -28,6 +28,7 @@ var (
 	buildLogNew     = buildlog.New
 	launchNew       = launch.New
 	artifactsDir    = launch.ArtifactsDir
+	sdUtilsDir      = launch.SdUtilsDir
 	memory          = ""
 	scmNew          = scm.New
 	osMkdirAll      = os.MkdirAll
@@ -226,6 +227,15 @@ func newBuildCmd() *cobra.Command {
 				return err
 			}
 
+			sdUtilsPath, err := filepath.Abs(sdUtilsDir)
+			if err != nil {
+				return err
+			}
+
+			if err := osMkdirAll(sdUtilsPath, 0777); err != nil {
+				return err
+			}
+
 			loggerDone = make(chan struct{})
 			logger, err := buildLogNew(filepath.Join(artifactsPath, launch.LogFile), os.Stdout, loggerDone)
 			if err != nil {
@@ -239,6 +249,7 @@ func newBuildCmd() *cobra.Command {
 				JobName:         jobName,
 				JWT:             api.JWT(),
 				ArtifactsPath:   artifactsPath,
+				SdUtilsPath:     sdUtilsPath,
 				Memory:          memory,
 				SrcPath:         srcPath,
 				OptionEnv:       optionEnv,
@@ -277,6 +288,12 @@ func newBuildCmd() *cobra.Command {
 		"artifacts-dir",
 		launch.ArtifactsDir,
 		"Path to the host side directory which is mounted into $SD_ARTIFACTS_DIR.")
+
+	buildCmd.Flags().StringVar(
+		&sdUtilsDir,
+		"utils-dir",
+		launch.SdUtilsDir,
+		"Path to the host side directory that is created to mount utility files for interactive mode.")
 
 	buildCmd.Flags().StringVarP(
 		&memory,

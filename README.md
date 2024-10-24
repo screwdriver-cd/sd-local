@@ -78,6 +78,13 @@ Global Flags:
   1. environment in a screwdriver.yaml
   1. defaultEnv (e.g.: `SD_TOKEN`, `SD_API_URL`)
 
+* You can execute step commands in interactive mode.
+
+```bash
+sd-local# sdrun <step name>
+foo
+```
+
 * You can use docker commands in the build to run containers, build images, etc.
   * Set `screwdriver.cd/dockerEnabled: true` in the job annotations.
 ```yaml

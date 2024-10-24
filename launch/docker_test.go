@@ -3,6 +3,7 @@ package launch
 import (
 	"bytes"
 	"fmt"
+	"io/fs"
 	"os"
 	"os/exec"
 	"strings"
@@ -11,6 +12,7 @@ import (
 	"testing"
 	"time"
 
+	"github.com/screwdriver-cd/sd-local/screwdriver"
 	"github.com/sirupsen/logrus"
 	"github.com/stretchr/testify/assert"
 )
@@ -26,6 +28,13 @@ type fakeExecCommand struct {
 	id       string
 	execCmd  func(command string, args ...string) *exec.Cmd
 	commands []string
+}
+
+type fakeOs struct {
+	dirPaths  string
+	fileNames string
+	mkdirAll  func(path string, perm fs.FileMode) error
+	WriteFile func(path string, data []byte, perm fs.FileMode) error
 }
 
 type mockInteract struct {
@@ -47,6 +56,26 @@ func newFakeExecCommand(id string) *fakeExecCommand {
 	return c
 }
 
+func newFakeOsMkdir(t *testing.T) *fakeOs {
+	f := &fakeOs{}
+	f.mkdirAll = func(path string, perm fs.FileMode) error {
+		f.dirPaths += path + ","
+
+		assert.Equal(t, os.FileMode(0777), perm)
+
+		return nil
+	}
+	f.WriteFile = func(path string, data []byte, perm fs.FileMode) error {
+		f.fileNames += path + ","
+
+		assert.Equal(t, os.FileMode(0755), perm)
+
+		return nil
+	}
+
+	return f
+}
+
 func (d *mockInteract) Run(c *exec.Cmd, commands [][]string) error {
 	return c.Run()
 }
@@ -60,6 +89,7 @@ func TestNewDocker(t *testing.T) {
 			setupImageVersion: "latest",
 			useSudo:           false,
 			interactiveMode:   false,
+			sdUtilsPath:       ".sd-utils",
 			commands:          make([]*exec.Cmd, 0, 10),
 			mutex:             &sync.Mutex{},
 			flagVerbose:       false,
@@ -79,7 +109,7 @@ func TestNewDocker(t *testing.T) {
 			},
 		}
 
-		d := newDocker("launcher", "latest", false, false, "/auth.sock", false, []string{"path:path"}, "jithin", false, true)
+		d := newDocker("launcher", "latest", false, false, ".sd-utils", "/auth.sock", false, []string{"path:path"}, "jithin", false, true)
 
 		assert.Equal(t, expected, d)
 	})
@@ -181,12 +211,12 @@ func TestRunBuild(t *testing.T) {
 		{"success", "SUCCESS_RUN_BUILD", nil,
 			[]string{
 				"docker pull node:12",
-				fmt.Sprintf("docker container run --rm --pull never -v /:/sd/workspace/src/screwdriver.cd/sd-local/local-build -v sd-artifacts/:/test/artifacts -v %s:/opt/sd -v %s:/opt/sd/hab -v %s --entrypoint /bin/sh -e SSH_AUTH_SOCK=/tmp/auth.sock node:12 /opt/sd/local_run.sh ", d.volume, d.habVolume, sshSocket)},
+				fmt.Sprintf("docker container run --rm --entrypoint /bin/sh -e SSH_AUTH_SOCK=/tmp/auth.sock -v /:/sd/workspace/src/screwdriver.cd/sd-local/local-build -v sd-artifacts/:/test/artifacts -v %s:/opt/sd -v %s:/opt/sd/hab -v %s --pull never node:12 /opt/sd/local_run.sh ", d.volume, d.habVolume, sshSocket)},
 			newBuildEntry()},
 		{"success with memory limit", "SUCCESS_RUN_BUILD", nil,
 			[]string{
 				"docker pull node:12",
-				fmt.Sprintf("docker container run -m2GB --rm --pull never -v /:/sd/workspace/src/screwdriver.cd/sd-local/local-build -v sd-artifacts/:/test/artifacts -v %s:/opt/sd -v %s:/opt/sd/hab -v %s --entrypoint /bin/sh -e SSH_AUTH_SOCK=/tmp/auth.sock node:12 /opt/sd/local_run.sh ", d.volume, d.habVolume, sshSocket)},
+				fmt.Sprintf("docker container run --rm --entrypoint /bin/sh -e SSH_AUTH_SOCK=/tmp/auth.sock -v /:/sd/workspace/src/screwdriver.cd/sd-local/local-build -v sd-artifacts/:/test/artifacts -v %s:/opt/sd -v %s:/opt/sd/hab -v %s -m2GB --pull never node:12 /opt/sd/local_run.sh ", d.volume, d.habVolume, sshSocket)},
 			newBuildEntry(func(b *buildEntry) {
 				b.MemoryLimit = "2GB"
 			})},
@@ -245,7 +275,7 @@ func TestRunBuildWithDind(t *testing.T) {
 				"docker network create sd-local-dind-bridge",
 				"docker container run --rm --privileged --pull never --name sd-local-dind -d --network sd-local-dind-bridge --network-alias docker -e DOCKER_TLS_CERTDIR=/certs -v SD_DIND_CERT:/certs/client -v SD_DIND_SHARE:/opt/sd_dind_share docker:23.0.1-dind-rootless",
 				"docker pull node:12",
-				fmt.Sprintf("docker container run --network %s -e DOCKER_TLS_CERTDIR=/certs -e DOCKER_HOST=tcp://docker:2376 -e DOCKER_TLS_VERIFY=1 -e DOCKER_CERT_PATH=/certs/client -e SD_DIND_SHARE_PATH=%s -v %s:/certs/client:ro -v %s:%s --rm --pull never -v /:/sd/workspace/src/screwdriver.cd/sd-local/local-build -v sd-artifacts/:/test/artifacts -v %s:/opt/sd -v %s:/opt/sd/hab -v %s --entrypoint /bin/sh -e SSH_AUTH_SOCK=/tmp/auth.sock node:12 /opt/sd/local_run.sh ", d.dind.network, d.dind.shareVolumePath, d.dind.volume, d.dind.shareVolumeName, d.dind.shareVolumePath, d.volume, d.habVolume, sshSocket)},
+				fmt.Sprintf("docker container run --network %s -e DOCKER_TLS_CERTDIR=/certs -e DOCKER_HOST=tcp://docker:2376 -e DOCKER_TLS_VERIFY=1 -e DOCKER_CERT_PATH=/certs/client -e SD_DIND_SHARE_PATH=%s -v %s:/certs/client:ro -v %s:%s --rm --entrypoint /bin/sh -e SSH_AUTH_SOCK=/tmp/auth.sock -v /:/sd/workspace/src/screwdriver.cd/sd-local/local-build -v sd-artifacts/:/test/artifacts -v %s:/opt/sd -v %s:/opt/sd/hab -v %s --pull never node:12 /opt/sd/local_run.sh ", d.dind.network, d.dind.shareVolumePath, d.dind.volume, d.dind.shareVolumeName, d.dind.shareVolumePath, d.volume, d.habVolume, sshSocket)},
 			newBuildEntry(func(b *buildEntry) {
 				b.Annotations["screwdriver.cd/dockerEnabled"] = true
 			})},
@@ -301,7 +331,7 @@ func TestRunBuildWithNoImagePull(t *testing.T) {
 			[]string{
 				"docker network create sd-local-dind-bridge",
 				"docker container run --rm --privileged --pull never --name sd-local-dind -d --network sd-local-dind-bridge --network-alias docker -e DOCKER_TLS_CERTDIR=/certs -v SD_DIND_CERT:/certs/client -v SD_DIND_SHARE:/opt/sd_dind_share docker:23.0.1-dind-rootless",
-				fmt.Sprintf("docker container run --network %s -e DOCKER_TLS_CERTDIR=/certs -e DOCKER_HOST=tcp://docker:2376 -e DOCKER_TLS_VERIFY=1 -e DOCKER_CERT_PATH=/certs/client -e SD_DIND_SHARE_PATH=%s -v %s:/certs/client:ro -v %s:%s --rm --pull never -v /:/sd/workspace/src/screwdriver.cd/sd-local/local-build -v sd-artifacts/:/test/artifacts -v %s:/opt/sd -v %s:/opt/sd/hab -v %s --entrypoint /bin/sh -e SSH_AUTH_SOCK=/tmp/auth.sock node:12 /opt/sd/local_run.sh ", d.dind.network, d.dind.shareVolumePath, d.dind.volume, d.dind.shareVolumeName, d.dind.shareVolumePath, d.volume, d.habVolume, sshSocket)},
+				fmt.Sprintf("docker container run --network %s -e DOCKER_TLS_CERTDIR=/certs -e DOCKER_HOST=tcp://docker:2376 -e DOCKER_TLS_VERIFY=1 -e DOCKER_CERT_PATH=/certs/client -e SD_DIND_SHARE_PATH=%s -v %s:/certs/client:ro -v %s:%s --rm --entrypoint /bin/sh -e SSH_AUTH_SOCK=/tmp/auth.sock -v /:/sd/workspace/src/screwdriver.cd/sd-local/local-build -v sd-artifacts/:/test/artifacts -v %s:/opt/sd -v %s:/opt/sd/hab -v %s --pull never node:12 /opt/sd/local_run.sh ", d.dind.network, d.dind.shareVolumePath, d.dind.volume, d.dind.shareVolumeName, d.dind.shareVolumePath, d.volume, d.habVolume, sshSocket)},
 			newBuildEntry(func(b *buildEntry) {
 				b.Annotations["screwdriver.cd/dockerEnabled"] = true
 			})},
@@ -356,12 +386,12 @@ func TestRunBuildWithSudo(t *testing.T) {
 		{"success", "SUCCESS_RUN_BUILD_SUDO", nil,
 			[]string{
 				"sudo docker pull node:12",
-				fmt.Sprintf("sudo docker container run --rm --pull never -v /:/sd/workspace/src/screwdriver.cd/sd-local/local-build -v sd-artifacts/:/test/artifacts -v %s:/opt/sd -v %s:/opt/sd/hab -v %s --entrypoint /bin/sh -e SSH_AUTH_SOCK=/tmp/auth.sock node:12 /opt/sd/local_run.sh ", d.volume, d.habVolume, sshSocket)},
+				fmt.Sprintf("sudo docker container run --rm --entrypoint /bin/sh -e SSH_AUTH_SOCK=/tmp/auth.sock -v /:/sd/workspace/src/screwdriver.cd/sd-local/local-build -v sd-artifacts/:/test/artifacts -v %s:/opt/sd -v %s:/opt/sd/hab -v %s --pull never node:12 /opt/sd/local_run.sh ", d.volume, d.habVolume, sshSocket)},
 			newBuildEntry()},
 		{"success with memory limit", "SUCCESS_RUN_BUILD_SUDO", nil,
 			[]string{
 				"sudo docker pull node:12",
-				fmt.Sprintf("sudo docker container run -m2GB --rm --pull never -v /:/sd/workspace/src/screwdriver.cd/sd-local/local-build -v sd-artifacts/:/test/artifacts -v %s:/opt/sd -v %s:/opt/sd/hab -v %s --entrypoint /bin/sh -e SSH_AUTH_SOCK=/tmp/auth.sock node:12 /opt/sd/local_run.sh ", d.volume, d.habVolume, sshSocket)},
+				fmt.Sprintf("sudo docker container run --rm --entrypoint /bin/sh -e SSH_AUTH_SOCK=/tmp/auth.sock -v /:/sd/workspace/src/screwdriver.cd/sd-local/local-build -v sd-artifacts/:/test/artifacts -v %s:/opt/sd -v %s:/opt/sd/hab -v %s -m2GB --pull never node:12 /opt/sd/local_run.sh ", d.volume, d.habVolume, sshSocket)},
 			newBuildEntry(func(b *buildEntry) {
 				b.MemoryLimit = "2GB"
 			})},
@@ -389,7 +419,14 @@ func TestRunBuildWithSudo(t *testing.T) {
 func TestRunBuildWithInteractiveMode(t *testing.T) {
 	defer func() {
 		execCommand = exec.Command
+		osMkdirAll = os.MkdirAll
+		osWriteFile = os.WriteFile
 	}()
+
+	steps := []screwdriver.Step{
+		{Name: "step1", Command: "echo 'This is a test command.'"},
+		{Name: "step2", Command: "cat /foo/bar"},
+	}
 
 	d := &docker{
 		volume:            "SD_LAUNCH_BIN",
@@ -397,6 +434,7 @@ func TestRunBuildWithInteractiveMode(t *testing.T) {
 		setupImageVersion: "latest",
 		useSudo:           true,
 		interactiveMode:   true,
+		sdUtilsPath:       ".sd-utils",
 		interact:          &mockInteract{},
 		socketPath:        os.Getenv("SSH_AUTH_SOCK"),
 		dind: DinD{
@@ -420,30 +458,44 @@ func TestRunBuildWithInteractiveMode(t *testing.T) {
 		{"success", "SUCCESS_RUN_BUILD_INTERACT", nil,
 			[]string{
 				"sudo docker pull node:12",
-				fmt.Sprintf("sudo docker container run -itd --rm --pull never -v /:/sd/workspace/src/screwdriver.cd/sd-local/local-build -v sd-artifacts/:/test/artifacts -v %s:/opt/sd -v %s:/opt/sd/hab -v %s --entrypoint /bin/sh -e SSH_AUTH_SOCK=/tmp/auth.sock node:12", d.volume, d.habVolume, sshSocket),
+				fmt.Sprintf("sudo docker container run --rm --entrypoint /bin/sh -e SSH_AUTH_SOCK=/tmp/auth.sock -v /:/sd/workspace/src/screwdriver.cd/sd-local/local-build -v sd-artifacts/:/test/artifacts -v %s:/opt/sd -v %s:/opt/sd/hab -v %s -itd -v .sd-utils/:/test/sd-utils --pull never node:12", d.volume, d.habVolume, sshSocket),
 				"sudo docker attach "},
-			newBuildEntry()},
+			newBuildEntry(func(b *buildEntry) {
+				b.Steps = steps
+			})},
 		{"success with memory limit", "SUCCESS_RUN_BUILD_INTERACT", nil,
 			[]string{
 				"sudo docker pull node:12",
-				fmt.Sprintf("sudo docker container run -m2GB -itd --rm --pull never -v /:/sd/workspace/src/screwdriver.cd/sd-local/local-build -v sd-artifacts/:/test/artifacts -v %s:/opt/sd -v %s:/opt/sd/hab -v %s --entrypoint /bin/sh -e SSH_AUTH_SOCK=/tmp/auth.sock node:12", d.volume, d.habVolume, sshSocket),
+				fmt.Sprintf("sudo docker container run --rm --entrypoint /bin/sh -e SSH_AUTH_SOCK=/tmp/auth.sock -v /:/sd/workspace/src/screwdriver.cd/sd-local/local-build -v sd-artifacts/:/test/artifacts -v %s:/opt/sd -v %s:/opt/sd/hab -v %s -m2GB -itd -v .sd-utils/:/test/sd-utils --pull never node:12", d.volume, d.habVolume, sshSocket),
 				"sudo docker attach SUCCESS_RUN_BUILD_INTERACT"},
 			newBuildEntry(func(b *buildEntry) {
 				b.MemoryLimit = "2GB"
+				b.Steps = steps
 			})},
-		{"failure build run", "FAIL_BUILD_CONTAINER_RUN_INTERACT", fmt.Errorf("failed to run build container: exit status 1"), []string{}, newBuildEntry()},
-		{"failure attach build container", "FAIL_BUILD_CONTAINER_ATTACH_INTERACT", fmt.Errorf("failed to attach build container: exit status 1"), []string{}, newBuildEntry()},
-		{"failure build image pull", "FAIL_BUILD_IMAGE_PULL_INTERACT", fmt.Errorf("failed to pull user image exit status 1"), []string{}, newBuildEntry()},
+		{"failure build run", "FAIL_BUILD_CONTAINER_RUN_INTERACT", fmt.Errorf("failed to run build container: exit status 1"), []string{}, newBuildEntry(func(b *buildEntry) { b.Steps = steps })},
+		{"failure attach build container", "FAIL_BUILD_CONTAINER_ATTACH_INTERACT", fmt.Errorf("failed to attach build container: exit status 1"), []string{}, newBuildEntry(func(b *buildEntry) { b.Steps = steps })},
+		{"failure build image pull", "FAIL_BUILD_IMAGE_PULL_INTERACT", fmt.Errorf("failed to pull user image exit status 1"), []string{}, newBuildEntry(func(b *buildEntry) { b.Steps = steps })},
 	}
 
 	for _, tt := range testCase {
 		t.Run(tt.name, func(t *testing.T) {
 			c := newFakeExecCommand(tt.id)
+			fakeOs := newFakeOsMkdir(t)
+
 			execCommand = c.execCmd
+			osMkdirAll = fakeOs.mkdirAll
+			osWriteFile = fakeOs.WriteFile
+
 			err := d.runBuild(tt.buildEntry)
 			for i, expectedCommand := range tt.expectedCommands {
 				assert.True(t, strings.Contains(c.commands[i], expectedCommand), "expect %q \nbut got \n%q", expectedCommand, c.commands[i])
 			}
+
+			assert.Contains(t, fakeOs.dirPaths, ".sd-utils/bin")
+			assert.Contains(t, fakeOs.dirPaths, ".sd-utils/step")
+			assert.Contains(t, fakeOs.fileNames, tt.buildEntry.Steps[0].Name)
+			assert.Contains(t, fakeOs.fileNames, tt.buildEntry.Steps[1].Name)
+
 			if tt.expectError != nil {
 				assert.Equal(t, tt.expectError.Error(), err.Error())
 			} else {

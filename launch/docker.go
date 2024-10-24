@@ -36,6 +36,7 @@ type docker struct {
 	setupImageVersion string
 	useSudo           bool
 	interactiveMode   bool
+	sdUtilsPath       string
 	commands          []*exec.Cmd
 	mutex             *sync.Mutex
 	flagVerbose       bool
@@ -47,20 +48,26 @@ type docker struct {
 	dind              DinD
 }
 
-var _ runner = (*docker)(nil)
-var execCommand = exec.Command
+var (
+	_           runner = (*docker)(nil)
+	execCommand        = exec.Command
+	osMkdirAll         = os.MkdirAll
+	osWriteFile        = os.WriteFile
+)
 
 const (
 	// ArtifactsDir is default artifact directory name
 	ArtifactsDir = "sd-artifacts"
 	// LogFile is default logfile name for build log
 	LogFile = "builds.log"
+	// SdUtilsDir is default directory name for sd-utils
+	SdUtilsDir = ".sd-utils"
 	// The definition of "ScmHost" and "OrgRepo" is in "PipelineFromID" of "screwdriver/screwdriver_local.go"
 	scmHost = "screwdriver.cd"
 	orgRepo = "sd-local/local-build"
 )
 
-func newDocker(setupImage, setupImageVer string, useSudo bool, interactiveMode bool, socketPath string, flagVerbose bool, localVolumes []string, buildUser string, noImagePull bool, dindEnabled bool) runner {
+func newDocker(setupImage, setupImageVer string, useSudo bool, interactiveMode bool, sdUtilsPath string, socketPath string, flagVerbose bool, localVolumes []string, buildUser string, noImagePull bool, dindEnabled bool) runner {
 	return &docker{
 		volume:            "SD_LAUNCH_BIN",
 		habVolume:         "SD_LAUNCH_HAB",
@@ -72,6 +79,7 @@ func newDocker(setupImage, setupImageVer string, useSudo bool, interactiveMode b
 		mutex:             &sync.Mutex{},
 		flagVerbose:       flagVerbose,
 		interact:          &Interact{flagVerbose: flagVerbose},
+		sdUtilsPath:       sdUtilsPath,
 		socketPath:        socketPath,
 		localVolumes:      localVolumes,
 		buildUser:         buildUser,
@@ -113,11 +121,73 @@ func (d *docker) setupBin() error {
 	return nil
 }
 
+func (d *docker) setupInteractiveMode(buildEntry *buildEntry) error {
+	sdUtilsPath := d.sdUtilsPath
+
+	if err := osMkdirAll(fmt.Sprintf("%s/bin", sdUtilsPath), 0777); err != nil {
+		return err
+	}
+
+	if err := osMkdirAll(fmt.Sprintf("%s/steps", sdUtilsPath), 0777); err != nil {
+		return err
+	}
+
+	shellBin := GetEnv(buildEntry.Environment, "USER_SHELL_BIN")
+
+	if len(shellBin) == 0 {
+		shellBin = "/bin/sh"
+	}
+
+	sdRunShell := fmt.Sprintf(`#!%s
+step_name="$1"
+step_dir="${SD_UTILS_DIR}/steps"
+step_list=$(ls "$step_dir")
+if [ "${step_name}" = "--list" ]; then echo "${step_list}";
+else . "${step_dir}/${step_name}"; fi
+`, shellBin)
+
+	if err := osWriteFile(fmt.Sprintf("%s/bin/sd-run", sdUtilsPath), []byte(sdRunShell), 0755); err != nil {
+		return err
+	}
+
+	for _, step := range buildEntry.Steps {
+		if err := osWriteFile(fmt.Sprintf("%s/steps/%s", sdUtilsPath, step.Name), []byte("#!"+shellBin+" -e\n"+step.Command), 0755); err != nil {
+			return err
+		}
+	}
+
+	// Overwrite steps for sd-local interact mode. The env will load later.
+	buildEntry.Steps = []screwdriver.Step{
+		{
+			Name:    "sd-local-init",
+			Command: "export > /tmp/sd-local.env",
+		},
+	}
+
+	return nil
+}
+
 func (d *docker) runBuild(buildEntry buildEntry) error {
+	dockerCommandArgs := []string{"container", "run"}
+	dockerCommandOptions := []string{"--rm", "--entrypoint", "/bin/sh", "-e", "SSH_AUTH_SOCK=/tmp/auth.sock"}
+
 	if d.dind.enabled {
 		if err := d.runDinD(); err != nil {
 			return fmt.Errorf("failed to prepare dind container: %v", err)
 		}
+
+		dockerCommandOptions = append(
+			[]string{
+				"--network", d.dind.network,
+				"-e", "DOCKER_TLS_CERTDIR=/certs",
+				"-e", "DOCKER_HOST=tcp://docker:2376",
+				"-e", "DOCKER_TLS_VERIFY=1",
+				"-e", "DOCKER_CERT_PATH=/certs/client",
+				"-e", fmt.Sprintf("SD_DIND_SHARE_PATH=%s", d.dind.shareVolumePath),
+				"-v", fmt.Sprintf("%s:/certs/client:ro", d.dind.volume),
+				"-v", fmt.Sprintf("%s:%s", d.dind.shareVolumeName, d.dind.shareVolumePath),
+			},
+			dockerCommandOptions...)
 	}
 
 	environment := buildEntry.Environment
@@ -134,84 +204,77 @@ func (d *docker) runBuild(buildEntry buildEntry) error {
 	habVol := fmt.Sprintf("%s:%s", d.habVolume, "/opt/sd/hab")
 
 	dockerVolumes := append(d.localVolumes, srcVol, artVol, binVol, habVol, fmt.Sprintf("%s:/tmp/auth.sock:rw", d.socketPath))
-
-	// Overwrite steps for sd-local interact mode. The env will load later.
-	if d.interactiveMode {
-		buildEntry.Steps = []screwdriver.Step{
-			{
-				Name:    "sd-local-init",
-				Command: "export > /tmp/sd-local.env",
-			},
-		}
+	for _, v := range dockerVolumes {
+		dockerCommandOptions = append(dockerCommandOptions, "-v", v)
 	}
+
+	if buildEntry.MemoryLimit != "" {
+		dockerCommandOptions = append(dockerCommandOptions, fmt.Sprintf("-m%s", buildEntry.MemoryLimit))
+	}
+
+	if buildEntry.UsePrivileged {
+		dockerCommandOptions = append(dockerCommandOptions, "--privileged")
+	}
+
+	if d.interactiveMode {
+		if err := d.setupInteractiveMode(&buildEntry); err != nil {
+			return err
+		}
+
+		hostSdUtilsDir := d.sdUtilsPath
+		containerSdUtilsDir := GetEnv(environment, "SD_UTILS_DIR")
+		utlVol := fmt.Sprintf("%s/:%s", hostSdUtilsDir, containerSdUtilsDir)
+
+		dockerCommandOptions = append(dockerCommandOptions, "-itd", "-v", utlVol)
+	}
+
+	if d.buildUser != "" {
+		dockerCommandOptions = append(dockerCommandOptions, fmt.Sprintf("-u%s", d.buildUser))
+	}
+
+	// Disable automatic image pulling
+	// Build image is explicitly pulled when the --no-image-pull option is not used
+	dockerCommandOptions = append(dockerCommandOptions, "--pull", "never")
+
+	// Now options are "(docker container run) --rm --entry-point ... --pull never <buildImage>"
+	dockerCommandOptions = append(dockerCommandOptions, buildImage)
 
 	configJSON, err := json.Marshal(buildEntry)
 	if err != nil {
 		return err
 	}
 
-	if !d.noImagePull {
-		logrus.Infof("Pulling docker image from %s...", buildImage)
-		_, err = d.execDockerCommand("pull", buildImage)
-		if err != nil {
-			return fmt.Errorf("failed to pull user image %v", err)
-		}
-	}
-
-	dockerCommandArgs := []string{"container", "run"}
-	dockerCommandOptions := []string{"--rm"}
-	dockerCommandOptions = append(dockerCommandOptions, "--pull", "never")
-	for _, v := range dockerVolumes {
-		dockerCommandOptions = append(dockerCommandOptions, "-v", v)
-	}
-	dockerCommandOptions = append(dockerCommandOptions, "--entrypoint", "/bin/sh")
-	dockerCommandOptions = append(dockerCommandOptions, "-e", "SSH_AUTH_SOCK=/tmp/auth.sock", buildImage)
 	configJSONArg := string(configJSON)
 	if d.interactiveMode {
 		configJSONArg = fmt.Sprintf("%q", configJSONArg)
 	}
-	launchCommands := []string{"/opt/sd/local_run.sh", configJSONArg, buildEntry.JobName, GetEnv(environment, "SD_API_URL"), GetEnv(environment, "SD_STORE_URL"), logfilePath}
-	if d.interactiveMode {
-		dockerCommandOptions = append([]string{"-itd"}, dockerCommandOptions...)
 
-	} else {
-		dockerCommandOptions = append(dockerCommandOptions, launchCommands...)
+	launchCommands := []string{
+		"/opt/sd/local_run.sh",
+		configJSONArg,
+		buildEntry.JobName,
+		GetEnv(environment, "SD_API_URL"),
+		GetEnv(environment, "SD_STORE_URL"),
+		logfilePath,
 	}
 
-	if buildEntry.MemoryLimit != "" {
-		dockerCommandOptions = append([]string{fmt.Sprintf("-m%s", buildEntry.MemoryLimit)}, dockerCommandOptions...)
-	}
+	// Pull build image explicitly before docker run
+	if !d.noImagePull {
+		logrus.Infof("Pulling docker image from %s...", buildImage)
 
-	if buildEntry.UsePrivileged {
-		dockerCommandOptions = append([]string{"--privileged"}, dockerCommandOptions...)
-	}
-
-	if d.dind.enabled {
-		dockerCommandOptions = append(
-			[]string{
-				"--network", d.dind.network,
-				"-e", "DOCKER_TLS_CERTDIR=/certs",
-				"-e", "DOCKER_HOST=tcp://docker:2376",
-				"-e", "DOCKER_TLS_VERIFY=1",
-				"-e", "DOCKER_CERT_PATH=/certs/client",
-				"-e", fmt.Sprintf("SD_DIND_SHARE_PATH=%s", d.dind.shareVolumePath),
-				"-v", fmt.Sprintf("%s:/certs/client:ro", d.dind.volume),
-				"-v", fmt.Sprintf("%s:%s", d.dind.shareVolumeName, d.dind.shareVolumePath),
-			},
-			dockerCommandOptions...)
-	}
-
-	if d.buildUser != "" {
-		dockerCommandOptions = append([]string{fmt.Sprintf("-u%s", d.buildUser)}, dockerCommandOptions...)
+		if _, err := d.execDockerCommand("pull", buildImage); err != nil {
+			return fmt.Errorf("failed to pull user image %v", err)
+		}
 	}
 
 	if d.interactiveMode {
-		// attach build container for sd-local interact mode
+		// Create build conatiner without command (e.g. docker run --rm ... image_name)
 		cid, err := d.execDockerCommand(append(dockerCommandArgs, dockerCommandOptions...)...)
 		if err != nil {
 			return fmt.Errorf("failed to run build container: %v", err)
 		}
 
+		// attach build container for sd-local interact mode
 		attachCommands := []string{"attach", cid}
 		commands := [][]string{
 			launchCommands,
@@ -219,16 +282,18 @@ func (d *docker) runBuild(buildEntry buildEntry) error {
 			{".", "/tmp/sd-local.env"},
 			{"set", "+a"},
 			{"export", "PS1='sd-local# '"},
+			{"sdrun() { . /$SD_UTILS_DIR/bin/sd-run $@; }"},
 			{"cd", "$SD_CHECKOUT_DIR"},
 		}
-		err = d.attachDockerCommand(attachCommands, commands)
-		if err != nil {
+
+		if err := d.attachDockerCommand(attachCommands, commands); err != nil {
 			return fmt.Errorf("failed to attach build container: %v", err)
 		}
 	} else {
-		// run for sd-local build mode
-		_, err = d.execDockerCommand(append(dockerCommandArgs, dockerCommandOptions...)...)
-		if err != nil {
+		// Run build container with launch command (e.g. docker run --rm ... image_name /opt/sd/local_run.sh ...)
+		dockerCommandOptions = append(dockerCommandOptions, launchCommands...)
+
+		if _, err := d.execDockerCommand(append(dockerCommandArgs, dockerCommandOptions...)...); err != nil {
 			return fmt.Errorf("failed to run build container: %v", err)
 		}
 	}
@@ -352,6 +417,10 @@ func (d *docker) clean() {
 
 	if err != nil {
 		logrus.Warn(fmt.Errorf("failed to remove hab volume: %v", err))
+	}
+
+	if err := os.RemoveAll(d.sdUtilsPath); err != nil {
+		logrus.Warn(fmt.Errorf("failed to remove sd-utils directory %s: %v", d.sdUtilsPath, err))
 	}
 
 	if d.dind.enabled {
