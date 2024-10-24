@@ -211,7 +211,7 @@ func TestRunBuild(t *testing.T) {
 		{"success", "SUCCESS_RUN_BUILD", nil,
 			[]string{
 				"docker pull node:12",
-				fmt.Sprintf("ocker container run --rm --entrypoint /bin/sh -e SSH_AUTH_SOCK=/tmp/auth.sock -v /:/sd/workspace/src/screwdriver.cd/sd-local/local-build -v sd-artifacts/:/test/artifacts -v %s:/opt/sd -v %s:/opt/sd/hab -v %s --pull never node:12 /opt/sd/local_run.sh ", d.volume, d.habVolume, sshSocket)},
+				fmt.Sprintf("docker container run --rm --entrypoint /bin/sh -e SSH_AUTH_SOCK=/tmp/auth.sock -v /:/sd/workspace/src/screwdriver.cd/sd-local/local-build -v sd-artifacts/:/test/artifacts -v %s:/opt/sd -v %s:/opt/sd/hab -v %s --pull never node:12 /opt/sd/local_run.sh ", d.volume, d.habVolume, sshSocket)},
 			newBuildEntry()},
 		{"success with memory limit", "SUCCESS_RUN_BUILD", nil,
 			[]string{
