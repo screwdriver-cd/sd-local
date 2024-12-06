@@ -140,6 +140,7 @@ func (d *docker) setupInteractiveMode(buildEntry *buildEntry) error {
 
 	sdRunShell := strings.Join([]string{
 		fmt.Sprintf(`#!%s`, shellBin),
+		`set -o pipefail`,
 		`step_dir="${SD_UTILS_DIR}/steps"`,
 		`step_list=$(ls "$step_dir")`,
 		`if [ -z "$1" ] || [ "$1" = "--help" ]; then`,
@@ -160,6 +161,9 @@ func (d *docker) setupInteractiveMode(buildEntry *buildEntry) error {
 		`  for step_name in $steps; do`,
 		`    cat "${step_dir}/${step_name}" | sed "s/^/${step_name}: /"`,
 		fmt.Sprintf(`    %s "${step_dir}/${step_name}" | sed "s/^/${step_name}: /"`, shellBin),
+		`    if [ $? != 0 ]; then`,
+		`      return 1`,
+		`    fi`,
 		`  done`,
 		`else`,
 		`  step_name="$1"`,
