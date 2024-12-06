@@ -155,7 +155,7 @@ func (d *docker) setupInteractiveMode(buildEntry *buildEntry) error {
 		`    echo "  --list     show all steps"`,
 		`    echo "  --all      run all steps"`,
 		`elif [ "$1" = "--list" ]; then`,
-		`  echo "${step_list}";`,
+		`  echo $(cat "${step_dir}/.steps")`,
 		`elif [ "$1" = "--all" ]; then`,
 		`  steps=$(cat "${step_dir}/.steps")`,
 		`  for step_name in $steps; do`,
@@ -335,7 +335,7 @@ func (d *docker) runBuild(buildEntry buildEntry) error {
 			{"set", "+a"},
 			{"export", "PS1='sd-local# '"},
 			{"sdrun() { . /$SD_UTILS_DIR/bin/sdrun $@; }"},
-			{"source /$SD_UTILS_DIR/bin/sdrun-bash-completion"},
+			{". /$SD_UTILS_DIR/bin/sdrun-bash-completion"},
 			{"cd", "$SD_CHECKOUT_DIR"},
 		}
 
