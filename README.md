@@ -81,8 +81,17 @@ Global Flags:
 * You can execute step commands in interactive mode.
 
 ```bash
-sd-local# sdrun <step name>
-foo
+sd-local# sdrun --help
+Run predefined steps of the specified job
+
+Usage:
+  sdrun [flags]
+  sdrun [step]
+
+Flags:
+  --help        help for sdrun
+  --list        show all steps
+  --all         run all steps
 ```
 
 * You can use docker commands in the build to run containers, build images, etc.
