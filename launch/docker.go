@@ -138,45 +138,41 @@ func (d *docker) setupInteractiveMode(buildEntry *buildEntry) error {
 		shellBin = "/bin/sh"
 	}
 
-	sdRunShell := strings.Join([]string{
-		fmt.Sprintf(`#!%s`, shellBin),
-		`set -o pipefail`,
-		`step_dir="${SD_UTILS_DIR}/steps"`,
-		`step_list=$(ls "$step_dir")`,
-		`if [ -z "$1" ] || [ "$1" = "--help" ]; then`,
-		`    echo "Run predefined steps of the specified job"`,
-		`    echo ""`,
-		`    echo "Usage:"`,
-		`    echo "  sdrun [flags]"`,
-		`    echo "  sdrun [step]"`,
-		`    echo ""`,
-		`    echo "Flags:"`,
-		`    echo "  --help     help for sdrun"`,
-		`    echo "  --list     show all steps"`,
-		`    echo "  --all      run all steps"`,
-		`elif [ "$1" = "--list" ]; then`,
-		`  echo $(cat "${step_dir}/.steps")`,
-		`elif [ "$1" = "--all" ]; then`,
-		`  steps=$(cat "${step_dir}/.steps")`,
-		`  for step_name in $steps; do`,
-		`    cat "${step_dir}/${step_name}" | sed "s/^/${step_name}: /"`,
-		fmt.Sprintf(`    %s "${step_dir}/${step_name}" | sed "s/^/${step_name}: /"`, shellBin),
-		`    if [ $? != 0 ]; then`,
-		`      return 1`,
-		`    fi`,
-		`  done`,
-		`else`,
-		`  step_name="$1"`,
-		`  step_file="${step_dir}/${step_name}"`,
-		`  if [ -f "${step_file}" ]; then`,
-		`    cat "${step_dir}/${step_name}"`,
-		fmt.Sprintf(`    %s "${step_dir}/${step_name}"`, shellBin),
-		`  else`,
-		`    echo "ERROR: invalid step"`,
-		`    return 1`,
-		`  fi`,
-		`fi`,
-	}, "\n")
+	sdRunShell := fmt.Sprintf(`#!%s
+        set -o pipefail
+        step_dir="${SD_UTILS_DIR}/steps"
+        step_list="$(ls "$step_dir")"
+        if [ -z "$1" ] || [ "$1" = "--help" ]; then
+          echo "Run predefined steps of the specified job"
+          echo ""
+          echo "Usage:"
+          echo "  sdrun [flags]"
+          echo "  sdrun [step]"
+          echo ""
+          echo "Flags:"
+          echo "  --help     help for sdrun"
+          echo "  --list     show all steps"
+          echo "  --all      run all steps"
+        elif [ "$1" = "--list" ]; then
+          echo $(cat "${step_dir}/.steps")
+        elif [ "$1" = "--all" ]; then
+          steps=$(cat "${step_dir}/.steps")
+          for step_name in $steps; do
+            tail -n +2 "${step_dir}/${step_name}" | sed "s/^/${step_name}: /"
+            . "${step_dir}/${step_name}"
+          done
+        else
+          step_name="$1"
+          step_file="${step_dir}/${step_name}"
+          if [ -f "${step_file}" ]; then
+            tail -n +2 "${step_dir}/${step_name}" | sed "s/^/${step_name}: /"
+            . "${step_dir}/${step_name}"
+          else
+            echo "ERROR: invalid step"
+            return 1
+          fi
+        fi
+    `, shellBin)
 
 	if err := osWriteFile(fmt.Sprintf("%s/bin/sdrun", sdUtilsPath), []byte(sdRunShell), 0755); err != nil {
 		return err
@@ -203,7 +199,7 @@ func (d *docker) setupInteractiveMode(buildEntry *buildEntry) error {
 	}
 
 	for _, step := range buildEntry.Steps {
-		if err := osWriteFile(fmt.Sprintf("%s/steps/%s", sdUtilsPath, step.Name), []byte(step.Command), 0755); err != nil {
+		if err := osWriteFile(fmt.Sprintf("%s/steps/%s", sdUtilsPath, step.Name), []byte("#!"+shellBin+" -e\n"+step.Command), 0755); err != nil {
 			return err
 		}
 	}
