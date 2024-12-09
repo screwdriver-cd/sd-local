@@ -139,7 +139,6 @@ func (d *docker) setupInteractiveMode(buildEntry *buildEntry) error {
 	}
 
 	sdRunShell := fmt.Sprintf(`#!%s
-        set -o pipefail
         step_dir="${SD_UTILS_DIR}/steps"
         step_list="$(ls "$step_dir")"
         if [ -z "$1" ] || [ "$1" = "--help" ]; then
