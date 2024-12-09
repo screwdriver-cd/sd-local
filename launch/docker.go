@@ -139,14 +139,61 @@ func (d *docker) setupInteractiveMode(buildEntry *buildEntry) error {
 	}
 
 	sdRunShell := fmt.Sprintf(`#!%s
-step_name="$1"
-step_dir="${SD_UTILS_DIR}/steps"
-step_list=$(ls "$step_dir")
-if [ "${step_name}" = "--list" ]; then echo "${step_list}";
-else . "${step_dir}/${step_name}"; fi
-`, shellBin)
+        step_dir="${SD_UTILS_DIR}/steps"
+        step_list="$(ls "$step_dir")"
+        if [ -z "$1" ] || [ "$1" = "--help" ]; then
+          echo "Run predefined steps of the specified job"
+          echo ""
+          echo "Usage:"
+          echo "  sdrun [flags]"
+          echo "  sdrun [step]"
+          echo ""
+          echo "Flags:"
+          echo "  --help     help for sdrun"
+          echo "  --list     show all steps"
+          echo "  --all      run all steps"
+        elif [ "$1" = "--list" ]; then
+          echo $(cat "${step_dir}/.steps")
+        elif [ "$1" = "--all" ]; then
+          steps=$(cat "${step_dir}/.steps")
+          for step_name in $steps; do
+            tail -n +2 "${step_dir}/${step_name}" | sed "s/^/${step_name}: /"
+            . "${step_dir}/${step_name}"
+          done
+        else
+          step_name="$1"
+          step_file="${step_dir}/${step_name}"
+          if [ -f "${step_file}" ]; then
+            tail -n +2 "${step_dir}/${step_name}" | sed "s/^/${step_name}: /"
+            . "${step_dir}/${step_name}"
+          else
+            echo "ERROR: invalid step"
+            return 1
+          fi
+        fi
+    `, shellBin)
 
-	if err := osWriteFile(fmt.Sprintf("%s/bin/sd-run", sdUtilsPath), []byte(sdRunShell), 0755); err != nil {
+	if err := osWriteFile(fmt.Sprintf("%s/bin/sdrun", sdUtilsPath), []byte(sdRunShell), 0755); err != nil {
+		return err
+	}
+
+	names := make([]string, len(buildEntry.Steps))
+	for i, item := range buildEntry.Steps {
+		names[i] = item.Name
+	}
+
+	if err := osWriteFile(fmt.Sprintf("%s/steps/.steps", sdUtilsPath), []byte(strings.Join(names, "\n")), 0755); err != nil {
+		return err
+	}
+
+	sdrunCompletion := strings.Join([]string{
+		fmt.Sprintf(`#!%s`, shellBin),
+		`_completion(){`,
+		fmt.Sprintf(`COMPREPLY=( %s )`, strings.Join(names, " ")),
+		`}`,
+		`complete -F _completion sdrun`,
+	}, "\n")
+	if err := osWriteFile(fmt.Sprintf("%s/bin/sdrun-bash-completion", sdUtilsPath), []byte(sdrunCompletion), 0755); err != nil {
 		return err
 	}
 
@@ -282,7 +329,8 @@ func (d *docker) runBuild(buildEntry buildEntry) error {
 			{".", "/tmp/sd-local.env"},
 			{"set", "+a"},
 			{"export", "PS1='sd-local# '"},
-			{"sdrun() { . /$SD_UTILS_DIR/bin/sd-run $@; }"},
+			{"sdrun() { . /$SD_UTILS_DIR/bin/sdrun $@; }"},
+			{". /$SD_UTILS_DIR/bin/sdrun-bash-completion"},
 			{"cd", "$SD_CHECKOUT_DIR"},
 		}
 
