@@ -198,7 +198,11 @@ func (d *docker) setupInteractiveMode(buildEntry *buildEntry) error {
 	}
 
 	for _, step := range buildEntry.Steps {
-		if err := osWriteFile(fmt.Sprintf("%s/steps/%s", sdUtilsPath, step.Name), []byte("#!"+shellBin+" -e\n"+step.Command), 0755); err != nil {
+		stepCommand := "#!" + shellBin + " -e\n" + step.Command
+		if !strings.HasSuffix(step.Command, "\n") {
+			stepCommand += "\n"
+		}
+		if err := osWriteFile(fmt.Sprintf("%s/steps/%s", sdUtilsPath, step.Name), []byte(stepCommand), 0755); err != nil {
 			return err
 		}
 	}
