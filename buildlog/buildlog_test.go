@@ -24,23 +24,26 @@ var (
 	}
 )
 
-func write(tb testing.TB, filepath string, inputs []string) {
+func write(tb testing.TB, filepath string, inputs []string, errCh chan<- error) {
 	tb.Helper()
 
 	for _, input := range inputs {
 		file, err := os.OpenFile(filepath, os.O_RDWR|os.O_CREATE|os.O_APPEND, 0666)
 		if err != nil {
-			tb.Fatal(err)
+			errCh <- err
+			return
 		}
 
 		_, err = file.Write([]byte(input))
 		if err != nil {
-			tb.Fatal(err)
+			errCh <- err
+			return
 		}
 
 		err = file.Close()
 		if err != nil {
-			tb.Fatal(err)
+			errCh <- err
+			return
 		}
 	}
 }
@@ -52,8 +55,8 @@ func TestRun(t *testing.T) {
 			t.Fatal(err)
 		}
 		defer tmpFile.Close()
-
-		go write(t, tmpFile.Name(), testInputs)
+		chErr := make(chan error)
+		go write(t, tmpFile.Name(), testInputs, chErr)
 
 		parent, cancel := context.WithCancel(context.Background())
 		writer := bytes.NewBuffer(nil)
@@ -73,6 +76,8 @@ func TestRun(t *testing.T) {
 		timeout := time.After(5 * time.Second)
 
 		select {
+		case err := <-chErr:
+			t.Fatalf("failed to write: %v", err)
 		case <-done:
 			expected := "main: test 1\r\nmain: test 2\r\n"
 			assert.Equal(t, expected, writer.String())
@@ -88,7 +93,7 @@ func TestRun(t *testing.T) {
 		}
 		defer tmpFile.Close()
 
-		longBuffer := make([]byte, 4096, 4096)
+		longBuffer := make([]byte, 4096)
 		for i := 0; i < 4096; i++ {
 			longBuffer[i] = '*'
 		}
@@ -97,8 +102,8 @@ func TestRun(t *testing.T) {
 			`{"t": 1581662022395, "m": "long input ` + string(longBuffer) + `", "n": 1, "s": "main"}` + "\n",
 			`{"t": 1581662022394, "m": "test 3", "n": 2, "s": "main"}` + "\n",
 		}
-
-		go write(t, tmpFile.Name(), longInputs)
+		chErr := make(chan error)
+		go write(t, tmpFile.Name(), longInputs, chErr)
 
 		parent, cancel := context.WithCancel(context.Background())
 		writer := bytes.NewBuffer(nil)
@@ -119,6 +124,8 @@ func TestRun(t *testing.T) {
 		timeout := time.After(5 * time.Second)
 
 		select {
+		case err := <-chErr:
+			t.Fatalf("failed to write: %v", err)
 		case <-done:
 			expected := "main: test 1\r\nmain: long input " + string(longBuffer) + "\r\nmain: test 3\r\n"
 			assert.Equal(t, expected, writer.String())
@@ -142,7 +149,8 @@ func TestRun(t *testing.T) {
 			`{` + "\n",
 			`{"t": 1581662022394, "m": "test 3", "n": 0, "s": "main"}` + "\n",
 		}
-		go write(t, tmpFile.Name(), testInvalidInputs)
+		chErr := make(chan error, 1)
+		go write(t, tmpFile.Name(), testInvalidInputs, chErr)
 
 		parent, cancel := context.WithCancel(context.Background())
 		writer := bytes.NewBuffer(nil)
@@ -167,6 +175,8 @@ func TestRun(t *testing.T) {
 		timeout := time.After(5 * time.Second)
 
 		select {
+		case err := <-chErr:
+			t.Fatalf("failed to write: %v", err)
 		case <-done:
 			assert.Contains(t, writer.String(), "main: test 1")
 			assert.Contains(t, writer.String(), "Parsed error. If you want to check see sd-artifacts/builds.log:2")

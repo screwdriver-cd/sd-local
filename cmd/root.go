@@ -70,14 +70,10 @@ func Execute() error {
 	go func() {
 		quit := make(chan os.Signal, 1)
 		signal.Notify(quit, syscall.SIGINT, syscall.SIGTERM, syscall.SIGHUP)
-		for {
-			select {
-			case sig := <-quit:
-				kill(sig)
-				clean()
-				os.Exit(1)
-			}
-		}
+		sig := <-quit
+		kill(sig)
+		clean()
+		os.Exit(1)
 	}()
 
 	rootCmd := newRootCmd()
