@@ -12,7 +12,7 @@ import (
 
 	"github.com/creack/pty"
 	"github.com/sirupsen/logrus"
-	"golang.org/x/crypto/ssh/terminal"
+	"golang.org/x/term"
 )
 
 // Interacter wraps up the interactive process
@@ -59,11 +59,11 @@ func (d *Interact) Run(c *exec.Cmd, commands [][]string) error {
 	ch <- syscall.SIGWINCH // Initial resize.
 
 	// Set stdin in raw mode.
-	oldState, err := terminal.MakeRaw(int(os.Stdin.Fd()))
+	oldState, err := term.MakeRaw(int(os.Stdin.Fd()))
 	if err != nil {
 		panic(err)
 	}
-	defer func() { _ = terminal.Restore(int(os.Stdin.Fd()), oldState) }() // Best effort.
+	defer func() { _ = term.Restore(int(os.Stdin.Fd()), oldState) }() // Best effort.
 
 	// Start the command
 	c.Start()

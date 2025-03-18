@@ -103,7 +103,7 @@ func TestJob(t *testing.T) {
 			w.WriteHeader(200)
 			w.Header().Set("Content-Type", "application/json")
 
-			testBody := fmt.Sprint(`{`)
+			testBody := `{`
 			fmt.Fprintln(w, testBody)
 		}))
 
@@ -256,7 +256,7 @@ func TestInitJWT(t *testing.T) {
 			w.WriteHeader(200)
 			w.Header().Set("Content-Type", "application/json")
 
-			testBody := fmt.Sprint(`{`)
+			testBody := `{`
 			fmt.Fprintln(w, testBody)
 		}))
 
