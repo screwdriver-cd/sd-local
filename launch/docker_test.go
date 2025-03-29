@@ -582,15 +582,12 @@ func TestDockerKill(t *testing.T) {
 		PidTmp := d.commands[0].Process.Pid
 		defer func() {
 			syscall.Kill(PidTmp, syscall.SIGINT)
+			signalFn = defaultSignalFunc
 		}()
-		// d.commands[0].Process = nil
-		d.commands[0].Process.Pid = 999999
-		// check if pid 0 exists
-		_, err := os.FindProcess(999999)
-		if err != nil {
-			fmt.Println("PID 0 does not exist:", err)
-		} else {
-			fmt.Println("PID 0 exists (unexpected)")
+
+		// Mock the signal function to force an error
+		signalFn = func(*os.Process, os.Signal) error {
+			return fmt.Errorf("mocked signal failure")
 		}
 
 		buf := bytes.NewBuffer(nil)
