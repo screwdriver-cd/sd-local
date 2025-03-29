@@ -583,7 +583,14 @@ func TestDockerKill(t *testing.T) {
 		defer func() {
 			syscall.Kill(PidTmp, syscall.SIGINT)
 		}()
-		d.commands[0].Process.Pid = 1
+		d.commands[0].Process.Pid = 0
+		// check if pid 0 exists
+		_, err := os.FindProcess(0)
+		if err != nil {
+			fmt.Println("PID 0 does not exist:", err)
+		} else {
+			fmt.Println("PID 0 exists (unexpected)")
+		}
 
 		buf := bytes.NewBuffer(nil)
 		logrus.SetOutput(buf)
