@@ -444,7 +444,6 @@ func (d *docker) kill(sig os.Signal) {
 			continue
 		}
 		d.mutex.Unlock()
-		fmt.Printf("pid: %d\n", v.Process.Pid)
 		if d.useSudo {
 			cmd := execCommand("sudo", "kill", fmt.Sprintf("-%v", signum(sig)), strconv.Itoa(v.Process.Pid))
 			err = cmd.Run()
