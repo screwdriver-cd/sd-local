@@ -51,6 +51,7 @@ func newFakeExecCommand(id string) *fakeExecCommand {
 		cs = append(cs, args...)
 		cmd := exec.Command(os.Args[0], cs...)
 		cmd.Env = []string{"GO_WANT_HELPER_PROCESS=1", fmt.Sprintf("GO_TEST_MODE=%s", id)}
+		fmt.Printf("cmd: %v\n", cmd)
 		return cmd
 	}
 	return c
@@ -582,7 +583,7 @@ func TestDockerKill(t *testing.T) {
 		defer func() {
 			syscall.Kill(PidTmp, syscall.SIGINT)
 		}()
-		d.commands[0].Process.Pid = 0
+		d.commands[0].Process.Pid = 1
 
 		buf := bytes.NewBuffer(nil)
 		logrus.SetOutput(buf)
@@ -591,6 +592,7 @@ func TestDockerKill(t *testing.T) {
 
 		actual := buf.String()
 		expected := "failed to stop process:"
+		fmt.Printf("actual: %s\n", actual)
 		assert.True(t, strings.Contains(actual, expected), fmt.Sprintf("\nexpected: %s \nactual: %s\n", expected, actual))
 	})
 
