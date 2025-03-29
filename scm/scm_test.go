@@ -139,26 +139,19 @@ func TestKill(t *testing.T) {
 		actual := buf.String()
 		assert.Equal(t, "", actual)
 	})
-
 	t.Run("failure", func(t *testing.T) {
 		defer func() {
-			execCommand = exec.Command
+			processSignal = defaultSignalFunc // Reset after test
 			logrus.SetOutput(os.Stderr)
 		}()
-		c := newFakeExecCommand("FAILED_TO_KILL")
-		execCommand = c.execCmd
-		command := execCommand("sleep")
-		s := &scm{
-			commands: []*exec.Cmd{command},
+
+		processSignal = func(p *os.Process, sig os.Signal) error {
+			return fmt.Errorf("mocked signal failure")
 		}
 
-		s.commands[0].Start()
-
-		PidTmp := s.commands[0].Process.Pid
-		defer func() {
-			syscall.Kill(PidTmp, syscall.SIGINT)
-		}()
-		s.commands[0].Process.Pid = 0
+		s := &scm{
+			commands: []*exec.Cmd{exec.Command("sleep")}, // Dummy command
+		}
 
 		buf := bytes.NewBuffer(nil)
 		logrus.SetOutput(buf)
@@ -169,6 +162,7 @@ func TestKill(t *testing.T) {
 		expected := "failed to stop process:"
 		assert.True(t, strings.Contains(actual, expected), fmt.Sprintf("\nexpected: %s \nactual: %s\n", expected, actual))
 	})
+
 }
 
 func TestClean(t *testing.T) {
