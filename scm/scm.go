@@ -17,10 +17,17 @@ func init() {
 	rand.Seed(time.Now().UnixNano())
 }
 
+type signalFunc func(*os.Process, os.Signal) error
+
+func defaultSignalFunc(p *os.Process, sig os.Signal) error {
+	return p.Signal(sig)
+}
+
 var (
-	srcURLRegex = regexp.MustCompile(`^((?:(?:https://(?:[^@/:\s]+@)?)|git@)+(?:[^/:\s]+)(?:/|:)(?:[^/:\s]+)/(?:[^\s]+?)(?:\.git)?)(?:#([^\s]+))?$`)
-	osMkdirAll  = os.MkdirAll
-	execCommand = exec.Command
+	srcURLRegex   = regexp.MustCompile(`^((?:(?:https://(?:[^@/:\s]+@)?)|git@)+(?:[^/:\s]+)(?:/|:)(?:[^/:\s]+)/(?:[^\s]+?)(?:\.git)?)(?:#([^\s]+))?$`)
+	osMkdirAll    = os.MkdirAll
+	execCommand   = exec.Command
+	processSignal = defaultSignalFunc
 )
 
 // SCM is able to fetch source code to build
@@ -89,7 +96,7 @@ func (s *scm) Kill(sig os.Signal) {
 		if v.ProcessState != nil {
 			continue
 		}
-		err := v.Process.Signal(sig)
+		err := processSignal(v.Process, sig)
 		if err != nil {
 			logrus.Warn(fmt.Errorf("failed to stop process: %v", err))
 		}

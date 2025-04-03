@@ -1,5 +1,5 @@
 shared:
-    image: golang:1.19
+    image: golang:1.23
     environment:
         GOPATH: /sd/workspace
 
@@ -12,8 +12,6 @@ jobs:
             - gover: go version
             - tidy: |
                 go mod tidy
-                echo 'This step failed because there is an unused module in the go.mod file.'
-                echo 'Retry again after using the "go mod tidy" command.'
                 git diff --exit-code --quiet HEAD ./go.mod ./go.sum
             - install: go mod download
             - gofmt: (! gofmt -d -s . | grep '^')

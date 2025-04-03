@@ -581,8 +581,13 @@ func TestDockerKill(t *testing.T) {
 		PidTmp := d.commands[0].Process.Pid
 		defer func() {
 			syscall.Kill(PidTmp, syscall.SIGINT)
+			signalFn = defaultSignalFunc
 		}()
-		d.commands[0].Process.Pid = 0
+
+		// Mock the signal function to force an error
+		signalFn = func(*os.Process, os.Signal) error {
+			return fmt.Errorf("mocked signal failure")
+		}
 
 		buf := bytes.NewBuffer(nil)
 		logrus.SetOutput(buf)

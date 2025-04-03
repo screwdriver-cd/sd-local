@@ -309,7 +309,7 @@ func TestInitJWT(t *testing.T) {
 		testToken := "token"
 		s := &sdAPI{
 			HTTPClient: http.DefaultClient,
-			APIURL:     "http://localhost",
+			APIURL:     "http://boom",
 			UserToken:  testToken,
 		}
 

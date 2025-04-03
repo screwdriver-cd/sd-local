@@ -48,11 +48,18 @@ type docker struct {
 	dind              DinD
 }
 
+type signalFunc func(*os.Process, os.Signal) error
+
+func defaultSignalFunc(p *os.Process, sig os.Signal) error {
+	return p.Signal(sig)
+}
+
 var (
 	_           runner = (*docker)(nil)
 	execCommand        = exec.Command
 	osMkdirAll         = os.MkdirAll
 	osWriteFile        = os.WriteFile
+	signalFn           = defaultSignalFunc
 )
 
 const (
@@ -427,6 +434,7 @@ func (d *docker) execDockerCommand(args ...string) (string, error) {
 }
 
 func (d *docker) kill(sig os.Signal) {
+
 	killedCmds := make([]*exec.Cmd, 0, 10)
 
 	for _, v := range d.commands {
@@ -436,12 +444,11 @@ func (d *docker) kill(sig os.Signal) {
 			continue
 		}
 		d.mutex.Unlock()
-
 		if d.useSudo {
 			cmd := execCommand("sudo", "kill", fmt.Sprintf("-%v", signum(sig)), strconv.Itoa(v.Process.Pid))
 			err = cmd.Run()
 		} else {
-			err = v.Process.Signal(sig)
+			err = signalFn(v.Process, sig) // Use the function wrapper
 		}
 
 		if err != nil {
