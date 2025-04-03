@@ -5,20 +5,20 @@
 class SdLocal < Formula
   desc "Screwdriver local mode."
   homepage "https://github.com/screwdriver-cd/sd-local"
-  version "1.0.57"
+  version "1.0.58"
 
   on_macos do
-    on_intel do
-      url "https://github.com/screwdriver-cd/sd-local/releases/download/v1.0.57/sd-local_darwin_amd64"
-      sha256 "9ac63195d2799bf8b33047fb39a41dbb46386cf9f68b68ce1f22f9bdc815d2b0"
+    if Hardware::CPU.intel?
+      url "https://github.com/screwdriver-cd/sd-local/releases/download/v1.0.58/sd-local_darwin_amd64"
+      sha256 "6b6d375bd3e8259b1311a94d43d7f8788ad34c78714fdc625f3bf3b56e960094"
 
       def install
         bin.install File.basename(@stable.url) => "sd-local"
       end
     end
-    on_arm do
-      url "https://github.com/screwdriver-cd/sd-local/releases/download/v1.0.57/sd-local_darwin_arm64"
-      sha256 "c3e83a743b00918b1ed088a12d4d98fc03a8d5e88ee69944a4c2d019d1bc1560"
+    if Hardware::CPU.arm?
+      url "https://github.com/screwdriver-cd/sd-local/releases/download/v1.0.58/sd-local_darwin_arm64"
+      sha256 "f6a15d2cbb000fa6dd10cca7389316531f48c460702ddebedf557fb34c91b6ac"
 
       def install
         bin.install File.basename(@stable.url) => "sd-local"
@@ -27,20 +27,20 @@ class SdLocal < Formula
   end
 
   on_linux do
-    on_intel do
+    if Hardware::CPU.intel?
       if Hardware::CPU.is_64_bit?
-        url "https://github.com/screwdriver-cd/sd-local/releases/download/v1.0.57/sd-local_linux_amd64"
-        sha256 "6694c32831d741080eaa6f5dcca6b3db1003309673c2c11d12dcbcecdb6803eb"
+        url "https://github.com/screwdriver-cd/sd-local/releases/download/v1.0.58/sd-local_linux_amd64"
+        sha256 "6de1f89ad4981333e2b33b42460eaa1f31ef68048b04d0b66bb92a7e8d9eb6f2"
 
         def install
           bin.install File.basename(@stable.url) => "sd-local"
         end
       end
     end
-    on_arm do
+    if Hardware::CPU.arm?
       if Hardware::CPU.is_64_bit?
-        url "https://github.com/screwdriver-cd/sd-local/releases/download/v1.0.57/sd-local_linux_arm64"
-        sha256 "4e7056f7ab8485a90cb172dec706339b9d91611a45ef69340a991794daa7172a"
+        url "https://github.com/screwdriver-cd/sd-local/releases/download/v1.0.58/sd-local_linux_arm64"
+        sha256 "20b8a5c6730971925212eb8578d2dc4d314600790fddb3a7e06bb24a00caaab4"
 
         def install
           bin.install File.basename(@stable.url) => "sd-local"
